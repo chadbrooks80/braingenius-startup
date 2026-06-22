@@ -1,0 +1,222 @@
+## 2026-04-19 18:30
+
+- Built `CTASection` block component in `src/components/blocks/CTASection.tsx`
+- Dark gradient card with cyan (top-right) and lime (bottom-left) radial glow decorations; scroll-reveal via `IntersectionObserver`
+- Single "Get Started For Free!" primary `Button` with `Rocket` icon; "Schedule a Demo" button intentionally excluded per spec
+- Added `--color-navy-medium`, `--color-cta-glow-cyan`, `--color-cta-glow-lime` theme tokens to `globals.css`
+- Replaced all hardcoded hex/rgba values with CSS variable references; `boxShadow` replaced with `shadow-(--shadow-2xl)` token
+- Integrated into `src/app/page.tsx` as the last section
+- Created `docs/components/CTASection.md`
+- Passed audit (hardcoded colors, inline text style, missing rocket icon all fixed) and user review
+
+## 2026-04-19 17:30
+
+- Built `TestimonialsSection` block component in `src/components/blocks/TestimonialsSection.tsx`
+- Uses `Eyebrow` (with `Heart` icon, indigo accent) and `TestimonialCard` — no new components created
+- 6 testimonials in a responsive 1→2→3 column grid; scroll-reveal via `IntersectionObserver` with staggered delays computed from index
+- All avatar images use `/sara.jpeg` from public folder
+- Section id `testimonials` matches landing page nav anchor
+- Integrated into `src/app/page.tsx` below `WordGeneratorSection`
+- Created `docs/components/TestimonialsSection.md`
+- Passed audit (doc image path corrected, delay moved out of data type) and user review
+
+## 2026-04-19 16:30
+
+- Built `WordGeneratorSection` block component in `src/components/blocks/WordGeneratorSection.tsx`
+- Three `FeatureCheckCard` instances: Recommended Words by Grade Level (dark), AI-Generated Words by Topic (light), Words from URLs or PDF Uploads (dark)
+- Scroll-reveal animation via `IntersectionObserver` with staggered delays (0s, 0.1s, 0.2s) using existing `reveal-item`/`reveal-visible` CSS classes
+- Section header uses `Eyebrow` with `Wand2` icon, `h2` title, and supporting description paragraph
+- Fixed `FeatureCheckCard`: added `h-full` to card wrapper and `flex-1` to description paragraph for equal-height cards in grid rows
+- Integrated into `src/app/page.tsx` below `HowItWorksSection`
+- Created `docs/components/WordGeneratorSection.md`
+- Passed audit and user review
+
+## 2026-04-19 15:30
+
+- Built `FeatureCheckCard` block component in `src/components/blocks/FeatureCheckCard.tsx`
+- Props: `icon`, `iconBackgroundColor`, `title`, `children`, `checkItems` (required); `backgroundColor`, `fontColor`, `checkboxColor` (optional)
+- Icon → Title → Description → Check list structure matching the white middle card from the Word Generator section of the landing page
+- Dynamic theming via CSS custom properties (`--fcc-bg`, `--fcc-font`, `--fcc-icon-bg`, `--fcc-check`) set via inline style; `fontColor` applied to title, description (opacity-75), and check items
+- `iconBackgroundColor` accepts full CSS values (e.g. `color-mix()`); color/font props accept token names without `--`
+- Added playground examples at `/playground`: default white, indigo grade-level variant, dark card variant
+- Created `docs/components/FeatureCheckCard.md`
+- Passed audit (description text not respecting fontColor, hardcoded rgba, key={item} collision risk — all fixed) and user review
+
+## 2026-04-19 14:00
+
+- Built `TestimonialCard` block component in `src/components/blocks/TestimonialCard.tsx`
+- Props: `children`, `name`, `title`, `imageUrl` (required); `backgroundColor`, `fontColor` (optional, accept CSS variable names)
+- Always renders 5 Lucide stars and a left-side opening quote mark — neither is configurable
+- Dynamic theming via CSS custom properties (`--card-bg`, `--card-font`) set via inline style on wrapper; all child elements use Tailwind classes
+- All values use existing theme tokens: `shadow-lg`, `backdrop-blur-(--blur-glass)`, `text-label`, `text-base`, `text-2xl`, `text-sm`, `leading-relaxed`
+- Title uses `text-(--card-font)/60` so it respects `fontColor` on dark backgrounds
+- Added playground examples at `/playground`: default, dark background, light background
+- Created `docs/components/TestimonialCard.md`
+- Passed audit (arbitrary values, hardcoded shadows, inline styles, title contrast all fixed) and user review
+
+## 2026-04-19 11:30
+
+- Built `HowItWorksSection` block component in `src/components/blocks/HowItWorksSection.tsx`
+- Two-column desktop layout: `ExampleBlock` (Student Progress card) on left spanning all rows; Eyebrow, heading, description, `CheckBadge` list on right
+- Mobile order: Eyebrow → Heading → ExampleBlock → Description → CheckBadges (matching Hero responsive pattern via CSS grid `col-start`/`row-start`)
+- Progress bar animations via `progressFill` keyframe added to `globals.css`; `ExampleBlock` uses existing `bob` animation
+- All 6 CheckBadge items rendered: Never too easy, Never too hard, Spaced reviews, Mastery-based, Works offline, Grade-aligned
+- Replaced hardcoded `rgba` values with Tailwind opacity utilities (`bg-white/10`, `bg-white/5`) matching Hero pattern
+- Integrated into `src/app/page.tsx` below `FeatureSection`
+- Created `docs/components/HowItWorksSection.md`
+- Passed audit (hardcoded colors fixed, docs added) and user review
+
+## 2026-04-19 10:00
+
+- Built `CheckBadge` UI component in `src/components/ui/CheckBadge.tsx`
+- Pill-style badge with a `lucide-react` check icon, label, and three optional color props: `backgroundColor`, `fontColor`, `checkboxColor`
+- Props accept CSS variable names as strings; component wraps them in `var()` internally
+- Defaults: white background, `--color-text-primary` text, `--color-primary-cyan` check icon
+- Border uses `--color-border-muted`; shadow uses `--shadow-sm` — no hardcoded color values
+- Added playground examples at `/playground`: default, custom backgrounds, custom checkbox colors
+- Created `docs/components/CheckBadge.md`
+- Passed audit (4 findings fixed: missing docs, hardcoded shadow, border token, heading inconsistency) and user review
+
+## 2026-04-18 30:00
+
+- Built `FeatureSection` block component in `src/components/blocks/FeatureSection.tsx`
+- Composes 6 `FeatureCard` instances in a responsive 1→2→3 column grid
+- Uses `Eyebrow` for section label; feature data defined in a clean array mapped to cards
+- Scroll-reveal animation via `IntersectionObserver` toggling `.reveal-item` / `.reveal-visible` CSS classes with staggered `transitionDelay` (0s → 0.5s)
+- Added `--color-icon-bg-pink`, `--color-icon-bg-amber`, `--color-icon-bg-teal-green` theme tokens to `globals.css`
+- Added `h-full` to `FeatureCard` so cards stretch to equal height within grid rows
+- Integrated into `src/app/page.tsx` below `TrustSection`
+- Created `docs/components/FeatureSection.md`
+- Passed audit (4 findings fixed: unused keyframe, iconColor renamed, stable keys, doc corrected) and user review
+
+## 2026-04-18 29:00
+
+- Built reusable `FeatureCard` block component in `src/components/blocks/FeatureCard.tsx`
+- Props: `icon`, `iconBgColor`, `title`, `borderColor`, `children`
+- Hover lift and glow effects driven entirely by CSS custom properties + Tailwind — no `"use client"` or JS event handlers
+- Added playground examples at `/playground` with 6 cards using all accent color tokens
+- Created `docs/components/FeatureCard.md`
+- Passed audit (inline styles and missing docs fixed) and user review
+
+## 2026-04-18 28:00
+
+- Built `TrustSection` block component in `src/components/blocks/TrustSection.tsx`
+- Renders "Trusted by schools and educators" strip with three `TrustSymbol` pill cards
+- Trust items: Nixa Public Schools, Ozark R-VI Schools, EdTech Horizon Award
+- Added `--color-icon-bg-teal/indigo/lime` theme tokens to `globals.css` — no hardcoded rgba values
+- Section placed in `src/app/page.tsx` below `Hero`
+- Created `docs/components/TrustSection.md`
+- Passed audit (hardcoded color finding fixed) and user review
+
+## 2026-04-18 27:00
+
+- Refactored `TrustSymbol` from a full section component to a single pill component
+- Removed `label`, `backgroundColor`, and `items[]` props — component now accepts `iconOrImage`, `iconBgColor`, `title`, `subtitle` directly
+- Removed internal `TrustVisual` sub-component; layout is now flat and single-responsibility
+- Callers compose multiple pills using a flex container — no layout imposed by the component
+- Updated playground to show pills composed in a `flex-wrap` row
+- Updated `docs/components/TrustSymbol.md` to reflect new API
+- Passed audit and user review
+
+## 2026-04-18 26:00
+
+- Built `TrustSymbol` block component in `src/components/blocks/TrustSymbol.tsx`
+- Renders a label/headline above a flex row of pill-shaped trust items
+- Each item shows a circular icon/image visual, bold title, and muted subtitle
+- `iconOrImage` accepts any `ReactNode` — icon or `<Image />` rendered as-is, no type detection needed
+- `backgroundColor` prop defaults to `var(--color-surface-soft)`; configurable per instance
+- Hover lift reuses `hover:-translate-y-0.5` and `hover:shadow-(--shadow-lg)` matching Button pattern
+- All colors use theme tokens; `iconBgColor` uses `color-mix()` with theme vars in playground examples
+- Added playground examples: icon-only, image-only, mixed, multiple background variations, realistic content
+- Created `docs/components/TrustSymbol.md`
+- Passed audit (all findings fixed) and user review
+
+## 2026-04-18 25:00
+
+- Built `Hero` block component in `src/components/blocks/Hero.tsx`
+- Single CSS grid layout — no left/right wrapper divs; each element is its own grid item
+- JSX order: Eyebrow → Heading → ExampleBlock → Description → CTA buttons
+- Desktop: 2-column grid (`1.1fr 0.9fr`); ExampleBlock spans all 4 rows in column 2
+- Mobile: 1-column auto-flow; ExampleBlock stays visible between heading and description (never hidden)
+- Hero fills viewport above the fold on desktop using `min-h-[calc(100dvh-var(--header-height))]` with `--header-height: 5rem` token
+- Added theme tokens: `--color-accent-orange`, `--shadow-glow-cyan`, `--header-height`
+- Added `@keyframes bob` floating animation in `globals.css`
+- Installed `lucide-react` for icons (approved by user)
+- Created `docs/components/Hero.md`
+- Placed in `src/app/page.tsx`
+- Passed audit (all 7 findings fixed) and user review
+
+## 2026-04-18 24:00
+
+- Built reusable `ExampleBlock` component in `src/components/blocks/ExampleBlock.tsx`
+- Based on `.quiz-card` design from landing page — matches background, radius, padding, and shadow exactly
+- Props: `label` (required), `status` (optional, conditional badge), `statusColor` (optional, overrides lime default)
+- Badge background injected via typed CSS custom property (`BadgeStyle` interface extending `React.CSSProperties`)
+- Added component-level typography and spacing tokens to `globals.css` (`--font-size-label`, `--font-size-badge`, `--tracking-label`, `--tracking-badge`, `--spacing-card-pad`, `--spacing-badge-x/y`)
+- Added playground examples at `/playground` for all three prop combinations
+- Added component docs at `docs/components/ExampleBlock.md`
+- Passed audit and user review
+
+## 2026-04-18 23:30
+
+- Built reusable `Eyebrow` component in `src/components/ui/Eyebrow.tsx`
+- Replaces `.hero-badge` and `.section-label` from landing page design
+- Props: `bgColor` and `textColor` accept CSS variable names; defaults to primary-cyan bg and text-primary text
+- Color applied via inline CSS custom properties — Tailwind v4 resolves opacity at runtime without dynamic class issues
+- No `className` prop — all styling controlled via props per spec
+- Created `src/app/playground/page.tsx` at `/playground` with all four landing page eyebrows and color variant examples
+- Added component docs at `docs/components/Eyebrow.md`
+- TypeScript strict check passed with no errors
+- Passed user review
+
+## 2026-04-18 22:15
+
+- Swapped mobile header layout: hamburger moved to left, logo centered using 3-col grid (`grid-cols-[1fr_auto_1fr]`)
+- Desktop layout unchanged (logo left, nav center, CTA right)
+- Removed portal/mounted-state pattern from `HeaderNav.tsx` — drawer inlined directly, simplifying SSR handling
+- Restored `md:hidden` guards on backdrop and drawer to prevent desktop rendering
+- Passed audit and user review
+
+## 2026-04-18 21:30
+
+- Refined header responsiveness for logo and nav items
+- Logo scales fluidly using `clamp(28px, 3.9vw, 56px)` — full size on desktop, shrinks smoothly on smaller viewports
+- CTA button is 15% smaller below `lg` breakpoint using fixed Tailwind responsive classes
+- Nav item spacing (gap + horizontal padding) scales fluidly with `clamp()` starting at large viewports
+- All changes in `Header.tsx` and `HeaderNav.tsx`
+
+## 2026-04-18 20:00
+
+- Built site header with logo, desktop nav, CTA button, and mobile slide-out drawer
+- Created `Header.tsx`, `HeaderNav.tsx` in `src/components/layout/header/`
+- Created reusable `Button.tsx` in `src/components/ui/` with `cta`, `primary`, `secondary` variants; polymorphic (renders `<a>` or `<button>` based on `href`)
+- Added `Button` documentation to `docs/components/Button.md`
+- Wired `<Header />` into `layout.tsx`
+- Fixed audit findings: Button type safety, layout indentation, removed structural comments, logo LCP and aspect ratio warnings
+- Passed audit and user review; merged to main
+- Note: responsiveness flagged for follow-up fix
+
+## 2026-04-17 16:30
+
+- Expanded global theme in `globals.css` with radius, shadow, surface/glass, layout, effects, and transition tokens
+- Set background gradient on `body` in CSS; removed duplicate gradient class from `page.tsx`
+- Updated `page.tsx` to use direct Tailwind v4 token utilities instead of `[var(--color-...)]` arbitrary syntax
+- Passed feature audit and user review; merged to main
+
+## 2026-04-17 15:00
+
+- Added Plus Jakarta Sans (body) and Baloo 2 (display) via `next/font/google` in `layout.tsx`
+- Assigned `--font-jakarta` and `--font-baloo` CSS variables, applied to `<html>` className
+- Mapped `--font-sans` and `--font-display` theme tokens in `globals.css` using `@theme`
+- Applied `font-sans` to `<body>` for global font inheritance; `font-display` on `<h1>` test
+- Added `display: "swap"` to both font configs per audit finding
+- Verified visually on homepage; passed feature audit
+
+## 2026-04-17 14:00
+
+- Completed Theme System Setup using Tailwind v4 `@theme` tokens in `globals.css`
+- Defined all color tokens (main, accent, utility) as CSS custom properties under `@theme`
+- Updated `layout.tsx` and `page.tsx` to use `var(--color-...)` tokens — no hardcoded hex values remain
+- No default Tailwind colors used anywhere in the codebase
+- Passed codex audit with no findings
+- Foundational theme system in place for all future features
