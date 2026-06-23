@@ -18,6 +18,12 @@ enum UserRole {
   ADMIN
 }
 
+enum SubscriptionTier {
+  STANDARD
+  ADMIN
+  CANCELED
+}
+
 model User {
   id             String    @id @default(cuid())
   isOwner        Boolean?
@@ -33,10 +39,11 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  parents  ParentStudent[] @relation("StudentParents")
-  students ParentStudent[] @relation("ParentStudents")
+  accounts     Account[]
+  sessions     Session[]
+  parents      ParentStudent[] @relation("StudentParents")
+  students     ParentStudent[] @relation("ParentStudents")
+  subscription Subscription?
 }
 
 model ParentStudent {
@@ -74,6 +81,22 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                   String            @id @default(cuid())
+  userId               String            @unique
+  tier                 SubscriptionTier?
+  stripeCustomerId     String?           @unique
+  stripeSubscriptionId String?           @unique
+  stripePriceId        String?
+  stripeStatus         String?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

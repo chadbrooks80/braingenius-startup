@@ -1,3 +1,13 @@
+## 2026-06-23 13:15
+
+- Added `SubscriptionTier` enum (`STANDARD`, `ADMIN`, `CANCELED`) and `Subscription` model to `prisma/schema.prisma`
+- `Subscription` is one-to-one with `User` (`onDelete: Cascade`); `tier` nullable with no default; Stripe fields (`stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `stripeStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`) added for future billing sync
+- Added `subscription Subscription?` relation field to `User`
+- Generated and applied migration `20260623125933_add_subscription_model` via `prisma migrate dev`; ran `prisma generate`
+- Verified `prisma migrate status` is in sync and generated client includes new types
+- Schema-only change — Stripe webhook/checkout logic intentionally out of scope
+- Passed audit and user review
+
 ## 2026-06-23 00:00
 
 - Implemented custom NextAuth sign-in page at `src/app/(auth)/sign-in/page.tsx`
