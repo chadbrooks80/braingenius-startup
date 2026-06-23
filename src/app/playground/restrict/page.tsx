@@ -6,7 +6,7 @@ export default async function RestrictedPage() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/api/auth/signin");
+    redirect("/sign-in");
   }
 
   return (

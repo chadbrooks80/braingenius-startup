@@ -1,3 +1,11 @@
+## 2026-06-23 00:00
+
+- Implemented custom NextAuth sign-in page at `src/app/(auth)/sign-in/page.tsx`
+- Added `pages: { signIn: "/sign-in" }` to NextAuth config in `src/auth.ts`
+- Google sign-in button with disabled/"Signing in..." loading state; existing credentials form retained
+- Removed leftover hardcoded `/api/auth/signin` redirect in `src/app/playground/restrict/page.tsx`, now points to `/sign-in`
+- Passed audit and fixes for hardcoded signin reference and Google button loading state; typecheck and lint clean
+
 ## 2026-04-19 18:30
 
 - Built `CTASection` block component in `src/components/blocks/CTASection.tsx`
