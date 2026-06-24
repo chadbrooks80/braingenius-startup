@@ -58,7 +58,7 @@ export default function CTASection() {
         </p>
 
         <div className="flex justify-center relative z-10">
-          <Button variant="primary" href="#">
+          <Button variant="primary" href="/sign-up">
             <Rocket className="w-4 h-4" />
             Get Started For Free!
           </Button>

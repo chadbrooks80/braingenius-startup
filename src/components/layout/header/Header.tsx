@@ -10,7 +10,7 @@ export default function Header() {
         <HeaderNav />
         <Image src="/logo.png" alt="BrainGenius.ai" height={56} width={200} loading="eager" className="justify-self-center max-w-[200px] w-[90%] h-auto" />
         <div className="flex justify-end">
-          <Button variant="cta" size="sm" href="#">
+          <Button variant="cta" size="sm" href="/sign-up">
             Get Started Free
           </Button>
         </div>
@@ -21,7 +21,7 @@ export default function Header() {
           <Image src="/logo.png" alt="BrainGenius.ai" height={56} width={200} loading="eager" className="h-[clamp(28px,3.9vw,56px)] w-auto" />
         </div>
         <HeaderNav />
-        <Button variant="cta" href="#">
+        <Button variant="cta" href="/sign-up">
           Get Started Free
         </Button>
       </div>

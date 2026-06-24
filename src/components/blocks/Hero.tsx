@@ -73,7 +73,7 @@ export default function Hero() {
 
         <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 lg:col-start-1 lg:row-start-4">
           <a
-            href="#"
+            href="/sign-up"
             className="inline-flex items-center gap-2 bg-gradient-to-br from-(--color-primary-cyan) to-(--color-cyan-light) text-(--color-dark) font-display text-base font-extrabold px-8 py-3.5 rounded-(--radius-full) shadow-(--shadow-glow-cyan) transition-transform duration-200 hover:-translate-y-[3px]"
           >
             <Rocket className="w-4 h-4" />

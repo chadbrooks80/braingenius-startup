@@ -75,7 +75,7 @@ export default function HeaderNav() {
               ))}
             </nav>
             <div className="px-5 py-6 border-t border-(--color-border-soft)">
-              <Button variant="primary" href="#" className="w-full justify-center">
+              <Button variant="primary" href="/sign-up" className="w-full justify-center">
                 Get Started Free
               </Button>
             </div>
