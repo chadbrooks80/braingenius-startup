@@ -1,3 +1,14 @@
+## 2026-06-24 17:06
+
+- Completed signup, onboarding, and trial subscription foundation
+- `prisma/schema.prisma`: added `User.onboardingCompleted`, updated `SubscriptionTier` (`FREE_TRIAL`, `MONTHLY`, `LIFETIME`, `ADMIN`, `CANCELED`), added `Subscription.trialStartedAt`/`trialEndsAt`; applied via `prisma migrate dev` + `prisma generate`
+- Built `/sign-up` (email + password) creating a `User` with a `FREE_TRIAL` `Subscription` (3-day trial) and redirecting to `/getting-started`
+- Built `/getting-started` with profile, plan/trial pricing, and children steps; sets `onboardingCompleted = true` and creates `CHILD` users linked via `ParentStudent`
+- Added Stripe test-mode foundation: `src/lib/stripe.ts`, `src/actions/checkout.ts`, `src/app/api/webhooks/stripe/route.ts`, documented in `docs/stripe-setup.md`; local `Subscription` is the source of truth for access, not live Stripe calls
+- Added `src/proxy.ts` (Next.js 16 proxy convention) to route by `onboardingCompleted`; sign-in now defaults to `/dashboard` so the proxy can redirect unboarded users to `/getting-started`
+- Fixed audit findings: sign-in redirect default, removed unapproved `playwright` dependency, allowed Google/credentials account linking by email, guarded Stripe webhook against deleted users
+- Passed feature audit (tsc + eslint clean) and user review
+
 ## 2026-06-23 13:15
 
 - Added `SubscriptionTier` enum (`STANDARD`, `ADMIN`, `CANCELED`) and `Subscription` model to `prisma/schema.prisma`

@@ -19,25 +19,28 @@ enum UserRole {
 }
 
 enum SubscriptionTier {
-  STANDARD
+  FREE_TRIAL
+  MONTHLY
+  LIFETIME
   ADMIN
   CANCELED
 }
 
 model User {
-  id             String    @id @default(cuid())
-  isOwner        Boolean?
-  name           String?
-  fName          String?
-  lName          String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  username       String?   @unique
-  image          String?
-  password       String?
-  role           UserRole?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  isOwner             Boolean?
+  name                String?
+  fName               String?
+  lName               String?
+  email               String?   @unique
+  emailVerified       DateTime?
+  username            String?   @unique
+  image               String?
+  password            String?
+  role                UserRole?
+  onboardingCompleted Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   accounts     Account[]
   sessions     Session[]
@@ -89,6 +92,8 @@ model Subscription {
   id                   String            @id @default(cuid())
   userId               String            @unique
   tier                 SubscriptionTier?
+  trialStartedAt       DateTime?
+  trialEndsAt          DateTime?
   stripeCustomerId     String?           @unique
   stripeSubscriptionId String?           @unique
   stripePriceId        String?

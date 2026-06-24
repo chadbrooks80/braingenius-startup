@@ -41,7 +41,8 @@ const inputClass =
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  // Default into /dashboard; proxy.ts redirects to /getting-started if onboarding isn't complete.
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

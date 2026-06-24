@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { getTrialDates } from "@/lib/subscription";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -17,6 +18,9 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Google verifies email ownership, so it's safe to link to an existing
+      // credentials-registered account that shares the same email.
+      allowDangerousEmailAccountLinking: true,
     }),
 
     Credentials({
@@ -47,24 +51,49 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          onboardingCompleted: user.onboardingCompleted,
         };
       },
     }),
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id as string;
+        token.onboardingCompleted = Boolean(
+          (user as { onboardingCompleted?: boolean }).onboardingCompleted
+        );
       }
+
+      if (trigger === "update" && session?.onboardingCompleted !== undefined) {
+        token.onboardingCompleted = session.onboardingCompleted;
+      }
+
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string }).id = token.id as string;
+        (session.user as { id: string; onboardingCompleted: boolean }).id = token.id as string;
+        (session.user as { id: string; onboardingCompleted: boolean }).onboardingCompleted =
+          Boolean(token.onboardingCompleted);
       }
       return session;
+    },
+  },
+
+  events: {
+    async createUser({ user }) {
+      const { trialStartedAt, trialEndsAt } = getTrialDates();
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          tier: "FREE_TRIAL",
+          trialStartedAt,
+          trialEndsAt,
+        },
+      });
     },
   },
 };
