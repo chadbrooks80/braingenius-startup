@@ -71,27 +71,14 @@ export default function SignUpPage() {
 
     const registration = await registerUser(formData);
 
+    setIsSubmitting(false);
+
     if (!registration.success) {
-      setIsSubmitting(false);
       setError(registration.error ?? "Something went wrong. Please try again.");
       return;
     }
 
-    const signInResponse = await signIn("credentials", {
-      username: result.data.email,
-      password: result.data.password,
-      redirect: false,
-    });
-
-    setIsSubmitting(false);
-
-    if (signInResponse?.error) {
-      setError("Account created. Please sign in.");
-      router.push("/sign-in");
-      return;
-    }
-
-    router.push("/getting-started");
+    router.push(`/verify-email?email=${encodeURIComponent(result.data.email)}`);
   }
 
   return (

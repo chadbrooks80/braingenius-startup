@@ -4,6 +4,13 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
 import { getTrialDates } from "@/lib/subscription";
+import {
+  generateVerificationCode,
+  hashValue,
+  minutesFromNow,
+  VERIFICATION_CODE_EXPIRY_MINUTES,
+} from "@/lib/auth-tokens";
+import { sendVerificationCodeEmail } from "@/lib/email";
 
 const RegisterSchema = z.object({
   email: z.email("Invalid email address"),
@@ -48,6 +55,24 @@ export async function registerUser(formData: FormData) {
         },
       },
     });
+
+    const code = generateVerificationCode();
+
+    await prisma.emailVerificationCode.create({
+      data: {
+        email,
+        codeHash: hashValue(code),
+        expiresAt: minutesFromNow(VERIFICATION_CODE_EXPIRY_MINUTES),
+      },
+    });
+
+    try {
+      await sendVerificationCodeEmail(email, code);
+    } catch (error) {
+      // The account and code already exist; the user can retry from /verify-email
+      // via "Resend code" if the email failed to send.
+      console.error("sendVerificationCodeEmail failed:", error);
+    }
 
     return { success: true };
   } catch (error) {

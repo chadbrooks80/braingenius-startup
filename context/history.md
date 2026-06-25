@@ -1,3 +1,16 @@
+## 2026-06-25 04:53
+
+- Implemented production email auth system using Resend: email verification (4-digit code) and password reset (secure link)
+- Added `EmailVerificationCode` and `PasswordResetToken` models to `prisma/schema.prisma`; applied via `prisma migrate dev` + `prisma generate`
+- Created `src/lib/auth-tokens.ts` (code/token generation, SHA-256 hashing) and `src/lib/email.ts` (Resend client + templates)
+- Signup flow (`src/actions/register.ts`) now creates user with `emailVerified = null`, generates/hashes a 4-digit code, emails it, and redirects to `/verify-email` instead of auto sign-in
+- Added `POST /api/auth/verify-email-code` and `POST /api/auth/resend-verification-code` (with 60s per-email rate limiting) routes
+- Added `POST /api/auth/password-reset/request` and `/confirm` routes; `/forgot-password` and `/reset-password` pages built
+- Credentials provider in `src/auth.ts` blocks sign-in until `emailVerified` is set; Google OAuth bypasses verification
+- Password reset confirm invalidates all other active `PasswordResetToken` records for the user after a successful reset
+- All flows pass `npm run build`
+- Passed audit and user review
+
 ## 2026-06-24 17:06
 
 - Completed signup, onboarding, and trial subscription foundation

@@ -43,6 +43,7 @@ function SignInContent() {
   const searchParams = useSearchParams();
   // Default into /dashboard; proxy.ts redirects to /getting-started if onboarding isn't complete.
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const justVerified = searchParams.get("verified") === "1";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -75,7 +76,11 @@ function SignInContent() {
     setIsSubmitting(false);
 
     if (response?.error) {
-      setError("Invalid email/username or password");
+      setError(
+        response.error === "EMAIL_NOT_VERIFIED"
+          ? "Please verify your email before signing in."
+          : "Invalid email/username or password"
+      );
       return;
     }
 
@@ -105,6 +110,12 @@ function SignInContent() {
               Sign in to continue to BrainGenius AI
             </p>
           </div>
+
+          {justVerified && (
+            <p className="mt-4 text-center text-sm font-medium text-(--color-text-primary)">
+              Your email is verified. You can now sign in.
+            </p>
+          )}
 
           <Button
             type="button"
@@ -148,9 +159,14 @@ function SignInContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
+                  Password
+                </label>
+                <a href="/forgot-password" className="text-sm font-semibold text-(--color-primary-cyan)">
+                  Forgot password?
+                </a>
+              </div>
               <input
                 id="password"
                 name="password"

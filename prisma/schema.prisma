@@ -42,11 +42,12 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  parents      ParentStudent[] @relation("StudentParents")
-  students     ParentStudent[] @relation("ParentStudents")
-  subscription Subscription?
+  accounts            Account[]
+  sessions            Session[]
+  parents             ParentStudent[]       @relation("StudentParents")
+  students            ParentStudent[]       @relation("ParentStudents")
+  subscription        Subscription?
+  passwordResetTokens PasswordResetToken[]
 }
 
 model ParentStudent {
@@ -112,4 +113,37 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model EmailVerificationCode {
+  id String @id @default(cuid())
+
+  email    String
+  codeHash String
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  attempts Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+
+  userId String
+
+  tokenHash String @unique
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
