@@ -1,3 +1,15 @@
+## 2026-06-25 17:30
+
+- Built funnel-based signup/onboarding system replacing scattered hardcoded redirects
+- Added `OnboardingStep` enum and `onboardingStep` field to `User` model (migration included, with backfill for existing users)
+- Created `src/lib/onboarding-funnel.ts` as the single source of truth for step order, route resolution (`getOnboardingRoute`), and step advancement (`advanceOnboardingStep`)
+- Added step components: `WelcomeVideoStep`, `ProfileStep`, `PlanStep`, `ChildrenStep`, wrapped in `OnboardingShell`; `/getting-started` renders based on current step
+- Email/password users start at `VERIFY_EMAIL`; Google users (new and account-linked) start at `WELCOME_VIDEO` via adapter `createUser`/`linkAccount` overrides in `src/auth.ts`
+- `proxy.ts` and `/getting-started` both route through `getOnboardingRoute` (no duplicated routing logic)
+- Free trial and Stripe checkout success both advance `PLAN` → `CHILDREN`; completing children advances to `COMPLETE` and sets `onboardingCompleted`
+- Documented all new components in `docs/components/`
+- Passed audit (including a follow-up pass fixing duplicated routing logic, Google account-linking onboarding state, and an enum string-literal nit)
+
 ## 2026-06-25 04:53
 
 - Implemented production email auth system using Resend: email verification (4-digit code) and password reset (secure link)

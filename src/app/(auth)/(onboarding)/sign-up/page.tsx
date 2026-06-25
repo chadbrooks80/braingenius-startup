@@ -13,8 +13,15 @@ const signUpSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+const codeSchema = z.object({
+  code: z.string().length(4, "Enter the 4-digit code"),
+});
+
 const inputClass =
   "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+
+const codeInputClass =
+  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
 
 function GoogleIcon() {
   return (
@@ -39,14 +46,44 @@ function GoogleIcon() {
   );
 }
 
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
+type Phase = "form" | "verify";
+
 export default function SignUpPage() {
   const router = useRouter();
+
+  const [phase, setPhase] = useState<Phase>("form");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+
+  const [code, setCode] = useState("");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   async function handleGoogleSignUp() {
     setIsGoogleSubmitting(true);
@@ -78,7 +115,72 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push(`/verify-email?email=${encodeURIComponent(result.data.email)}`);
+    setPhase("verify");
+  }
+
+  async function handleVerifySubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setVerifyError(null);
+    setResendMessage(null);
+
+    const result = codeSchema.safeParse({ code });
+    if (!result.success) {
+      setVerifyError(result.error.issues[0]?.message ?? "Invalid code");
+      return;
+    }
+
+    setIsVerifying(true);
+
+    const response = await fetch("/api/auth/verify-email-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code: result.data.code }),
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      setIsVerifying(false);
+      setVerifyError(data.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+
+    // The password is still held in memory from the form above, so we can
+    // sign the user straight in instead of sending them back to /sign-in.
+    const signInResult = await signIn("credentials", {
+      username: email,
+      password,
+      redirect: false,
+    });
+
+    if (signInResult?.error) {
+      router.push("/sign-in?verified=1");
+      return;
+    }
+
+    router.push("/getting-started");
+    // isVerifying intentionally stays true here; the page is navigating away.
+  }
+
+  async function handleResend() {
+    setVerifyError(null);
+    setResendMessage(null);
+    setIsResending(true);
+
+    const response = await fetch("/api/auth/resend-verification-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json().catch(() => null);
+
+    setIsResending(false);
+
+    if (!response.ok || !data?.success) {
+      setVerifyError(data?.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+
+    setResendMessage("If your account needs verification, we sent a new code.");
   }
 
   return (
@@ -96,89 +198,157 @@ export default function SignUpPage() {
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
         <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
-          <div className="text-center">
-            <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
-              Create your account
-            </h1>
-            <p className="mt-2 text-sm text-(--color-text-muted)">
-              Start your 3-day free trial with BrainGenius AI
-            </p>
-          </div>
+          {phase === "form" && (
+            <>
+              <div className="text-center">
+                <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+                  Create your account
+                </h1>
+                <p className="mt-2 text-sm text-(--color-text-muted)">
+                  Start your 3-day free trial with BrainGenius AI
+                </p>
+              </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleGoogleSignUp}
-            disabled={isGoogleSubmitting}
-            className="mt-8 w-full justify-center bg-(--color-white) disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isGoogleSubmitting ? (
-              "Signing in..."
-            ) : (
-              <>
-                <GoogleIcon />
-                Continue with Google
-              </>
-            )}
-          </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleGoogleSignUp}
+                disabled={isGoogleSubmitting}
+                className="mt-8 w-full justify-center bg-(--color-white) disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isGoogleSubmitting ? (
+                  "Signing in..."
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    Continue with Google
+                  </>
+                )}
+              </Button>
 
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-(--color-border-muted)" />
-            <span className="text-xs font-semibold uppercase tracking-(--tracking-label) text-(--color-text-muted)">
-              or
-            </span>
-            <span className="h-px flex-1 bg-(--color-border-muted)" />
-          </div>
+              <div className="my-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-(--color-border-muted)" />
+                <span className="text-xs font-semibold uppercase tracking-(--tracking-label) text-(--color-text-muted)">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-(--color-border-muted)" />
+              </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-semibold text-(--color-text-primary)">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <div className="space-y-1.5">
+                  <label htmlFor="email" className="text-sm font-semibold text-(--color-text-primary)">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-semibold text-(--color-text-primary)"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
 
-            {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+                {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
 
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSubmitting ? "Creating account..." : "Create account"}
-            </Button>
-          </form>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isSubmitting}
+                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? "Creating account..." : "Create account"}
+                </Button>
+              </form>
 
-          <p className="mt-6 text-center text-sm text-(--color-text-muted)">
-            Already have an account?{" "}
-            <a href="/sign-in" className="font-semibold text-(--color-primary-cyan)">
-              Sign in
-            </a>
-          </p>
+              <p className="mt-6 text-center text-sm text-(--color-text-muted)">
+                Already have an account?{" "}
+                <a href="/sign-in" className="font-semibold text-(--color-primary-cyan)">
+                  Sign in
+                </a>
+              </p>
+            </>
+          )}
+
+          {phase === "verify" && (
+            <>
+              <div className="text-center">
+                <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+                  Verify your email
+                </h1>
+                <p className="mt-2 text-sm text-(--color-text-muted)">
+                  We sent a 4-digit verification code to {email}.
+                </p>
+              </div>
+
+              <form className="mt-8 space-y-4" onSubmit={handleVerifySubmit}>
+                <div className="space-y-1.5">
+                  <label htmlFor="code" className="text-sm font-semibold text-(--color-text-primary)">
+                    Verification code
+                  </label>
+                  <input
+                    id="code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={4}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    className={codeInputClass}
+                  />
+                </div>
+
+                {verifyError && (
+                  <p className="text-sm font-medium text-(--color-accent-pink)">{verifyError}</p>
+                )}
+                {resendMessage && (
+                  <p className="text-sm font-medium text-(--color-text-muted)">{resendMessage}</p>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isVerifying}
+                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isVerifying && <Spinner />}
+                  {isVerifying ? "Verifying..." : "Verify email"}
+                </Button>
+              </form>
+
+              <p className="mt-6 text-center text-sm text-(--color-text-muted)">
+                Didn&apos;t get a code?{" "}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
+                  className="font-semibold text-(--color-primary-cyan) disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isResending ? "Sending..." : "Resend code"}
+                </button>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

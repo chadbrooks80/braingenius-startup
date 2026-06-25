@@ -4,6 +4,29 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/db";
+import { OnboardingStep } from "@/generated/prisma";
+import { advanceOnboardingStep } from "@/lib/onboarding-funnel";
+
+async function getCurrentUserId() {
+  const session = await getServerSession(authOptions);
+  return (session?.user as { id?: string } | undefined)?.id;
+}
+
+export async function completeWelcomeVideoStep() {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return { success: false, error: "You must be signed in to continue onboarding." };
+  }
+
+  try {
+    await advanceOnboardingStep(userId, OnboardingStep.WELCOME_VIDEO);
+    return { success: true };
+  } catch (error) {
+    console.error("completeWelcomeVideoStep failed:", error);
+    return { success: false, error: "Something went wrong. Please try again." };
+  }
+}
 
 const ProfileSchema = z.object({
   fName: z.string().min(1, "First name is required"),
@@ -19,8 +42,7 @@ export async function saveProfile(input: ProfileInput) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return { success: false, error: "You must be signed in to continue onboarding." };
@@ -39,9 +61,27 @@ export async function saveProfile(input: ProfileInput) {
       },
     });
 
+    await advanceOnboardingStep(userId, OnboardingStep.PROFILE);
+
     return { success: true };
   } catch (error) {
     console.error("saveProfile failed:", error);
+    return { success: false, error: "Something went wrong. Please try again." };
+  }
+}
+
+export async function continueWithFreeTrial() {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return { success: false, error: "You must be signed in to continue onboarding." };
+  }
+
+  try {
+    await advanceOnboardingStep(userId, OnboardingStep.PLAN);
+    return { success: true };
+  } catch (error) {
+    console.error("continueWithFreeTrial failed:", error);
     return { success: false, error: "Something went wrong. Please try again." };
   }
 }
@@ -60,8 +100,7 @@ export async function completeOnboarding(input: ChildrenInput) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return { success: false, error: "You must be signed in to finish onboarding." };
@@ -77,13 +116,6 @@ export async function completeOnboarding(input: ChildrenInput) {
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          onboardingCompleted: true,
-        },
-      });
-
       for (const childName of childNames) {
         const child = await tx.user.create({
           data: {
@@ -101,6 +133,8 @@ export async function completeOnboarding(input: ChildrenInput) {
         });
       }
     });
+
+    await advanceOnboardingStep(userId, OnboardingStep.CHILDREN);
 
     return { success: true };
   } catch (error) {

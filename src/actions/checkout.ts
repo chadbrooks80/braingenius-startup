@@ -41,7 +41,7 @@ export async function createCheckoutSession(plan: CheckoutPlan): Promise<Checkou
       customer_email: user.subscription?.stripeCustomerId ? undefined : user.email ?? undefined,
       client_reference_id: userId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/getting-started?step=children&checkout=success`,
+      success_url: `${baseUrl}/getting-started?checkout=success`,
       cancel_url: `${baseUrl}/getting-started?checkout=canceled`,
     });
 

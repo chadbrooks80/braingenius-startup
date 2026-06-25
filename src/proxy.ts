@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import { OnboardingStep } from "@/generated/prisma";
+import { getOnboardingRoute } from "@/lib/onboarding-funnel";
 
 export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -10,14 +12,17 @@ export async function proxy(req: NextRequest) {
   }
 
   const { pathname } = req.nextUrl;
-  const onboardingCompleted = Boolean(token.onboardingCompleted);
+  const targetRoute = getOnboardingRoute({
+    onboardingCompleted: Boolean(token.onboardingCompleted),
+    onboardingStep: (token.onboardingStep as OnboardingStep) ?? OnboardingStep.VERIFY_EMAIL,
+  });
 
-  if (pathname === "/getting-started" && onboardingCompleted) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  if (pathname === "/getting-started" && targetRoute !== "/getting-started") {
+    return NextResponse.redirect(new URL(targetRoute, req.url));
   }
 
-  if (pathname.startsWith("/dashboard") && !onboardingCompleted) {
-    return NextResponse.redirect(new URL("/getting-started", req.url));
+  if (pathname.startsWith("/dashboard") && targetRoute !== "/dashboard") {
+    return NextResponse.redirect(new URL(targetRoute, req.url));
   }
 
   return NextResponse.next();

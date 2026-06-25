@@ -26,21 +26,31 @@ enum SubscriptionTier {
   CANCELED
 }
 
+enum OnboardingStep {
+  VERIFY_EMAIL
+  WELCOME_VIDEO
+  PROFILE
+  PLAN
+  CHILDREN
+  COMPLETE
+}
+
 model User {
-  id                  String    @id @default(cuid())
+  id                  String         @id @default(cuid())
   isOwner             Boolean?
   name                String?
   fName               String?
   lName               String?
-  email               String?   @unique
+  email               String?        @unique
   emailVerified       DateTime?
-  username            String?   @unique
+  username            String?        @unique
   image               String?
   password            String?
   role                UserRole?
-  onboardingCompleted Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  onboardingCompleted Boolean        @default(false)
+  onboardingStep      OnboardingStep @default(VERIFY_EMAIL)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   accounts            Account[]
   sessions            Session[]

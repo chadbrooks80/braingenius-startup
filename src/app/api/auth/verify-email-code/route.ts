@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/db";
 import { hashValue, VERIFICATION_CODE_MAX_ATTEMPTS } from "@/lib/auth-tokens";
+import { getNextOnboardingStep } from "@/lib/onboarding-funnel";
+import { OnboardingStep } from "@/generated/prisma";
 
 const VerifySchema = z.object({
   email: z.email(),
@@ -56,7 +58,10 @@ export async function POST(request: NextRequest) {
   await prisma.$transaction([
     prisma.user.update({
       where: { email },
-      data: { emailVerified: new Date() },
+      data: {
+        emailVerified: new Date(),
+        onboardingStep: getNextOnboardingStep(OnboardingStep.VERIFY_EMAIL),
+      },
     }),
     prisma.emailVerificationCode.update({
       where: { id: verificationCode.id },
