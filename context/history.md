@@ -1,3 +1,13 @@
+## 2026-06-25 18:15
+
+- Redesigned onboarding CHILDREN step so children get real, loginable accounts (first/last name, username, password) instead of a bare placeholder `User` row
+- Added `mustResetPassword Boolean @default(false)` to `User` (migration `add_must_reset_password`)
+- Scoped `EMAIL_NOT_VERIFIED` check in `src/auth.ts` `authorize()` to skip `role === "CHILD"` accounts
+- `src/actions/onboarding.ts`: added `checkUsernameAvailability`, `suggestUsernames`, `createChildAccount` (bcrypt hash, transaction creating `User` + `ParentStudent`, server-side 2-child cap), `finishChildrenStep`
+- Built reusable `Modal` and `PasswordInput` UI components with docs in `docs/components/`
+- Rewrote `ChildrenStep.tsx`: per-child modal flow with username availability/suggestions, auto-generate, "Skip for now" and "Finish setup" actions, max 2 children with slot 2 locked until child 1 created
+- Verified end-to-end: add child 1 unlocks slot 2, username collision/suggestions work, mustResetPassword checkbox persists, skip-for-now completes onboarding with 0 children, created child can sign in at /sign-in
+
 ## 2026-06-25 17:30
 
 - Built funnel-based signup/onboarding system replacing scattered hardcoded redirects

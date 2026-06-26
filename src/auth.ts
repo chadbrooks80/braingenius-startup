@@ -125,7 +125,7 @@ export const authOptions: NextAuthOptions = {
         const pwdMatches = await bcrypt.compare(credentials.password, user.password);
         if (!pwdMatches) return null;
 
-        if (!user.emailVerified) {
+        if (user.role !== "CHILD" && !user.emailVerified) {
           throw new Error("EMAIL_NOT_VERIFIED");
         }
 
