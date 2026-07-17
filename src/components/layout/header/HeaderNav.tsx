@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Button from "@/components/ui/Button";
 
@@ -11,11 +11,17 @@ const NAV_LINKS = [
   { href: "#word-generator", label: "Word Tools" },
 ];
 
+const subscribeToClientEnvironment = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function HeaderNav() {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribeToClientEnvironment,
+    getClientSnapshot,
+    getServerSnapshot
+  );
 
   return (
     <>
