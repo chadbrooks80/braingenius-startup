@@ -10,8 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
-# ai references
+# ai references and compressed archives
 /references
+/Archive.zip
 
 # testing
 /coverage
