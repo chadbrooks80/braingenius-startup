@@ -52,6 +52,3 @@ subscription access from this local record — it does not call Stripe on every 
 signed-in user and returns its URL. It's called from the plan step of `/getting-started`. If the
 relevant price env var isn't set, it returns an error instead of throwing, so onboarding can
 continue on the free trial without Stripe configured.
-
-Additional-child add-on checkout is not yet wired into the UI — only the base monthly/lifetime
-plans — per the first-version scope in `context/current-feature.md`.

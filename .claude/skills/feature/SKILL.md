@@ -11,16 +11,16 @@ Use this skill to implement or complete a feature for the Brain Genius AI projec
 ### Steps:
 
 1. **Read the current feature file**
-   - Navigate to `context/current-feature.md`
+   - Use the Google Drive MCP to read `dev-instructions/brain-genius-startup/current-feature.md`
    - Read the full contents of that file to understand the feature name and implementation instructions
 
 2. **Create a new Git branch**
-   - Extract the feature name from `context/current-feature.md`
+   - Extract the feature name from `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
    - Create a new branch named after the feature (use kebab-case, e.g. `feature/auth-setup`)
    - Switch to that branch before doing anything else
 
 3. **Implement the feature**
-   - Follow all instructions defined in `context/current-feature.md`
+   - Follow all instructions defined in `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
    - Stay on the new branch throughout the entire implementation
 
 ---
@@ -30,7 +30,7 @@ Use this skill to implement or complete a feature for the Brain Genius AI projec
 ### Steps:
 
 1. **Clear the current feature file**
-   - Open `context/current-feature.md`
+   - Use the Google Drive MCP to open `dev-instructions/brain-genius-startup/current-feature.md`
    - Delete all contents from the file, leaving it empty and ready for the next feature
 
 2. **Log the completed work**
@@ -48,6 +48,7 @@ Use this skill to implement or complete a feature for the Brain Genius AI projec
 - Brief summary of what was completed
 - Any key decisions or integrations worth noting
 - Verification steps passed (if applicable)
+
 ```
 
 ### Example:
