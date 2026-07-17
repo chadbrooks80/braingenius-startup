@@ -15,7 +15,7 @@ No application code has been moved. No dependencies, lockfiles, configuration, r
 ## Classification key
 
 Every migration item below has exactly one classification:
-
+`
 - **Safe to copy** — can be retained or moved without a known collision after preserving its path.
 - **Must be adapted** — behavior is valuable, but its path, contract, runtime boundary, security boundary, or host integration must change.
 - **Version conflict** — manifests or resolved tool/runtime versions disagree.
