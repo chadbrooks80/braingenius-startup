@@ -10,17 +10,17 @@ When a feature or fix is fully approved, a timestamped summary of the completed 
 
 ---
 
-## Standard Workflow
+## Standard Workflow (only when /feature implement skill is performed)
 
 1. Use the Google Drive MCP to read `dev-instructions/brain-genius-startup/current-feature.md`
 2. Create a branch for the current feature
 3. Implement the requested change
 4. Run self-checks and testing
 5. Refine the work
-6. Run a 3rd-party audit
-7. Fix audit findings
+6. perform test lint and test to make sure it works. 
+7. user will later request audit, do not perform an audit only ensure it boots up
 8. User performs visual/functional review
-9. If approved, log the completed feature in `@context/history.md`
+
 
 ---
 

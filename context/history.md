@@ -284,3 +284,9 @@
 - No default Tailwind colors used anywhere in the codebase
 - Passed codex audit with no findings
 - Foundational theme system in place for all future features
+
+## 2026-07-17 16:08
+
+- Completed Stage 2A runtime and toolchain alignment with Next.js and `eslint-config-next` 16.2.9, Node 24.14.1, and ESM package behavior
+- Added the approved `server-only`, `tsx`, and `playwright-core` dependencies and excluded `references/**` from host TypeScript and ESLint checks
+- Verified the development server reached ready state and returned HTTP 200; no existing host test command was present
