@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  --cyan: #22d3ee;
+  --lime: #a3e635;
+  --navy: #0f172a;
+  --ink: #1e293b;
+  --muted: #64748b;
+  --muted-light: #94a3b8;
+  --lime-strong: #65a30d;
+  --lime-ink: #3f6212;
+  --cyan-ink: #0e7490;
+  --surface-strong: rgba(255, 255, 255, 0.82);
+  --surface-soft: rgba(255, 255, 255, 0.72);
+  --hairline: rgba(15, 23, 42, 0.07);
+  --track: rgba(15, 23, 42, 0.08);
+  --tint-lime: rgba(163, 230, 53, 0.12);
+  --tint-lime-strong: rgba(163, 230, 53, 0.18);
+  --border-lime: rgba(163, 230, 53, 0.35);
+  --tint-cyan: rgba(34, 211, 238, 0.15);
+  --tint-cyan-strong: rgba(34, 211, 238, 0.18);
+
+  /* Cyan border (badge + word-box outlines) */
+  --border-cyan: rgba(34, 211, 238, 0.3);
+
+  /* Neutral / slate (default + faded answer-choice states) */
+  --border-neutral: #e2e8f0;
+  --border-neutral-faded: #f1f5f9;
+  --tint-neutral-faded: rgba(248, 250, 252, 0.5);
+
+  /* Red (incorrect-answer state) — mirrors the existing lime pattern */
+  --red: #f87171;
+  --red-strong: #dc2626;
+  --red-ink: #b91c1c;
+  --tint-red: rgba(248, 113, 113, 0.1);
+
+  /* Sky (next-button gradient second stop) */
+  --sky: #38bdf8;
+
+  /* Cyan shadow (next-button glow) */
+  --shadow-cyan: rgba(34, 211, 238, 0.3);
+
+  /* Purple (review-mode badge) */
+  --purple: #7c3aed;
+  --tint-purple: rgba(124, 58, 237, 0.12);
+  --border-purple: rgba(124, 58, 237, 0.35);
+  --surface-translucent: rgba(255, 255, 255, 0.88);
+  --shadow-card: rgba(15, 23, 42, 0.13);
+  --shadow-soft: rgba(15, 23, 42, 0.06);
+  --shadow-medium: rgba(15, 23, 42, 0.1);
+  --shadow-strong: rgba(15, 23, 42, 0.14);
+  --shadow-button: rgba(15, 23, 42, 0.18);
+  --shadow-button-hover: rgba(15, 23, 42, 0.22);
+  --page-background: #c8f6ff;
+}
+
+@theme inline {
+  --color-cyan: var(--cyan);
+  --color-lime: var(--lime);
+  --color-navy: var(--navy);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
+  --color-lime-strong: var(--lime-strong);
+  --color-lime-ink: var(--lime-ink);
+  --color-cyan-ink: var(--cyan-ink);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-soft: var(--surface-soft);
+  --color-hairline: var(--hairline);
+  --color-track: var(--track);
+  --color-tint-lime: var(--tint-lime);
+  --color-tint-lime-strong: var(--tint-lime-strong);
+  --color-border-lime: var(--border-lime);
+  --color-tint-cyan: var(--tint-cyan);
+  --color-tint-cyan-strong: var(--tint-cyan-strong);
+  --color-border-cyan: var(--border-cyan);
+  --color-border-neutral: var(--border-neutral);
+  --color-border-neutral-faded: var(--border-neutral-faded);
+  --color-tint-neutral-faded: var(--tint-neutral-faded);
+  --color-red: var(--red);
+  --color-red-strong: var(--red-strong);
+  --color-red-ink: var(--red-ink);
+  --color-tint-red: var(--tint-red);
+  --color-sky: var(--sky);
+  --color-purple: var(--purple);
+  --color-tint-purple: var(--tint-purple);
+  --color-border-purple: var(--border-purple);
+  --color-surface-translucent: var(--surface-translucent);
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-baloo);
+}
+
+body {
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  color: var(--ink);
+  background: var(--page-background);
+}

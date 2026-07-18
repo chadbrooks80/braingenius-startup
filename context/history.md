@@ -1,3 +1,13 @@
+## 2026-07-18 21:46
+
+- Merged the standalone Learning Engine into the BrainGenius host on `feature/stage-2b-learning-engine-integration`
+- Migrated components to `src/learning-engine-components`, modules to `src/learning-modules`, types to `src/types`, and libs to `src/lib/learning-engine` and `src/lib/random`
+- Moved the learning route/layout to `src/app/(app)/(learning)`, vocabulary and TTS API routes to `src/app/api/learning` and `src/app/api/tts`, and the playground to `src/app/le-playground`
+- Copied Learning Engine tests into host-level `tests/`, replaced `src/lib/emojis.ts` placeholder with the real emoji constants
+- Imported the six Learning Engine Claude skills under `.claude/skills` with an `le-` prefix and matching `.codex/skills` pointers
+- Copied Learning Engine `context/` and `docs/` into `le-context/` and `le-docs/` at the host root, byte-for-byte
+- Repaired migrated import paths to the host `@/` alias and confirmed no active host source imports from `references/learning-engine`
+
 ## 2026-06-25 18:15
 
 - Redesigned onboarding CHILDREN step so children get real, loginable accounts (first/last name, username, password) instead of a bare placeholder `User` row
