@@ -1,45 +1,73 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   /* ===================== MAIN THEME COLORS ===================== */
 
-  --color-primary-cyan: #22d3ee;
-  --color-secondary-lime: #a3e635;
+  --primary-cyan: #22d3ee;
+  --secondary-lime: #a3e635;
 
-  --color-dark: #0f172a;
-  --color-navy-medium: #1e3a5f;
-  --color-text-primary: #1e293b;
-  --color-text-muted: #64748b;
+  --dark: #0f172a;
+  --navy-medium: #1e3a5f;
+  --text-primary: #1e293b;
+  --text-muted: #64748b;
 
-  --color-white: #ffffff;
+  --white: #ffffff;
 
-  --color-bg-top: #c8f6ff;
-  --color-bg-bottom: #fffbe8;
+  --bg-top: #c8f6ff;
+  --bg-bottom: #fffbe8;
 
   /* ===================== CONTRAST COLORS (FEATURE COLORS) ===================== */
 
-  --color-accent-cyan: #22d3ee;
-  --color-accent-lime: #a3e635;
-  --color-accent-indigo: #818cf8;
-  --color-accent-pink: #f472b6;
-  --color-accent-amber: #fbbf24;
-  --color-accent-teal: #2dd4bf;
-  --color-accent-orange: #f97316;
+  --accent-cyan: #22d3ee;
+  --accent-lime: #a3e635;
+  --accent-indigo: #818cf8;
+  --accent-pink: #f472b6;
+  --accent-amber: #fbbf24;
+  --accent-teal: #2dd4bf;
+  --accent-orange: #f97316;
 
   /* ===================== SUPPORT / UTILITY COLORS ===================== */
 
-  --color-cyan-light: #38bdf8;
-  --color-primary-hover: #1e40af;
+  --cyan-light: #38bdf8;
+  --primary-hover: #1e40af;
 
-  --color-text-light: #94a3b8;
-  --color-text-inverse: #cbd5e1;
+  --text-light: #94a3b8;
+  --text-inverse: #cbd5e1;
 
-  --color-footer-muted: #475569;
+  --footer-muted: #475569;
+
+  /* ===================== SURFACE / GLASS ===================== */
+
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.82);
+  --surface-soft: rgba(255, 255, 255, 0.45);
+
+  --icon-bg-teal: rgba(34, 211, 238, 0.12);
+  --icon-bg-indigo: rgba(129, 140, 248, 0.12);
+  --icon-bg-lime: rgba(163, 230, 53, 0.12);
+  --icon-bg-pink: rgba(244, 114, 182, 0.15);
+  --icon-bg-amber: rgba(251, 191, 36, 0.15);
+  --icon-bg-teal-green: rgba(45, 212, 191, 0.15);
+
+  --border-soft: rgba(255, 255, 255, 0.7);
+  --border-muted: rgba(15, 23, 42, 0.18);
+
+  /* ===================== GLOW / EFFECT COLORS ===================== */
+
+  --glow-cyan: rgba(34, 211, 238, 0.35);
+  --glow-lime: rgba(163, 230, 53, 0.30);
+  --cta-glow-cyan: rgba(34, 211, 238, 0.18);
+  --cta-glow-lime: rgba(163, 230, 53, 0.15);
 
   /* ===================== TYPOGRAPHY ===================== */
 
-  --font-sans: var(--font-jakarta);
-  --font-display: var(--font-baloo);
+  --font-sans-raw: var(--font-jakarta);
+  --font-display-raw: var(--font-baloo);
+
+  --font-size-label: 0.75rem;
+  --font-size-badge: 0.7rem;
+  --tracking-label: 0.12em;
+  --tracking-badge: 0.18em;
 
   /* ===================== RADIUS ===================== */
 
@@ -53,35 +81,12 @@
 
   /* ===================== SHADOWS ===================== */
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 8px 40px rgba(15, 23, 42, 0.10);
-  --shadow-lg: 0 16px 56px rgba(15, 23, 42, 0.13);
-  --shadow-xl: 0 28px 70px rgba(15, 23, 42, 0.38);
-  --shadow-2xl: 0 32px 80px rgba(15, 23, 42, 0.30);
-  --shadow-glow-cyan: 0 8px 32px rgba(34, 211, 238, 0.35);
-
-  /* ===================== SURFACE / GLASS ===================== */
-
-  --color-surface: rgba(255, 255, 255, 0.78);
-  --color-surface-strong: rgba(255, 255, 255, 0.82);
-  --color-surface-soft: rgba(255, 255, 255, 0.45);
-
-  --color-icon-bg-teal: rgba(34, 211, 238, 0.12);
-  --color-icon-bg-indigo: rgba(129, 140, 248, 0.12);
-  --color-icon-bg-lime: rgba(163, 230, 53, 0.12);
-  --color-icon-bg-pink: rgba(244, 114, 182, 0.15);
-  --color-icon-bg-amber: rgba(251, 191, 36, 0.15);
-  --color-icon-bg-teal-green: rgba(45, 212, 191, 0.15);
-
-  --color-border-soft: rgba(255, 255, 255, 0.7);
-  --color-border-muted: rgba(15, 23, 42, 0.18);
-
-  /* ===================== GLOW / EFFECT COLORS ===================== */
-
-  --color-glow-cyan: rgba(34, 211, 238, 0.35);
-  --color-glow-lime: rgba(163, 230, 53, 0.30);
-  --color-cta-glow-cyan: rgba(34, 211, 238, 0.18);
-  --color-cta-glow-lime: rgba(163, 230, 53, 0.15);
+  --shadow-sm-raw: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md-raw: 0 8px 40px rgba(15, 23, 42, 0.10);
+  --shadow-lg-raw: 0 16px 56px rgba(15, 23, 42, 0.13);
+  --shadow-xl-raw: 0 28px 70px rgba(15, 23, 42, 0.38);
+  --shadow-2xl-raw: 0 32px 80px rgba(15, 23, 42, 0.30);
+  --shadow-glow-cyan-raw: 0 8px 32px rgba(34, 211, 238, 0.35);
 
   /* ===================== LAYOUT ===================== */
 
@@ -91,13 +96,6 @@
   --spacing-card-pad: 1.6rem;
   --spacing-badge-x: 0.7rem;
   --spacing-badge-y: 0.25rem;
-
-  /* ===================== COMPONENT TYPOGRAPHY ===================== */
-
-  --font-size-label: 0.75rem;
-  --font-size-badge: 0.7rem;
-  --tracking-label: 0.12em;
-  --tracking-badge: 0.18em;
 
   --max-width-container: 1200px;
   --max-width-reading: 700px;
@@ -113,6 +111,107 @@
   --transition-fast: 150ms;
   --transition-normal: 250ms;
   --transition-slow: 300ms;
+
+  /* ===================== OPACITY SCALE ===================== */
+
+  --alpha-hairline: 0.07;
+  --alpha-subtle: 0.13;
+  --alpha-soft: 0.20;
+  --alpha-medium: 0.34;
+  --alpha-surface-soft: 0.48;
+  --alpha-surface: 0.74;
+  --alpha-surface-strong: 0.85;
+}
+
+@theme inline {
+  --color-primary-cyan: var(--primary-cyan);
+  --color-secondary-lime: var(--secondary-lime);
+
+  --color-dark: var(--dark);
+  --color-navy-medium: var(--navy-medium);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+
+  --color-white: var(--white);
+
+  --color-bg-top: var(--bg-top);
+  --color-bg-bottom: var(--bg-bottom);
+
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-lime: var(--accent-lime);
+  --color-accent-indigo: var(--accent-indigo);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-orange: var(--accent-orange);
+
+  --color-cyan-light: var(--cyan-light);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-text-light: var(--text-light);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-footer-muted: var(--footer-muted);
+
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-soft: var(--surface-soft);
+
+  --color-icon-bg-teal: var(--icon-bg-teal);
+  --color-icon-bg-indigo: var(--icon-bg-indigo);
+  --color-icon-bg-lime: var(--icon-bg-lime);
+  --color-icon-bg-pink: var(--icon-bg-pink);
+  --color-icon-bg-amber: var(--icon-bg-amber);
+  --color-icon-bg-teal-green: var(--icon-bg-teal-green);
+
+  --color-border-soft: var(--border-soft);
+  --color-border-muted: var(--border-muted);
+
+  --color-glow-cyan: var(--glow-cyan);
+  --color-glow-lime: var(--glow-lime);
+  --color-cta-glow-cyan: var(--cta-glow-cyan);
+  --color-cta-glow-lime: var(--cta-glow-lime);
+
+  --font-sans: var(--font-sans-raw);
+  --font-display: var(--font-display-raw);
+
+  --font-size-label: var(--font-size-label);
+  --font-size-badge: var(--font-size-badge);
+  --tracking-label: var(--tracking-label);
+  --tracking-badge: var(--tracking-badge);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-sm: var(--shadow-sm-raw);
+  --shadow-md: var(--shadow-md-raw);
+  --shadow-lg: var(--shadow-lg-raw);
+  --shadow-xl: var(--shadow-xl-raw);
+  --shadow-2xl: var(--shadow-2xl-raw);
+  --shadow-glow-cyan: var(--shadow-glow-cyan-raw);
+
+  --spacing-section: var(--spacing-section);
+  --spacing-container: var(--spacing-container);
+  --header-height: var(--header-height);
+  --spacing-card-pad: var(--spacing-card-pad);
+  --spacing-badge-x: var(--spacing-badge-x);
+  --spacing-badge-y: var(--spacing-badge-y);
+
+  --max-width-container: var(--max-width-container);
+  --max-width-reading: var(--max-width-reading);
+  --max-width-content: var(--max-width-content);
+
+  --blur-glass: var(--blur-glass);
+  --blur-header: var(--blur-header);
+
+  --transition-fast: var(--transition-fast);
+  --transition-normal: var(--transition-normal);
+  --transition-slow: var(--transition-slow);
 }
 
 @keyframes bob {

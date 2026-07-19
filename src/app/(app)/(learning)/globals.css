@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
 :root {
+  
   --cyan: #22d3ee;
+  
+  
   --lime: #a3e635;
   --navy: #0f172a;
   --ink: #1e293b;
@@ -56,6 +59,8 @@
 
 @theme inline {
   --color-cyan: var(--cyan);
+
+  
   --color-lime: var(--lime);
   --color-navy: var(--navy);
   --color-ink: var(--ink);
