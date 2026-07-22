@@ -36,7 +36,7 @@ export default function Button({
       "px-8 py-[0.85rem] rounded-(--radius-full) border-none",
       "shadow-glow-cyan",
       "duration-(--transition-normal)",
-      "hover:-translate-y-1 hover:shadow-[0_12px_40px_var(--color-primary-cyan)] hover:shadow-primary-cyan/34"
+      "hover:-translate-y-1 hover:shadow-[0_12px_40px] hover:shadow-primary-cyan/34"
     ),
     secondary: clsx(
       "bg-transparent border-2 border-(--color-border-muted)",

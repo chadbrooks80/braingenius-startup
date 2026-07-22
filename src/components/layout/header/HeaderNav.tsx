@@ -54,7 +54,7 @@ export default function HeaderNav() {
             />
           )}
           <div
-            className={`fixed top-0 left-0 z-[201] h-full w-72 flex flex-col bg-(--color-surface-strong) border-r border-(--color-border-soft) shadow-[4px_0_32px_var(--color-primary-cyan)] shadow-primary-cyan/34 transition-transform duration-(--transition-normal) ${
+            className={`fixed top-0 left-0 z-[201] h-full w-72 flex flex-col bg-(--color-surface-strong) border-r border-(--color-border-soft) shadow-[4px_0_32px] shadow-primary-cyan/34 transition-transform duration-(--transition-normal) ${
               open ? "translate-x-0" : "-translate-x-full"
             }`}
           >

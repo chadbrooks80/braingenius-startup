@@ -308,3 +308,9 @@
 - Reproduced the failure with temporary instrumentation added to `SpeechPlaybackController.ts` and `src/app/le-playground/page.tsx` (both reverted afterward, branch left clean): confirmed `/api/tts` returns a valid 200 `audio/mpeg` blob every time, and the exact failing step is `audio.play()` — the `<audio>` element never advances past `readyState: 0` / `networkState: 2`, isolated down to the browser's media pipeline itself (reproduced with a bare `new Audio()` call, no app code involved)
 - Noted the test browser tab reported `document.hidden: true` during reproduction, a likely confound of the automated browser environment; recommended re-running the same manual-click test in a normal foreground tab to confirm whether the same stall occurs for real users
 - Also flagged (unfixed): every failure path in `SpeechPlaybackController.ts` uses an empty/silent `catch`, so this class of failure produces no console error or user-visible feedback
+
+## 2026-07-22 17:34
+
+- Completed CSS variable cleanup phase 3 on `var-cleanup-phase-3`: removed redundant `var(--color-*)` shadow-color arguments from `box-shadow` arbitrary values (e.g. `shadow-[0_16px_56px_var(--color-navy)]` → `shadow-[0_16px_56px]`) across host and Learning Engine components, since the adjacent `shadow-<color>/<alpha>` utility already supplies the shadow color
+- Converted remaining `color-mix(in srgb, var(--color-*) ...)` inline gradient `style` props to Tailwind v4 `bg-linear-*/srgb` and `bg-radial/srgb` utilities with color/opacity classes (`CTASection.tsx`, `DefinitionFunFact.tsx`, `VocabularyStartupVisual.tsx`), eliminating the last inline `style` gradients tied to CSS vars
+- Files touched: `CTASection.tsx`, `Header.tsx`, `HeaderNav.tsx`, `components/ui/Button.tsx`, `learning-engine-components/Blocks/Header.tsx`, `UI/Button.tsx`, all `LearningWindows/*` window components, `VocabularyStartupContent.tsx`, `VocabularyStartupVisual.tsx`

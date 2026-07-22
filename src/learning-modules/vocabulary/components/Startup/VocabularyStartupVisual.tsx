@@ -20,12 +20,8 @@ const WORD_POSITIONS: WordPosition[] = [
 export function VocabularyStartupVisual() {
   return (
     <div
-      className="relative overflow-hidden h-full"
-      style={{
-        background:
-          "linear-gradient(135deg, color-mix(in srgb, var(--color-cyan) calc(var(--alpha-subtle) * 100%), transparent) 0%, color-mix(in srgb, var(--color-lime) calc(var(--alpha-subtle) * 100%), transparent) 100%)",
-        minHeight: 280,
-      }}
+      className="relative overflow-hidden h-full bg-linear-135/srgb from-cyan/13 to-lime/13"
+      style={{ minHeight: 280 }}
     >
       {/* Decorative circles */}
       <div
@@ -50,7 +46,7 @@ export function VocabularyStartupVisual() {
       {/* Center book stage */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div
-          className="flex items-center justify-center rounded-3xl bg-white/85 shadow-[0_8px_32px_var(--color-navy)] shadow-navy/13"
+          className="flex items-center justify-center rounded-3xl bg-white/85 shadow-[0_8px_32px] shadow-navy/13"
           style={{
             width: 120,
             height: 120,
@@ -69,7 +65,7 @@ export function VocabularyStartupVisual() {
         return (
           <div
             key={word}
-            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-white/85 text-navy shadow-[0_2px_8px_var(--color-navy)] shadow-navy/13"
+            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-white/85 text-navy shadow-[0_2px_8px] shadow-navy/13"
             style={{
               ...position,
               backdropFilter: "blur(4px)",

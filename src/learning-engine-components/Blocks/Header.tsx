@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-6 py-3 sticky top-0 z-10 border-b border-white/60 bg-surface-strong backdrop-blur-md shadow-[0_10px_35px_var(--color-navy)] shadow-navy/7">
+    <header className="flex items-center justify-between px-6 py-3 sticky top-0 z-10 border-b border-white/60 bg-surface-strong backdrop-blur-md shadow-[0_10px_35px] shadow-navy/7">
       <Image
         src="/logo.png"
         alt="BrainGenius"

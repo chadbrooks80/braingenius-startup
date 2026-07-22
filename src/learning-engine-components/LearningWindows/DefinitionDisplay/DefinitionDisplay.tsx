@@ -35,7 +35,7 @@ export function DefinitionDisplay({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <p className="text-[10px] font-bold uppercase tracking-widest mb-4 text-cyan-ink">

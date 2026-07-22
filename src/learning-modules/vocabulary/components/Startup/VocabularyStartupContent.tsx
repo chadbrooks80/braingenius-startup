@@ -70,7 +70,7 @@ export function VocabularyStartupContent() {
 
 function StatChip({ stat }: { stat: Stat }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-white/85 border-navy/7 shadow-[0_1px_3px_var(--color-navy)] shadow-navy/7">
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-white/85 border-navy/7 shadow-[0_1px_3px] shadow-navy/7">
       <span>{stat.icon}</span>
       <span className="font-bold text-navy">
         {stat.value}

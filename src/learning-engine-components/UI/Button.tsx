@@ -24,12 +24,12 @@ export function Button({
 
   const variantClasses: Record<ButtonVariant, string> = {
     primary:
-      "bg-navy text-white shadow-[0_2px_8px_var(--color-navy)] shadow-navy/20 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_var(--color-navy)]",
+      "bg-navy text-white shadow-[0_2px_8px] shadow-navy/20 hover:-translate-y-0.5 hover:shadow-[0_6px_18px]",
     secondary:
       "bg-lime/13 text-lime-ink border border-lime/34 hover:-translate-y-0.5 hover:shadow-sm",
     ghost: "bg-transparent text-muted hover:-translate-y-0.5 hover:shadow-sm",
     accent:
-      "text-navy shadow-[0_8px_24px_var(--color-cyan)] shadow-cyan/34 hover:-translate-y-0.5 hover:shadow-sm bg-linear-[135deg] from-cyan to-sky",
+      "text-navy shadow-[0_8px_24px] shadow-cyan/34 hover:-translate-y-0.5 hover:shadow-sm bg-linear-[135deg] from-cyan to-sky",
   };
 
   return (

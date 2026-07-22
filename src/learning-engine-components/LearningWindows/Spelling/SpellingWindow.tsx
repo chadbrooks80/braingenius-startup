@@ -106,7 +106,7 @@ function SpellingAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center justify-between mb-4">
