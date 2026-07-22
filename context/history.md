@@ -300,3 +300,11 @@
 - Completed Stage 2A runtime and toolchain alignment with Next.js and `eslint-config-next` 16.2.9, Node 24.14.1, and ESM package behavior
 - Added the approved `server-only`, `tsx`, and `playwright-core` dependencies and excluded `references/**` from host TypeScript and ESLint checks
 - Verified the development server reached ready state and returned HTTP 200; no existing host test command was present
+
+## 2026-07-22 14:46
+
+- Diagnosed the Vocabulary module TTS playback regression flagged in audit; no fix implemented (diagnosis only, as instructed)
+- Confirmed via read-only review that the CSS-var-to-Tailwind-theme commits (`6a85d2a`, `7e76318`) did not cause the regression — all diffs in TTS-adjacent files (`DefinitionDisplay.tsx`, `AnswerRecapWindow.tsx`, `SpellingWindow.tsx`, `MultipleChoiceWindow.tsx`, `UI/Button.tsx`) are class-name-equivalent with no changed event handlers, props, or interactive CSS
+- Reproduced the failure with temporary instrumentation added to `SpeechPlaybackController.ts` and `src/app/le-playground/page.tsx` (both reverted afterward, branch left clean): confirmed `/api/tts` returns a valid 200 `audio/mpeg` blob every time, and the exact failing step is `audio.play()` — the `<audio>` element never advances past `readyState: 0` / `networkState: 2`, isolated down to the browser's media pipeline itself (reproduced with a bare `new Audio()` call, no app code involved)
+- Noted the test browser tab reported `document.hidden: true` during reproduction, a likely confound of the automated browser environment; recommended re-running the same manual-click test in a normal foreground tab to confirm whether the same stall occurs for real users
+- Also flagged (unfixed): every failure path in `SpeechPlaybackController.ts` uses an empty/silent `catch`, so this class of failure produces no console error or user-visible feedback

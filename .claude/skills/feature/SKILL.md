@@ -29,11 +29,7 @@ Use this skill to implement or complete a feature for the Brain Genius AI projec
 
 ### Steps:
 
-1. **Clear the current feature file**
-   - Use the Google Drive MCP to open `dev-instructions/brain-genius-startup/current-feature.md`
-   - Delete all contents from the file, leaving it empty and ready for the next feature
-
-2. **Log the completed work**
+1. **Log the completed work**
    - Open `context/history.md`
    - Append a new entry at the end of the file using the format below
    - Include a timestamp (date and time)
@@ -60,4 +56,11 @@ Use this skill to implement or complete a feature for the Brain Genius AI projec
 - Added protected dashboard routing
 - Verified login, logout, and session persistence
 - Passed audit and user review
+```
+
+2. **Output the completion message**
+   - At the end, output exactly:
+
+```text
+EVERYTHING COMPLETE PLEASE EMPTY THE current-feature.md CONTENTS
 ```
