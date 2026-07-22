@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { Star } from "lucide-react";
+import { getColorClass, type ColorToken } from "@/lib/theme-colors";
 
 interface TestimonialCardProps {
   children: React.ReactNode;
   name: string;
   title: string;
   imageUrl: string;
-  backgroundColor?: string;
-  fontColor?: string;
+  backgroundColor?: ColorToken;
+  fontColor?: ColorToken;
 }
 
 export default function TestimonialCard({
@@ -16,17 +17,17 @@ export default function TestimonialCard({
   title,
   imageUrl,
   backgroundColor,
-  fontColor,
+  fontColor = "text-primary",
 }: TestimonialCardProps) {
+  /* Default card background is white at --alpha-surface (74%) */
+  const bgClass = backgroundColor
+    ? getColorClass(backgroundColor, "bg")
+    : "bg-white/74";
+  const fontClass = getColorClass(fontColor, "text");
+
   return (
     <div
-      style={
-        {
-          "--card-bg": backgroundColor ? `var(--${backgroundColor})` : "var(--color-surface)",
-          "--card-font": fontColor ? `var(--${fontColor})` : "var(--color-text-primary)",
-        } as React.CSSProperties
-      }
-      className="bg-(--card-bg) border border-border-soft rounded-2xl p-7 shadow-lg backdrop-blur-(--blur-glass) transition-transform duration-300 ease-in-out hover:-translate-y-1"
+      className={`${bgClass} border border-border-soft rounded-2xl p-7 shadow-lg backdrop-blur-(--blur-glass) transition-transform duration-300 ease-in-out hover:-translate-y-1`}
     >
       <div className="flex gap-1 mb-4">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -34,7 +35,7 @@ export default function TestimonialCard({
         ))}
       </div>
 
-      <p className="text-base leading-relaxed italic mb-5 text-(--card-font)">
+      <p className={`text-base leading-relaxed italic mb-5 ${fontClass}`}>
         <span className="text-2xl not-italic text-(--color-primary-cyan) leading-none mr-1">&ldquo;</span>
         {children}
       </p>
@@ -49,8 +50,8 @@ export default function TestimonialCard({
           />
         </div>
         <div>
-          <div className="font-bold text-sm text-(--card-font)">{name}</div>
-          <div className="text-label text-(--card-font)/60">{title}</div>
+          <div className={`font-bold text-sm ${fontClass}`}>{name}</div>
+          <div className={`text-label ${getColorClass(fontColor, "textMuted")}`}>{title}</div>
         </div>
       </div>
     </div>

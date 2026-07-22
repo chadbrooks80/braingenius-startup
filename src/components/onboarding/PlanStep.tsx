@@ -52,7 +52,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
     <>
       <div className="text-center">
         <Eyebrow>3-day free trial</Eyebrow>
-        <h1 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+        <h1 className="mt-4 font-display text-2xl font-extrabold text-(--color-dark)">
           Your trial is ready
         </h1>
         <p className="mt-2 text-sm text-(--color-text-muted)">
@@ -62,7 +62,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md)">
-          <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-(--color-dark)">
+          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
             Free trial
           </h3>
           <p className="mt-1 text-sm text-(--color-text-muted)">3 days, on us.</p>
@@ -74,7 +74,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
         </div>
 
         <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md)">
-          <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-(--color-dark)">
+          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
             Monthly
           </h3>
           <p className="mt-1 text-sm text-(--color-text-muted)">
@@ -98,7 +98,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
         </div>
 
         <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md) sm:col-span-2">
-          <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-(--color-dark)">
+          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
             Lifetime
           </h3>
           <p className="mt-1 text-sm text-(--color-text-muted)">$149.99 one-time</p>

@@ -1,24 +1,30 @@
 import { School, GraduationCap, Award, ShieldCheck } from "lucide-react";
 import TrustSymbol from "@/components/blocks/TrustSymbol";
+import type { ColorToken } from "@/lib/theme-colors";
 
-const TRUST_ITEMS = [
+const TRUST_ITEMS: {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  iconBgColor: ColorToken;
+}[] = [
   {
     title: "Nixa Public Schools",
     subtitle: "Nixa, Missouri",
     icon: <School size={18} className="text-(--color-accent-teal)" />,
-    iconBgColor: "var(--color-icon-bg-teal)",
+    iconBgColor: "cyan",
   },
   {
     title: "Ozark R-VI Schools",
     subtitle: "Ozark, Missouri",
     icon: <GraduationCap size={18} className="text-(--color-accent-indigo)" />,
-    iconBgColor: "var(--color-icon-bg-indigo)",
+    iconBgColor: "indigo",
   },
   {
     title: "EdTech Horizon Award",
     subtitle: "2024 Best K-12 Tool",
     icon: <Award size={18} className="text-(--color-secondary-lime)" />,
-    iconBgColor: "var(--color-icon-bg-lime)",
+    iconBgColor: "lime",
   },
 ];
 

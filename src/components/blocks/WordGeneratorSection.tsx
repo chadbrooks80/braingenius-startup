@@ -4,23 +4,24 @@ import { useEffect, useRef } from "react";
 import { Wand2, GraduationCap, Bot, FileText } from "lucide-react";
 import Eyebrow from "@/components/ui/Eyebrow";
 import FeatureCheckCard from "@/components/blocks/FeatureCheckCard";
+import type { ColorToken } from "@/lib/theme-colors";
 
 type CardConfig = {
   icon: React.ReactNode;
-  iconBackgroundColor: string;
+  iconBackgroundColor: ColorToken;
   title: string;
   description: string;
   checkItems: string[];
-  backgroundColor?: string;
-  fontColor?: string;
-  checkboxColor?: string;
+  backgroundColor?: ColorToken;
+  fontColor?: ColorToken;
+  checkboxColor?: ColorToken;
   delay: string;
 };
 
 const CARDS: CardConfig[] = [
   {
     icon: <GraduationCap size={24} className="text-white" />,
-    iconBackgroundColor: "rgba(255,255,255,0.12)",
+    iconBackgroundColor: "white",
     title: "Recommended Words by Grade Level",
     description:
       "Instantly generate a vocabulary list aligned to your students\u2019 grade. Words are curated from academic standards and leveled reading lists.",
@@ -30,14 +31,14 @@ const CARDS: CardConfig[] = [
       "Pre-loaded definitions, prompts & example sentences",
       "Instantly ready for student practice",
     ],
-    backgroundColor: "color-dark",
-    fontColor: "color-white",
-    checkboxColor: "color-secondary-lime",
+    backgroundColor: "dark",
+    fontColor: "white",
+    checkboxColor: "secondary",
     delay: "0s",
   },
   {
     icon: <Bot size={24} className="text-(--color-primary-cyan)" />,
-    iconBackgroundColor: "var(--color-icon-bg-teal)",
+    iconBackgroundColor: "cyan",
     title: "AI-Generated Words by Topic",
     description:
       "Tell the AI what you\u2019re studying \u2014 ancient civilizations, ecosystems, the Civil War \u2014 and it generates a rich vocabulary set tailored to that topic.",
@@ -51,7 +52,7 @@ const CARDS: CardConfig[] = [
   },
   {
     icon: <FileText size={24} className="text-white" />,
-    iconBackgroundColor: "rgba(255,255,255,0.12)",
+    iconBackgroundColor: "white",
     title: "Words from URLs or PDF Uploads",
     description:
       "Paste a webpage link or upload a PDF \u2014 a textbook chapter, article, or passage \u2014 and BrainGenius.ai extracts the most valuable vocabulary for your students.",
@@ -61,9 +62,9 @@ const CARDS: CardConfig[] = [
       "AI picks the most academically useful words",
       "Filtered to match your grade level setting",
     ],
-    backgroundColor: "color-dark",
-    fontColor: "color-white",
-    checkboxColor: "color-secondary-lime",
+    backgroundColor: "dark",
+    fontColor: "white",
+    checkboxColor: "secondary",
     delay: "0.2s",
   },
 ];

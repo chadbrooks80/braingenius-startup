@@ -33,30 +33,20 @@ export function AnswerRecapWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
-        <p
-          className="text-[10px] font-bold uppercase tracking-widest mb-3"
-          style={{ color: "var(--cyan-ink)" }}
-        >
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-cyan-ink">
           {label}
         </p>
 
         <div className="flex items-center gap-3 mb-5">
-          <h2
-            className="font-display text-4xl font-extrabold"
-            style={{ color: "var(--navy)" }}
-          >
+          <h2 className="font-display text-4xl font-extrabold text-navy">
             {title}
           </h2>
           <button
             type="button"
-            className="ml-auto cursor-pointer"
-            style={{ color: "var(--cyan)" }}
+            className="ml-auto cursor-pointer text-cyan"
             aria-label={replayLabel}
             onClick={() => onAction("speak", { text: speechText, tts })}
           >
@@ -67,24 +57,18 @@ export function AnswerRecapWindow({
           </button>
         </div>
 
-        <div
-          className="rounded-2xl px-5 py-4 mb-4"
-          style={{
-            background: "var(--tint-cyan)",
-            border: "1px solid var(--border-cyan)",
-          }}
-        >
-          <p className="font-medium leading-relaxed" style={{ color: "var(--ink)" }}>
+        <div className="rounded-2xl px-5 py-4 mb-4 border bg-cyan/13 border-cyan/34">
+          <p className="font-medium leading-relaxed text-ink">
             {primaryText}
           </p>
         </div>
 
-        <p className="italic leading-relaxed mb-7" style={{ color: "var(--muted)" }}>
+        <p className="italic leading-relaxed mb-7 text-muted">
           {secondaryText}
         </p>
 
         <div className="flex items-center justify-between gap-4">
-          <p className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
+          <p className="text-xs font-semibold text-muted">
             {isSpeaking ? playingMessage : completeMessage}
           </p>
           <Button

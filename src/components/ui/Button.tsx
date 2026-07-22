@@ -32,11 +32,11 @@ export default function Button({
     ),
     primary: clsx(
       "bg-linear-to-br from-(--color-primary-cyan) to-(--color-cyan-light)",
-      "text-(--color-dark) font-[family-name:var(--font-display)] text-[1rem] font-extrabold",
+      "text-(--color-dark) font-display text-[1rem] font-extrabold",
       "px-8 py-[0.85rem] rounded-(--radius-full) border-none",
-      "shadow-[0_8px_32px_var(--color-glow-cyan)]",
+      "shadow-glow-cyan",
       "duration-(--transition-normal)",
-      "hover:-translate-y-1 hover:shadow-[0_12px_40px_var(--color-glow-cyan)]"
+      "hover:-translate-y-1 hover:shadow-[0_12px_40px_var(--color-primary-cyan)] hover:shadow-primary-cyan/34"
     ),
     secondary: clsx(
       "bg-transparent border-2 border-(--color-border-muted)",

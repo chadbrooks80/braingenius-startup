@@ -21,43 +21,30 @@ export function DefinitionFunFact({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
-        <p
-          className="text-[10px] font-bold uppercase tracking-widest mb-2"
-          style={{ color: "var(--lime-strong)" }}
-        >
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-lime-strong">
           {eyebrow}
         </p>
 
         <div className="flex items-center gap-3 mb-6">
-          <span
-            className="font-display text-3xl font-extrabold"
-            style={{ color: "var(--navy)" }}
-          >
+          <span className="font-display text-3xl font-extrabold text-navy">
             {title}
           </span>
         </div>
 
         <div
-          className="rounded-2xl px-6 py-6 mb-8"
+          className="rounded-2xl px-6 py-6 mb-8 border border-lime/34"
           style={{
             background:
-              "linear-gradient(135deg, var(--tint-lime), var(--tint-cyan))",
-            border: "1px solid var(--border-lime)",
+              "linear-gradient(135deg, color-mix(in srgb, var(--color-lime) calc(var(--alpha-subtle) * 100%), transparent), color-mix(in srgb, var(--color-cyan) calc(var(--alpha-subtle) * 100%), transparent))",
           }}
         >
-          <p
-            className="text-sm font-bold mb-3"
-            style={{ color: "var(--lime-strong)" }}
-          >
+          <p className="text-sm font-bold mb-3 text-lime-strong">
             {introLabel}
           </p>
-          <p className="leading-relaxed font-medium" style={{ color: "var(--ink)" }}>
+          <p className="leading-relaxed font-medium text-ink">
             {body}
           </p>
         </div>

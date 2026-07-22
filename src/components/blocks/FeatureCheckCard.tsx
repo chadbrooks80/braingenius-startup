@@ -1,15 +1,16 @@
 import React from "react";
 import { Check } from "lucide-react";
+import { getColorClass, type ColorToken } from "@/lib/theme-colors";
 
 interface FeatureCheckCardProps {
   icon: React.ReactNode;
-  iconBackgroundColor: string;
+  iconBackgroundColor: ColorToken;
   title: string;
   children: React.ReactNode;
   checkItems: string[];
-  backgroundColor?: string;
-  fontColor?: string;
-  checkboxColor?: string;
+  backgroundColor?: ColorToken;
+  fontColor?: ColorToken;
+  checkboxColor?: ColorToken;
 }
 
 export default function FeatureCheckCard({
@@ -18,43 +19,42 @@ export default function FeatureCheckCard({
   title,
   children,
   checkItems,
-  backgroundColor,
-  fontColor,
-  checkboxColor,
+  backgroundColor = "white",
+  fontColor = "dark",
+  checkboxColor = "primary",
 }: FeatureCheckCardProps) {
+  const fontClass = getColorClass(fontColor, "text");
+
   return (
     <div
-      style={
-        {
-          "--fcc-icon-bg": iconBackgroundColor,
-          "--fcc-bg": backgroundColor ? `var(--${backgroundColor})` : "var(--color-white)",
-          "--fcc-font": fontColor ? `var(--${fontColor})` : "var(--color-dark)",
-          "--fcc-check": checkboxColor
-            ? `var(--${checkboxColor})`
-            : "var(--color-primary-cyan)",
-        } as React.CSSProperties
-      }
-      className="h-full rounded-[1.5rem] p-8 shadow-[var(--shadow-lg)] border border-(--color-border-soft) bg-(--fcc-bg) flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]"
+      className={`h-full rounded-[1.5rem] p-8 shadow-lg border border-(--color-border-soft) ${getColorClass(backgroundColor, "bg")} flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]`}
     >
-      <div className="w-14 h-14 rounded-[16px] flex items-center justify-center mb-[1.2rem] bg-(--fcc-icon-bg)">
+      <div
+        className={`w-14 h-14 rounded-[16px] flex items-center justify-center mb-[1.2rem] ${getColorClass(iconBackgroundColor, "iconBg")}`}
+      >
         {icon}
       </div>
 
-      <h3 className="font-display text-[1.1rem] font-extrabold mb-[0.6rem] text-(--fcc-font)">
+      <h3
+        className={`font-display text-[1.1rem] font-extrabold mb-[0.6rem] ${fontClass}`}
+      >
         {title}
       </h3>
 
-      <p className="flex-1 text-[0.91rem] leading-[1.65] text-(--fcc-font) opacity-75">
+      <p className={`flex-1 text-[0.91rem] leading-[1.65] ${fontClass} opacity-75`}>
         {children}
       </p>
 
       <ul className="flex flex-col gap-2 mt-4">
         {checkItems.map((item, index) => (
-          <li key={index} className="flex items-center gap-2 text-[0.85rem] text-(--fcc-font)">
+          <li
+            key={index}
+            className={`flex items-center gap-2 text-[0.85rem] ${fontClass}`}
+          >
             <Check
               size={14}
               strokeWidth={3}
-              className="shrink-0 text-(--fcc-check)"
+              className={`shrink-0 ${getColorClass(checkboxColor, "text")}`}
             />
             {item}
           </li>

@@ -23,23 +23,17 @@ export function VocabularyStartupContent() {
   return (
     <div className="flex flex-col gap-4">
       {/* Eyebrow */}
-      <span
-        className="text-xs font-bold tracking-widest uppercase"
-        style={{ color: "var(--lime-strong)" }}
-      >
+      <span className="text-xs font-bold tracking-widest uppercase text-lime-strong">
         {EYEBROW}
       </span>
 
       {/* Title */}
-      <h1
-        className="font-[family-name:var(--font-display)] text-4xl font-extrabold leading-tight tracking-tight"
-        style={{ color: "var(--navy)" }}
-      >
+      <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-navy">
         {TITLE}
       </h1>
 
       {/* Description */}
-      <p className="text-sm font-medium leading-relaxed" style={{ color: "var(--muted)" }}>
+      <p className="text-sm font-medium leading-relaxed text-muted">
         {DESCRIPTION}
       </p>
 
@@ -51,37 +45,18 @@ export function VocabularyStartupContent() {
       </div>
 
       {/* Path card */}
-      <div
-        className="rounded-2xl px-4 py-3"
-        style={{
-          background: "var(--tint-lime)",
-          border: "1px solid var(--border-lime)",
-        }}
-      >
-        <p
-          className="text-[10px] font-bold tracking-widest uppercase mb-2"
-          style={{ color: "var(--lime-ink)" }}
-        >
+      <div className="rounded-2xl px-4 py-3 border bg-lime/13 border-lime/34">
+        <p className="text-[10px] font-bold tracking-widest uppercase mb-2 text-lime-ink">
           YOUR PATH TODAY
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           {PATH_STEPS.map((step, i) => (
             <div key={step} className="flex items-center gap-1.5">
-              <span
-                className="text-xs font-semibold px-3 py-1 rounded-full"
-                style={{
-                  background: "var(--surface-strong)",
-                  color: "var(--navy)",
-                  border: "1px solid var(--border-lime)",
-                }}
-              >
+              <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-white/85 text-navy border-lime/34">
                 {step}
               </span>
               {i < PATH_STEPS.length - 1 && (
-                <span
-                  className="text-xs font-bold"
-                  style={{ color: "var(--lime-strong)" }}
-                >
+                <span className="text-xs font-bold text-lime-strong">
                   →
                 </span>
               )}
@@ -95,19 +70,12 @@ export function VocabularyStartupContent() {
 
 function StatChip({ stat }: { stat: Stat }) {
   return (
-    <div
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs"
-      style={{
-        background: "var(--surface-strong)",
-        border: "1px solid var(--hairline)",
-        boxShadow: "0 1px 3px var(--shadow-soft)",
-      }}
-    >
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-white/85 border-navy/7 shadow-[0_1px_3px_var(--color-navy)] shadow-navy/7">
       <span>{stat.icon}</span>
-      <span className="font-bold" style={{ color: "var(--navy)" }}>
+      <span className="font-bold text-navy">
         {stat.value}
       </span>
-      <span style={{ color: "var(--muted)" }}>{stat.label}</span>
+      <span className="text-muted">{stat.label}</span>
     </div>
   );
 }

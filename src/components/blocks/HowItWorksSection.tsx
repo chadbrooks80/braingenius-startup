@@ -16,28 +16,28 @@ const PROGRESS_BARS = [
   {
     label: "Word Mastery",
     value: 84,
-    gradient: "linear-gradient(90deg, var(--color-primary-cyan), var(--color-cyan-light))",
+    barClassName: "bg-linear-to-r from-primary-cyan to-cyan-light",
     delay: "0s",
   },
   {
     label: "Retention Rate",
     value: 91,
-    gradient: "linear-gradient(90deg, var(--color-secondary-lime), var(--color-secondary-lime))",
+    barClassName: "bg-secondary-lime",
     delay: "0.15s",
   },
   {
     label: "Session Consistency",
     value: 76,
-    gradient: "linear-gradient(90deg, var(--color-accent-indigo), var(--color-accent-indigo))",
+    barClassName: "bg-accent-indigo",
     delay: "0.3s",
   },
 ];
 
 const STATS = [
-  { value: "142", label: "Words mastered", color: "--color-primary-cyan" },
-  { value: "12", label: "Day streak", color: "--color-secondary-lime" },
-  { value: "23min", label: "Avg. session", color: "--color-accent-indigo" },
-  { value: "4.8★", label: "Student rating", color: "--color-accent-pink" },
+  { value: "142", label: "Words mastered", textClassName: "text-primary-cyan" },
+  { value: "12", label: "Day streak", textClassName: "text-secondary-lime" },
+  { value: "23min", label: "Avg. session", textClassName: "text-accent-indigo" },
+  { value: "4.8★", label: "Student rating", textClassName: "text-accent-pink" },
 ];
 
 export default function HowItWorksSection() {
@@ -60,9 +60,9 @@ export default function HowItWorksSection() {
 
         {/* Mobile order 3 | Desktop: col 1, rows 1–4 */}
         <div className="lg:col-start-1 lg:row-start-1 lg:row-span-4 animate-[bob_6s_ease-in-out_infinite]">
-          <ExampleBlock label="Student Progress" status="This Week" statusColor="--color-secondary-lime">
+          <ExampleBlock label="Student Progress" status="This Week" statusColor="secondary">
             <div className="space-y-4 mb-6">
-              {PROGRESS_BARS.map(({ label, value, gradient, delay }) => (
+              {PROGRESS_BARS.map(({ label, value, barClassName, delay }) => (
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
                     <span className="text-(--font-size-label) text-(--color-text-light)">{label}</span>
@@ -70,8 +70,8 @@ export default function HowItWorksSection() {
                   </div>
                   <div className="h-2 rounded-full overflow-hidden bg-white/10">
                     <div
-                      className="h-full rounded-full origin-left animate-[progressFill_1.5s_ease-out_both]"
-                      style={{ width: `${value}%`, background: gradient, animationDelay: delay }}
+                      className={`h-full rounded-full origin-left animate-[progressFill_1.5s_ease-out_both] ${barClassName}`}
+                      style={{ width: `${value}%`, animationDelay: delay }}
                     />
                   </div>
                 </div>
@@ -79,9 +79,9 @@ export default function HowItWorksSection() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {STATS.map(({ value, label, color }) => (
+              {STATS.map(({ value, label, textClassName }) => (
                 <div key={label} className="rounded-(--radius-xl) p-3 bg-white/5">
-                  <div className="font-display text-2xl font-black" style={{ color: `var(${color})` }}>
+                  <div className={`font-display text-2xl font-black ${textClassName}`}>
                     {value}
                   </div>
                   <div className="text-(--font-size-label) text-(--color-text-muted) mt-0.5">{label}</div>

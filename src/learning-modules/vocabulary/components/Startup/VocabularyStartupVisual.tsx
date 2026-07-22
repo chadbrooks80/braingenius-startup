@@ -22,42 +22,39 @@ export function VocabularyStartupVisual() {
     <div
       className="relative overflow-hidden h-full"
       style={{
-        background: "linear-gradient(135deg, var(--tint-cyan) 0%, var(--tint-lime) 100%)",
+        background:
+          "linear-gradient(135deg, color-mix(in srgb, var(--color-cyan) calc(var(--alpha-subtle) * 100%), transparent) 0%, color-mix(in srgb, var(--color-lime) calc(var(--alpha-subtle) * 100%), transparent) 100%)",
         minHeight: 280,
       }}
     >
       {/* Decorative circles */}
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full bg-cyan/20"
         style={{
           width: 200,
           height: 200,
           top: -60,
           right: -60,
-          background: "var(--tint-cyan-strong)",
         }}
       />
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full bg-lime/20"
         style={{
           width: 140,
           height: 140,
           bottom: -40,
           left: -30,
-          background: "var(--tint-lime-strong)",
         }}
       />
 
       {/* Center book stage */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div
-          className="flex items-center justify-center rounded-3xl"
+          className="flex items-center justify-center rounded-3xl bg-white/85 shadow-[0_8px_32px_var(--color-navy)] shadow-navy/13"
           style={{
             width: 120,
             height: 120,
-            background: "var(--surface-strong)",
             backdropFilter: "blur(8px)",
-            boxShadow: "0 8px 32px var(--shadow-strong)",
           }}
         >
           <span style={{ fontSize: 60, lineHeight: 1 }} role="img" aria-label="book">
@@ -72,13 +69,10 @@ export function VocabularyStartupVisual() {
         return (
           <div
             key={word}
-            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-white/85 text-navy shadow-[0_2px_8px_var(--color-navy)] shadow-navy/13"
             style={{
               ...position,
-              background: "var(--surface-translucent)",
               backdropFilter: "blur(4px)",
-              color: "var(--navy)",
-              boxShadow: "0 2px 8px var(--shadow-medium)",
               transform: `rotate(${rotation})`,
             }}
           >

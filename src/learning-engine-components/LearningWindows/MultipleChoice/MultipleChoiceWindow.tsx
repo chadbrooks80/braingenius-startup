@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/learning-engine-components/UI/Button";
 import {
   IDLE_ANSWER_SUBMISSION_STATE,
@@ -105,60 +105,35 @@ function MultipleChoiceAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
         {/* Badge */}
         <div className="flex items-center justify-between mb-4">
           <span
-            className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-            style={{
-              background:
-                badgeTone === "secondary"
-                  ? "var(--tint-purple)"
-                  : "var(--tint-cyan)",
-              border: badgeTone === "secondary"
-                ? "1px solid var(--border-purple)"
-                : "1px solid var(--border-cyan)",
-              color:
-                badgeTone === "secondary"
-                  ? "var(--purple)"
-                  : "var(--cyan-ink)",
-            }}
+            className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
+              badgeTone === "secondary"
+                ? "bg-purple/13 border-purple/34 text-purple"
+                : "bg-cyan/13 border-cyan/34 text-cyan-ink"
+            }`}
           >
             {badgeLabel}
           </span>
         </div>
 
         {/* Word box */}
-        <div
-          className="rounded-2xl px-5 py-4 mb-5"
-          style={{
-            background: "var(--tint-cyan)",
-            border: "1px solid var(--border-cyan)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest mb-1"
-            style={{ color: "var(--cyan-ink)" }}
-          >
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-cyan/13 border-cyan/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-cyan-ink">
             {prompt}
           </p>
           <div className="flex items-center gap-3">
-            <span
-              className="font-display text-4xl font-extrabold"
-              style={{ color: "var(--navy)" }}
-            >
+            <span className="font-display text-4xl font-extrabold text-navy">
               {question}
             </span>
             {actions.hearPronunciation !== null && (
               <button
                 type="button"
-                className="ml-auto cursor-pointer"
-                style={{ color: "var(--cyan)" }}
+                className="ml-auto cursor-pointer text-cyan"
                 aria-label={replayLabel}
                 onClick={actions.hearPronunciation}
               >
@@ -191,14 +166,14 @@ function MultipleChoiceAttempt({
         </div>
 
         {submissionState.status === "pending" && (
-          <p className="mt-4 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+          <p className="mt-4 text-sm font-semibold text-muted">
             Checking your answer…
           </p>
         )}
 
         {submissionState.status === "error" && (
           <div className="mt-4 flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold" style={{ color: "var(--red-strong)" }}>
+            <p className="text-sm font-semibold text-red-strong">
               We couldn&apos;t submit your answer. Please try again.
             </p>
             <Button
@@ -213,8 +188,9 @@ function MultipleChoiceAttempt({
         {answered && (
           <div className="mt-5 flex items-center justify-between">
             <span
-              className="font-bold text-sm"
-              style={{ color: isSelectedAnswerCorrect ? "var(--lime-strong)" : "var(--red-strong)" }}
+              className={`font-bold text-sm ${
+                isSelectedAnswerCorrect ? "text-lime-strong" : "text-red-strong"
+              }`}
             >
               {isSelectedAnswerCorrect ? correctMessage : incorrectMessage}
             </span>
@@ -249,37 +225,20 @@ function ChoiceRow({
   isSelected,
   onClick,
 }: ChoiceRowProps) {
-  const choiceStyle: CSSProperties = !answered
-    ? {
-        background: "white",
-        border: "1px solid var(--border-neutral)",
-        color: "var(--ink)",
-      }
+  const choiceClass = !answered
+    ? "bg-white border-border-neutral text-ink"
     : isCorrect
-      ? {
-          background: "var(--tint-lime)",
-          border: "1px solid var(--lime)",
-          color: "var(--lime-ink)",
-        }
+      ? "bg-lime/13 border-lime text-lime-ink"
       : isSelected
-        ? {
-            background: "var(--tint-red)",
-            border: "1px solid var(--red)",
-            color: "var(--red-ink)",
-          }
-        : {
-            background: "var(--tint-neutral-faded)",
-            border: "1px solid var(--border-neutral-faded)",
-            color: "var(--muted-light)",
-          };
+        ? "bg-red/13 border-red text-red-ink"
+        : "bg-tint-neutral-faded border-border-neutral-faded text-muted-light";
 
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="w-full text-left px-4 py-3 rounded-2xl border text-sm font-medium cursor-pointer disabled:cursor-default"
-      style={choiceStyle}
+      className={`w-full text-left px-4 py-3 rounded-2xl border text-sm font-medium cursor-pointer disabled:cursor-default ${choiceClass}`}
     >
       {text}
     </button>

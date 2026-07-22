@@ -39,15 +39,15 @@ export default function PlaygroundPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <CheckBadge label="Never too easy" backgroundColor="--color-accent-cyan" fontColor="--color-dark" checkboxColor="--color-dark" />
-            <CheckBadge label="Never too hard" backgroundColor="--color-accent-lime" fontColor="--color-dark" checkboxColor="--color-dark" />
-            <CheckBadge label="Spaced reviews" backgroundColor="--color-accent-indigo" fontColor="--color-white" checkboxColor="--color-white" />
+            <CheckBadge label="Never too easy" backgroundColor="cyan" fontColor="dark" checkboxColor="dark" />
+            <CheckBadge label="Never too hard" backgroundColor="lime" fontColor="dark" checkboxColor="dark" />
+            <CheckBadge label="Spaced reviews" backgroundColor="indigo" fontColor="white" checkboxColor="white" />
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <CheckBadge label="Mastery-based" checkboxColor="--color-accent-pink" />
-            <CheckBadge label="Works offline" checkboxColor="--color-accent-amber" />
-            <CheckBadge label="Grade-aligned" checkboxColor="--color-accent-teal" />
+            <CheckBadge label="Mastery-based" checkboxColor="pink" />
+            <CheckBadge label="Works offline" checkboxColor="amber" />
+            <CheckBadge label="Grade-aligned" checkboxColor="teal" />
           </div>
         </div>
       </section>
@@ -64,10 +64,10 @@ export default function PlaygroundPage() {
 
         <h3 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest mt-4">Color Variants</h3>
         <div className="flex flex-col gap-3 items-start">
-          <Eyebrow bgColor="--color-accent-lime" textColor="--color-dark">Lime Variant</Eyebrow>
-          <Eyebrow bgColor="--color-accent-indigo" textColor="--color-accent-indigo">Indigo Variant</Eyebrow>
-          <Eyebrow bgColor="--color-accent-pink" textColor="--color-accent-pink">Pink Variant</Eyebrow>
-          <Eyebrow bgColor="--color-accent-amber" textColor="--color-dark">Amber Variant</Eyebrow>
+          <Eyebrow bgColor="lime" textColor="dark">Lime Variant</Eyebrow>
+          <Eyebrow bgColor="indigo" textColor="indigo">Indigo Variant</Eyebrow>
+          <Eyebrow bgColor="pink" textColor="pink">Pink Variant</Eyebrow>
+          <Eyebrow bgColor="amber" textColor="dark">Amber Variant</Eyebrow>
         </div>
       </section>
 
@@ -83,7 +83,7 @@ export default function PlaygroundPage() {
             <p className="text-sm text-(--color-text-inverse)">Placeholder content — default lime status badge.</p>
           </ExampleBlock>
 
-          <ExampleBlock label="Custom Color" status="Review" statusColor="--color-accent-indigo">
+          <ExampleBlock label="Custom Color" status="Review" statusColor="indigo">
             <p className="text-sm text-(--color-text-inverse)">Placeholder content — custom indigo status badge.</p>
           </ExampleBlock>
         </div>
@@ -95,37 +95,37 @@ export default function PlaygroundPage() {
         <div className="flex flex-wrap gap-4">
           <TrustSymbol
             iconOrImage={<School className="w-5 h-5 text-(--color-primary-cyan)" />}
-            iconBgColor="color-mix(in srgb, var(--color-primary-cyan) 12%, transparent)"
+            iconBgColor="primary"
             title="Nixa Public Schools"
             subtitle="Nixa, Missouri"
           />
           <TrustSymbol
             iconOrImage={<GraduationCap className="w-5 h-5 text-(--color-accent-indigo)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-indigo) 12%, transparent)"
+            iconBgColor="indigo"
             title="Ozark R-VI Schools"
             subtitle="Ozark, Missouri"
           />
           <TrustSymbol
             iconOrImage={<Award className="w-5 h-5 text-(--color-accent-lime)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-lime) 12%, transparent)"
+            iconBgColor="lime"
             title="EdTech Horizon Award"
             subtitle="2024 Best K-12 Tool"
           />
           <TrustSymbol
             iconOrImage={<Star className="w-5 h-5 text-(--color-accent-amber)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-amber) 12%, transparent)"
+            iconBgColor="amber"
             title="4.9 / 5 Rating"
             subtitle="2,400+ reviews"
           />
           <TrustSymbol
             iconOrImage={<Zap className="w-5 h-5 text-(--color-accent-amber)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-amber) 12%, transparent)"
+            iconBgColor="amber"
             title="District Ready"
             subtitle="FERPA Compliant"
           />
           <TrustSymbol
             iconOrImage={<BookOpen className="w-5 h-5 text-(--color-accent-teal)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-teal) 12%, transparent)"
+            iconBgColor="teal"
             title="Reading First"
             subtitle="Curriculum Partner"
           />
@@ -151,8 +151,8 @@ export default function PlaygroundPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[900px]">
           <FeatureCard
             icon={<ChartLine size={22} className="text-(--color-accent-cyan)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-cyan) 15%, transparent)"
-            borderColor="var(--color-accent-cyan)"
+            iconBgColor="cyan"
+            borderColor="cyan"
             title="Adaptive Learning"
           >
             Lessons adjust to your skill level in real time, keeping you in the optimal challenge zone.
@@ -160,8 +160,8 @@ export default function PlaygroundPage() {
 
           <FeatureCard
             icon={<RotateCw size={22} className="text-(--color-accent-lime)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-lime) 15%, transparent)"
-            borderColor="var(--color-accent-lime)"
+            iconBgColor="lime"
+            borderColor="lime"
             title="Spaced Repetition"
           >
             Words resurface at the perfect moment so they move from short-term recall into long-term memory.
@@ -169,8 +169,8 @@ export default function PlaygroundPage() {
 
           <FeatureCard
             icon={<Brain size={22} className="text-(--color-accent-indigo)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-indigo) 15%, transparent)"
-            borderColor="var(--color-accent-indigo)"
+            iconBgColor="indigo"
+            borderColor="indigo"
             title="AI-Generated Content"
           >
             Fresh passages and questions are created on demand, tuned to your grade level and interests.
@@ -178,8 +178,8 @@ export default function PlaygroundPage() {
 
           <FeatureCard
             icon={<Gamepad2 size={22} className="text-(--color-accent-pink)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-pink) 15%, transparent)"
-            borderColor="var(--color-accent-pink)"
+            iconBgColor="pink"
+            borderColor="pink"
             title="Gamified Practice"
           >
             Earn streaks, badges, and leaderboard spots that make daily vocabulary practice feel like play.
@@ -187,8 +187,8 @@ export default function PlaygroundPage() {
 
           <FeatureCard
             icon={<BarChart2 size={22} className="text-(--color-accent-amber)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-amber) 15%, transparent)"
-            borderColor="var(--color-accent-amber)"
+            iconBgColor="amber"
+            borderColor="amber"
             title="Progress Analytics"
           >
             Visual dashboards show mastery trends so students and teachers always know what to work on next.
@@ -196,8 +196,8 @@ export default function PlaygroundPage() {
 
           <FeatureCard
             icon={<Users size={22} className="text-(--color-accent-teal)" />}
-            iconBgColor="color-mix(in srgb, var(--color-accent-teal) 15%, transparent)"
-            borderColor="var(--color-accent-teal)"
+            iconBgColor="teal"
+            borderColor="teal"
             title="Class Management"
           >
             Assign lists, track individual progress, and share reports with parents — all in one place.
@@ -221,8 +221,8 @@ export default function PlaygroundPage() {
             name="Marcus T."
             title="8th Grade Science Teacher · Springfield, MO"
             imageUrl="/sara.jpeg"
-            backgroundColor="color-dark"
-            fontColor="color-white"
+            backgroundColor="dark"
+            fontColor="white"
           >
             I used to spend hours building vocab lists for each unit. Now BrainGenius generates a complete word set with definitions in about 30 seconds.
           </TestimonialCard>
@@ -231,8 +231,8 @@ export default function PlaygroundPage() {
             name="Jayla R."
             title="9th Grade Student · Ozark High School"
             imageUrl="/sara.jpeg"
-            backgroundColor="color-bg-top"
-            fontColor="color-dark"
+            backgroundColor="bg-top"
+            fontColor="dark"
           >
             It&apos;s like having a tutor that remembers every word I&apos;ve ever gotten wrong. I went from a C to an A in English this semester.
           </TestimonialCard>
@@ -245,7 +245,7 @@ export default function PlaygroundPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1200px]">
           <FeatureCheckCard
             icon={<Bot size={24} className="text-(--color-primary-cyan)" />}
-            iconBackgroundColor="color-mix(in srgb, var(--color-primary-cyan) 12%, transparent)"
+            iconBackgroundColor="primary"
             title="AI-Generated Words by Topic"
             checkItems={[
               "Any subject or theme",
@@ -259,7 +259,7 @@ export default function PlaygroundPage() {
 
           <FeatureCheckCard
             icon={<GraduationCap size={24} className="text-accent-indigo" />}
-            iconBackgroundColor="color-mix(in srgb, var(--color-accent-indigo) 15%, transparent)"
+            iconBackgroundColor="indigo"
             title="Recommended Words by Grade Level"
             checkItems={[
               "K–12 grade bands supported",
@@ -267,14 +267,14 @@ export default function PlaygroundPage() {
               "Pre-loaded definitions & example sentences",
               "Instantly ready for student practice",
             ]}
-            checkboxColor="color-accent-indigo"
+            checkboxColor="indigo"
           >
             Instantly generate a vocabulary list aligned to your students&apos; grade, curated from academic standards and leveled reading lists.
           </FeatureCheckCard>
 
           <FeatureCheckCard
             icon={<FileText size={24} className="text-white" />}
-            iconBackgroundColor="color-mix(in srgb, var(--color-white) 12%, transparent)"
+            iconBackgroundColor="white"
             title="Words from URLs or PDF Uploads"
             checkItems={[
               "Paste any HTML link or article URL",
@@ -282,9 +282,9 @@ export default function PlaygroundPage() {
               "AI picks the most useful words",
               "Filtered to match your grade level",
             ]}
-            backgroundColor="color-dark"
-            fontColor="color-white"
-            checkboxColor="color-secondary-lime"
+            backgroundColor="dark"
+            fontColor="white"
+            checkboxColor="secondary"
           >
             Upload a PDF or paste a webpage link and BrainGenius extracts the most valuable vocabulary for your students automatically.
           </FeatureCheckCard>

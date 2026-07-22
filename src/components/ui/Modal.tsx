@@ -35,7 +35,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       >
         <div className="mb-4 flex items-center justify-between">
           {title && (
-            <h2 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-(--color-dark)">
+            <h2 className="font-display text-lg font-extrabold text-(--color-dark)">
               {title}
             </h2>
           )}

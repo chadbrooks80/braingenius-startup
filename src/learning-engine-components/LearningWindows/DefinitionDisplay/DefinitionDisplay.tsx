@@ -35,32 +35,22 @@ export function DefinitionDisplay({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
-        <p
-          className="text-[10px] font-bold uppercase tracking-widest mb-4"
-          style={{ color: "var(--cyan-ink)" }}
-        >
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-4 text-cyan-ink">
           {eyebrow}
         </p>
 
         {/* Word + speaker */}
         <div className="flex items-center gap-3 mb-6">
-          <span
-            className="font-display text-5xl font-extrabold"
-            style={{ color: "var(--navy)" }}
-          >
+          <span className="font-display text-5xl font-extrabold text-navy">
             {title}
           </span>
           <button
             type="button"
             onClick={() => onAction("speak", { text: replayText, tts })}
-            className="ml-auto cursor-pointer transition-colors hover:opacity-80"
-            style={{ color: "var(--cyan)" }}
+            className="ml-auto cursor-pointer transition-colors hover:opacity-80 text-cyan"
             aria-label={replayLabel}
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
@@ -71,44 +61,25 @@ export function DefinitionDisplay({
         </div>
 
         {/* Definition */}
-        <div
-          className="rounded-2xl px-5 py-4 mb-4"
-          style={{
-            background: "var(--tint-cyan)",
-            border: "1px solid var(--border-cyan)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-            style={{ color: "var(--cyan-ink)" }}
-          >
+        <div className="rounded-2xl px-5 py-4 mb-4 border bg-cyan/13 border-cyan/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-cyan-ink">
             {primaryLabel}
           </p>
-          <p className="font-medium leading-relaxed" style={{ color: "var(--ink)" }}>
+          <p className="font-medium leading-relaxed text-ink">
             {primaryText}
           </p>
         </div>
 
         {/* Example sentences */}
-        <div
-          className="rounded-2xl px-5 py-4 mb-8"
-          style={{
-            background: "var(--tint-lime)",
-            border: "1px solid var(--border-lime)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest mb-3"
-            style={{ color: "var(--lime-strong)" }}
-          >
+        <div className="rounded-2xl px-5 py-4 mb-8 border bg-lime/13 border-lime/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-lime-strong">
             {secondaryLabel}
           </p>
           <div className="space-y-2.5">
             {visibleItems.map((item, index) => (
               <p
                 key={index}
-                className="italic leading-relaxed text-sm"
-                style={{ color: "var(--muted)" }}
+                className="italic leading-relaxed text-sm text-muted"
               >
                 {item}
               </p>

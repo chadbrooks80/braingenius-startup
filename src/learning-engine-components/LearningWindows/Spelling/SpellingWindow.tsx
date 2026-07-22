@@ -106,35 +106,22 @@ function SpellingAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center justify-between mb-4">
           <span
-            className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-            style={{
-              background:
-                badgeTone === "secondary"
-                  ? "var(--tint-purple)"
-                  : "var(--tint-cyan)",
-              border: badgeTone === "secondary"
-                ? "1px solid var(--border-purple)"
-                : "1px solid var(--border-cyan)",
-              color:
-                badgeTone === "secondary"
-                  ? "var(--purple)"
-                  : "var(--cyan-ink)",
-            }}
+            className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
+              badgeTone === "secondary"
+                ? "bg-purple/13 border-purple/34 text-purple"
+                : "bg-cyan/13 border-cyan/34 text-cyan-ink"
+            }`}
           >
             {badgeLabel}
           </span>
           <button
             type="button"
-            className="cursor-pointer"
-            style={{ color: "var(--cyan)" }}
+            className="cursor-pointer text-cyan"
             aria-label={replayLabel}
             onClick={() => onAction("speak", speech)}
           >
@@ -142,20 +129,11 @@ function SpellingAttempt({
           </button>
         </div>
 
-        <div
-          className="rounded-2xl px-5 py-4 mb-5"
-          style={{
-            background: "var(--tint-cyan)",
-            border: "1px solid var(--border-cyan)",
-          }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
-            style={{ color: "var(--cyan-ink)" }}
-          >
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-cyan/13 border-cyan/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-cyan-ink">
             {promptLabel}
           </p>
-          <p className="font-medium leading-relaxed" style={{ color: "var(--ink)" }}>
+          <p className="font-medium leading-relaxed text-ink">
             {promptText}
           </p>
         </div>
@@ -163,8 +141,7 @@ function SpellingAttempt({
         <form onSubmit={submitSpelling}>
           <label
             htmlFor={`spelling-${attemptId}`}
-            className="block text-sm font-bold mb-2"
-            style={{ color: "var(--navy)" }}
+            className="block text-sm font-bold mb-2 text-navy"
           >
             {inputLabel}
           </label>
@@ -177,21 +154,12 @@ function SpellingAttempt({
               autoComplete="off"
               spellCheck={false}
               onChange={(event) => setAnswer(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-70"
-              style={{
-                borderColor: "var(--border-neutral)",
-                background: "white",
-                color: "var(--ink)",
-              }}
+              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-70 border-border-neutral bg-white text-ink"
             />
             <button
               type="submit"
               disabled={locked}
-              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                background: "linear-gradient(135deg, var(--cyan), var(--sky))",
-                color: "var(--navy)",
-              }}
+              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-navy bg-linear-[135deg] from-cyan to-sky"
             >
               {submitLabel}
             </button>
@@ -199,20 +167,20 @@ function SpellingAttempt({
         </form>
 
         {validationMessage && (
-          <p className="mt-3 text-sm font-semibold" style={{ color: "var(--red-strong)" }}>
+          <p className="mt-3 text-sm font-semibold text-red-strong">
             {validationMessage}
           </p>
         )}
 
         {submissionState.status === "pending" && (
-          <p className="mt-4 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+          <p className="mt-4 text-sm font-semibold text-muted">
             {pendingMessage}
           </p>
         )}
 
         {submissionState.status === "error" && (
           <div className="mt-4 flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold" style={{ color: "var(--red-strong)" }}>
+            <p className="text-sm font-semibold text-red-strong">
               {errorMessage}
             </p>
             <Button label="Retry" variant="secondary" onClick={retrySubmission} />
@@ -223,17 +191,14 @@ function SpellingAttempt({
           <div className="mt-5 flex items-end justify-between gap-4">
             <div>
               <p
-                className="font-bold text-sm"
-                style={{
-                  color: feedback.correct
-                    ? "var(--lime-strong)"
-                    : "var(--red-strong)",
-                }}
+                className={`font-bold text-sm ${
+                  feedback.correct ? "text-lime-strong" : "text-red-strong"
+                }`}
               >
                 {feedback.correct ? correctMessage : incorrectMessage}
               </p>
               {!feedback.correct && (
-                <p className="mt-1 text-sm" style={{ color: "var(--ink)" }}>
+                <p className="mt-1 text-sm text-ink">
                   {correctionLabel}: <strong>{feedback.correctAnswer}</strong>
                 </p>
               )}

@@ -87,7 +87,7 @@ export default function TestimonialsSection() {
           ref={(el) => { revealRefs.current[0] = el; }}
           className="reveal-item mb-12"
         >
-          <Eyebrow bgColor="--color-accent-indigo" textColor="--color-accent-indigo">
+          <Eyebrow bgColor="indigo" textColor="indigo">
             <Heart className="w-3.5 h-3.5" />
             Testimonials
           </Eyebrow>

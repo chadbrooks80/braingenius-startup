@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
@@ -385,37 +384,25 @@ export function WordSearchWindowView({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-2xl rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{
-          background: "var(--surface-strong)",
-          backdropFilter: "blur(12px)",
-        }}
+        className="w-full max-w-2xl rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
+        style={{ backdropFilter: "blur(12px)" }}
       >
-        <h2
-          className="font-display text-3xl font-extrabold mb-1"
-          style={{ color: "var(--navy)" }}
-        >
+        <h2 className="font-display text-3xl font-extrabold mb-1 text-navy">
           {title}
         </h2>
-        <p className="text-sm font-medium mb-5" style={{ color: "var(--muted)" }}>
+        <p className="text-sm font-medium mb-5 text-muted">
           {instructions}
         </p>
 
         {loadStatus === "loading" && (
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--muted)" }}
-          >
+          <p className="text-sm font-semibold text-muted">
             {LOADING_MESSAGE}
           </p>
         )}
 
         {loadStatus === "error" && (
           <div className="flex items-center justify-between gap-4" role="alert">
-            <p
-              className="text-sm font-semibold"
-              style={{ color: "var(--red-strong)" }}
-            >
+            <p className="text-sm font-semibold text-red-strong">
               {ERROR_MESSAGE}
             </p>
             <Button label="Retry" variant="secondary" onClick={onRetry} />
@@ -426,11 +413,7 @@ export function WordSearchWindowView({
           <>
             <div
               ref={scrollAreaRef}
-              className="overflow-auto max-h-[60vh] rounded-2xl p-3"
-              style={{
-                background: "var(--tint-cyan)",
-                border: "1px solid var(--border-cyan)",
-              }}
+              className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-cyan/13 border-cyan/34"
             >
               <div
                 className="relative w-fit mx-auto select-none"
@@ -466,8 +449,7 @@ export function WordSearchWindowView({
                             tabIndex={isCursor ? 0 : -1}
                             aria-selected={isSelected}
                             aria-label={`Row ${row + 1}, column ${col + 1}, letter ${letter}${isFound ? ", found word" : ""}`}
-                            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border text-sm font-bold uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--cyan-ink)] motion-safe:transition-colors sm:h-10 sm:w-10 sm:text-base"
-                            style={getCellStyle(isSelected, isFound)}
+                            className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border text-sm font-bold uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-ink motion-safe:transition-colors sm:h-10 sm:w-10 sm:text-base ${getCellClass(isSelected, isFound)}`}
                           >
                             {letter}
                           </button>
@@ -487,11 +469,11 @@ export function WordSearchWindowView({
                     <SelectionLine
                       key={found.word}
                       cells={found.cells}
-                      stroke="var(--lime)"
+                      strokeClassName="stroke-lime"
                     />
                   ))}
                   {selectedCells.length > 1 && (
-                    <SelectionLine cells={selectedCells} stroke="var(--cyan)" />
+                    <SelectionLine cells={selectedCells} strokeClassName="stroke-cyan" />
                   )}
                 </svg>
               </div>
@@ -500,17 +482,11 @@ export function WordSearchWindowView({
             <div className="mt-4 flex items-center justify-between gap-4">
               <p
                 aria-live="polite"
-                className="text-sm font-semibold"
-                style={{
-                  color: complete ? "var(--lime-strong)" : "var(--muted)",
-                }}
+                className={`text-sm font-semibold ${complete ? "text-lime-strong" : "text-muted"}`}
               >
                 {getStatusMessage(interaction, words)}
               </p>
-              <p
-                className="shrink-0 text-[10px] font-bold uppercase tracking-widest"
-                style={{ color: "var(--cyan-ink)" }}
-              >
+              <p className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-cyan-ink">
                 {foundWordSet.size} of {words.length} found
               </p>
             </div>
@@ -522,20 +498,11 @@ export function WordSearchWindowView({
                 return (
                   <li key={normalized}>
                     <span
-                      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold ${isFound ? "line-through" : ""}`}
-                      style={
+                      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold ${
                         isFound
-                          ? {
-                              background: "var(--tint-lime)",
-                              borderColor: "var(--border-lime)",
-                              color: "var(--lime-ink)",
-                            }
-                          : {
-                              background: "white",
-                              borderColor: "var(--border-neutral)",
-                              color: "var(--ink)",
-                            }
-                      }
+                          ? "line-through bg-lime/13 border-lime/34 text-lime-ink"
+                          : "bg-white border-border-neutral text-ink"
+                      }`}
                     >
                       {display}
                       {isFound && <span className="sr-only"> (found)</span>}
@@ -562,21 +529,21 @@ export function WordSearchWindowView({
 
 function SelectionLine({
   cells,
-  stroke,
+  strokeClassName,
 }: {
   cells: WordSearchCell[];
-  stroke: string;
+  strokeClassName: string;
 }) {
   const first = cells[0];
   const last = cells[cells.length - 1];
 
   return (
     <line
+      className={strokeClassName}
       x1={first.col + 0.5}
       y1={first.row + 0.5}
       x2={last.col + 0.5}
       y2={last.row + 0.5}
-      stroke={stroke}
       strokeOpacity={0.4}
       strokeWidth={0.72}
       strokeLinecap="round"
@@ -584,28 +551,16 @@ function SelectionLine({
   );
 }
 
-function getCellStyle(isSelected: boolean, isFound: boolean): CSSProperties {
+function getCellClass(isSelected: boolean, isFound: boolean): string {
   if (isSelected) {
-    return {
-      background: "var(--tint-cyan-strong)",
-      borderColor: "var(--border-cyan)",
-      color: "var(--cyan-ink)",
-    };
+    return "bg-cyan/20 border-cyan/34 text-cyan-ink";
   }
 
   if (isFound) {
-    return {
-      background: "var(--tint-lime-strong)",
-      borderColor: "var(--border-lime)",
-      color: "var(--lime-ink)",
-    };
+    return "bg-lime/20 border-lime/34 text-lime-ink";
   }
 
-  return {
-    background: "white",
-    borderColor: "var(--border-neutral-faded)",
-    color: "var(--ink)",
-  };
+  return "bg-white border-border-neutral-faded text-ink";
 }
 
 function getStatusMessage(

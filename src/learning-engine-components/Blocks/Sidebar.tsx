@@ -6,31 +6,31 @@ export function Sidebar() {
       <div className="px-5 pt-4 pb-3 border-b border-hairline">
         <div className="flex items-center gap-1.5 mb-2">
           <span className="text-xs">{TIMER_EMOJI}</span>
-          <p className="font-[family-name:var(--font-display)] text-sm font-extrabold text-navy tracking-tight flex-1">
+          <p className="font-display text-sm font-extrabold text-navy tracking-tight flex-1">
             Today&apos;s Practice
           </p>
         </div>
 
         <div className="h-1.5 rounded-full mb-3 overflow-hidden bg-track">
-          <div className="h-full w-1/3 rounded-full bg-[linear-gradient(90deg,var(--lime),var(--cyan))]" />
+          <div className="h-full w-1/3 rounded-full bg-linear-to-r from-lime to-cyan" />
         </div>
 
         <div className="space-y-1">
           <div className="flex justify-between items-center">
             <span className="text-[11px] text-muted font-medium">Remaining today</span>
-            <span className="font-[family-name:var(--font-display)] text-sm font-extrabold text-navy">
+            <span className="font-display text-sm font-extrabold text-navy">
               30:00
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-[11px] text-muted font-medium">Studied today</span>
-            <span className="font-[family-name:var(--font-display)] text-sm font-extrabold text-navy">
+            <span className="font-display text-sm font-extrabold text-navy">
               00:00
             </span>
           </div>
           <div className="flex justify-between items-center pt-1 border-t border-hairline">
             <span className="text-[11px] text-muted font-medium">Days completed</span>
-            <span className="font-[family-name:var(--font-display)] text-sm font-extrabold text-cyan-ink">
+            <span className="font-display text-sm font-extrabold text-cyan-ink">
               0
             </span>
           </div>
@@ -38,7 +38,7 @@ export function Sidebar() {
       </div>
 
       <div className="px-5 pt-5 pb-3 border-b border-hairline">
-        <p className="font-[family-name:var(--font-display)] text-sm font-extrabold text-navy tracking-tight">
+        <p className="font-display text-sm font-extrabold text-navy tracking-tight">
           My Words
         </p>
       </div>
@@ -46,7 +46,7 @@ export function Sidebar() {
       <div className="mb-1">
         <div className="flex items-center gap-1.5 px-5 py-2.5 border-b border-hairline">
           <span className="text-xs">{BOOK_EMOJI}</span>
-          <span className="font-[family-name:var(--font-display)] text-xs font-extrabold tracking-tight flex-1 text-navy">
+          <span className="font-display text-xs font-extrabold tracking-tight flex-1 text-navy">
             Word List
           </span>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-hairline text-navy">
@@ -59,7 +59,7 @@ export function Sidebar() {
       <div className="mb-1">
         <div className="flex items-center gap-1.5 px-5 py-2.5 border-b border-hairline">
           <span className="text-xs">{PENCIL_EMOJI}</span>
-          <span className="font-[family-name:var(--font-display)] text-xs font-extrabold tracking-tight flex-1 text-lime-strong">
+          <span className="font-display text-xs font-extrabold tracking-tight flex-1 text-lime-strong">
             Spelling
           </span>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-tint-lime-strong text-lime-strong">
@@ -72,7 +72,7 @@ export function Sidebar() {
       <div className="mb-1">
         <div className="flex items-center gap-1.5 px-5 py-2.5 border-b border-hairline">
           <span className="text-xs">{TROPHY_EMOJI}</span>
-          <span className="font-[family-name:var(--font-display)] text-xs font-extrabold tracking-tight flex-1 text-cyan-ink">
+          <span className="font-display text-xs font-extrabold tracking-tight flex-1 text-cyan-ink">
             Mastered
           </span>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-tint-cyan text-cyan-ink">

@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
         <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
           <div className="text-center">
-            <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+            <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
               Forgot your password?
             </h1>
             <p className="mt-2 text-sm text-(--color-text-muted)">

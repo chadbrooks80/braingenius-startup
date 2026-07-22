@@ -201,7 +201,7 @@ export default function SignUpPage() {
           {phase === "form" && (
             <>
               <div className="text-center">
-                <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+                <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
                   Create your account
                 </h1>
                 <p className="mt-2 text-sm text-(--color-text-muted)">
@@ -292,7 +292,7 @@ export default function SignUpPage() {
           {phase === "verify" && (
             <>
               <div className="text-center">
-                <h1 className="font-[family-name:var(--font-display)] text-2xl font-extrabold text-(--color-dark)">
+                <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
                   Verify your email
                 </h1>
                 <p className="mt-2 text-sm text-(--color-text-muted)">

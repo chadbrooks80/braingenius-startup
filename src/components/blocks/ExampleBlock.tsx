@@ -1,20 +1,17 @@
 import { ReactNode } from "react";
+import { getColorClass, type ColorToken } from "@/lib/theme-colors";
 
 interface ExampleBlockProps {
   label: string;
   status?: string;
-  statusColor?: string;
+  statusColor?: ColorToken;
   children: ReactNode;
-}
-
-interface BadgeStyle extends React.CSSProperties {
-  "--badge-bg": string;
 }
 
 export default function ExampleBlock({
   label,
   status,
-  statusColor = "--color-secondary-lime",
+  statusColor = "secondary",
   children,
 }: ExampleBlockProps) {
   return (
@@ -28,8 +25,7 @@ export default function ExampleBlock({
 
         {status && (
           <span
-            style={{ "--badge-bg": `var(${statusColor})` } as BadgeStyle}
-            className="bg-(--badge-bg) text-(--color-dark) text-(--font-size-badge) font-extrabold tracking-(--tracking-badge) uppercase px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)"
+            className={`${getColorClass(statusColor, "bg")} text-(--color-dark) text-(--font-size-badge) font-extrabold tracking-(--tracking-badge) uppercase px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)`}
           >
             {status}
           </span>

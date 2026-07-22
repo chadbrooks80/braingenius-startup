@@ -26,18 +26,14 @@ export default function CTASection() {
     <section className="px-(--spacing-container) mb-20">
       <div
         ref={revealRef}
-        className="reveal-item max-w-(--max-width-container) mx-auto rounded-[2rem] text-center px-12 py-16 relative overflow-hidden shadow-(--shadow-2xl)"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--color-dark) 0%, var(--color-navy-medium) 100%)",
-        }}
+        className="reveal-item max-w-(--max-width-container) mx-auto rounded-[2rem] text-center px-12 py-16 relative overflow-hidden shadow-(--shadow-2xl) bg-linear-[135deg] from-dark to-navy-medium"
       >
         {/* cyan glow top-right */}
         <div
           className="absolute top-[-6rem] right-[-6rem] w-80 h-80 rounded-full pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle, var(--color-cta-glow-cyan), transparent 70%)",
+              "radial-gradient(circle, color-mix(in srgb, var(--color-primary-cyan) calc(var(--alpha-soft) * 100%), transparent), transparent 70%)",
           }}
         />
         {/* lime glow bottom-left */}
@@ -45,7 +41,7 @@ export default function CTASection() {
           className="absolute bottom-[-5rem] left-[-4rem] w-64 h-64 rounded-full pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle, var(--color-cta-glow-lime), transparent 70%)",
+              "radial-gradient(circle, color-mix(in srgb, var(--color-secondary-lime) calc(var(--alpha-subtle) * 100%), transparent), transparent 70%)",
           }}
         />
 

@@ -12,16 +12,12 @@ export function LessonCompleteWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 shadow-[0_16px_56px_var(--shadow-card)]"
-        style={{ background: "var(--surface-strong)" }}
+        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px_var(--color-navy)] shadow-navy/13"
       >
-        <h1
-          className="font-display text-4xl font-extrabold mb-3"
-          style={{ color: "var(--navy)" }}
-        >
+        <h1 className="font-display text-4xl font-extrabold mb-3 text-navy">
           {title}
         </h1>
-        <p className="mb-6 leading-relaxed" style={{ color: "var(--muted)" }}>
+        <p className="mb-6 leading-relaxed text-muted">
           {message}
         </p>
         <dl className="grid grid-cols-3 gap-3">
@@ -42,17 +38,11 @@ function Stat({
   value: string | number;
 }) {
   return (
-    <div
-      className="rounded-2xl px-3 py-4 text-center"
-      style={{
-        background: "var(--tint-cyan)",
-        border: "1px solid var(--border-cyan)",
-      }}
-    >
-      <dt className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
+    <div className="rounded-2xl px-3 py-4 text-center border bg-cyan/13 border-cyan/34">
+      <dt className="text-xs font-semibold text-muted">
         {label}
       </dt>
-      <dd className="mt-1 text-2xl font-extrabold" style={{ color: "var(--navy)" }}>
+      <dd className="mt-1 text-2xl font-extrabold text-navy">
         {value}
       </dd>
     </div>
