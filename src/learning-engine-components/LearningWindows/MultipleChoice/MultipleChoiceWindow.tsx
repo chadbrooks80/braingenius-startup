@@ -105,7 +105,7 @@ function MultipleChoiceAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
         {/* Badge */}
@@ -113,8 +113,8 @@ function MultipleChoiceAttempt({
           <span
             className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
               badgeTone === "secondary"
-                ? "bg-purple/13 border-purple/34 text-purple"
-                : "bg-cyan/13 border-cyan/34 text-cyan-ink"
+                ? "bg-feature/13 border-feature/34 text-feature"
+                : "bg-primary/13 border-primary/34 text-primary-strong"
             }`}
           >
             {badgeLabel}
@@ -122,18 +122,18 @@ function MultipleChoiceAttempt({
         </div>
 
         {/* Word box */}
-        <div className="rounded-2xl px-5 py-4 mb-5 border bg-cyan/13 border-cyan/34">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-cyan-ink">
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/13 border-primary/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-primary-strong">
             {prompt}
           </p>
           <div className="flex items-center gap-3">
-            <span className="font-display text-4xl font-extrabold text-navy">
+            <span className="font-display text-4xl font-extrabold text-heading">
               {question}
             </span>
             {actions.hearPronunciation !== null && (
               <button
                 type="button"
-                className="ml-auto cursor-pointer text-cyan"
+                className="ml-auto cursor-pointer text-primary"
                 aria-label={replayLabel}
                 onClick={actions.hearPronunciation}
               >
@@ -173,7 +173,7 @@ function MultipleChoiceAttempt({
 
         {submissionState.status === "error" && (
           <div className="mt-4 flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold text-red-strong">
+            <p className="text-sm font-semibold text-danger">
               We couldn&apos;t submit your answer. Please try again.
             </p>
             <Button
@@ -189,7 +189,7 @@ function MultipleChoiceAttempt({
           <div className="mt-5 flex items-center justify-between">
             <span
               className={`font-bold text-sm ${
-                isSelectedAnswerCorrect ? "text-lime-strong" : "text-red-strong"
+                isSelectedAnswerCorrect ? "text-secondary-strong" : "text-danger"
               }`}
             >
               {isSelectedAnswerCorrect ? correctMessage : incorrectMessage}
@@ -226,12 +226,12 @@ function ChoiceRow({
   onClick,
 }: ChoiceRowProps) {
   const choiceClass = !answered
-    ? "bg-white border-border-neutral text-ink"
+    ? "bg-surface border-heading/13 text-text"
     : isCorrect
-      ? "bg-lime/13 border-lime text-lime-ink"
+      ? "bg-secondary/13 border-secondary text-secondary-strong"
       : isSelected
-        ? "bg-red/13 border-red text-red-ink"
-        : "bg-tint-neutral-faded border-border-neutral-faded text-muted-light";
+        ? "bg-danger/13 border-danger text-heading"
+        : "bg-surface/48 border-heading/7 text-muted";
 
   return (
     <button

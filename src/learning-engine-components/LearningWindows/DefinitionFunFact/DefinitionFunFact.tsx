@@ -21,24 +21,24 @@ export function DefinitionFunFact({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-lime-strong">
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-secondary-strong">
           {eyebrow}
         </p>
 
         <div className="flex items-center gap-3 mb-6">
-          <span className="font-display text-3xl font-extrabold text-navy">
+          <span className="font-display text-3xl font-extrabold text-heading">
             {title}
           </span>
         </div>
 
-        <div className="rounded-2xl px-6 py-6 mb-8 border border-lime/34 bg-linear-135/srgb from-lime/13 to-cyan/13">
-          <p className="text-sm font-bold mb-3 text-lime-strong">
+        <div className="rounded-2xl px-6 py-6 mb-8 border border-secondary/34 bg-linear-135/srgb from-secondary/13 to-primary/13">
+          <p className="text-sm font-bold mb-3 text-secondary-strong">
             {introLabel}
           </p>
-          <p className="leading-relaxed font-medium text-ink">
+          <p className="leading-relaxed font-medium text-text">
             {body}
           </p>
         </div>

@@ -33,20 +33,20 @@ export function AnswerRecapWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
-        <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-cyan-ink">
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-primary-strong">
           {label}
         </p>
 
         <div className="flex items-center gap-3 mb-5">
-          <h2 className="font-display text-4xl font-extrabold text-navy">
+          <h2 className="font-display text-4xl font-extrabold text-heading">
             {title}
           </h2>
           <button
             type="button"
-            className="ml-auto cursor-pointer text-cyan"
+            className="ml-auto cursor-pointer text-primary"
             aria-label={replayLabel}
             onClick={() => onAction("speak", { text: speechText, tts })}
           >
@@ -57,8 +57,8 @@ export function AnswerRecapWindow({
           </button>
         </div>
 
-        <div className="rounded-2xl px-5 py-4 mb-4 border bg-cyan/13 border-cyan/34">
-          <p className="font-medium leading-relaxed text-ink">
+        <div className="rounded-2xl px-5 py-4 mb-4 border bg-primary/13 border-primary/34">
+          <p className="font-medium leading-relaxed text-text">
             {primaryText}
           </p>
         </div>

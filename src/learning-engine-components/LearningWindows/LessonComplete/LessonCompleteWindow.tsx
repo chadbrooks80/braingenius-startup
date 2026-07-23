@@ -12,9 +12,9 @@ export function LessonCompleteWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
       >
-        <h1 className="font-display text-4xl font-extrabold mb-3 text-navy">
+        <h1 className="font-display text-4xl font-extrabold mb-3 text-heading">
           {title}
         </h1>
         <p className="mb-6 leading-relaxed text-muted">
@@ -38,11 +38,11 @@ function Stat({
   value: string | number;
 }) {
   return (
-    <div className="rounded-2xl px-3 py-4 text-center border bg-cyan/13 border-cyan/34">
+    <div className="rounded-2xl px-3 py-4 text-center border bg-primary/13 border-primary/34">
       <dt className="text-xs font-semibold text-muted">
         {label}
       </dt>
-      <dd className="mt-1 text-2xl font-extrabold text-navy">
+      <dd className="mt-1 text-2xl font-extrabold text-heading">
         {value}
       </dd>
     </div>

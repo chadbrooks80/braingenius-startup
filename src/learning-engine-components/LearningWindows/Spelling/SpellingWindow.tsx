@@ -106,22 +106,22 @@ function SpellingAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-white/70 bg-white/85 shadow-[0_16px_56px] shadow-navy/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center justify-between mb-4">
           <span
             className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
               badgeTone === "secondary"
-                ? "bg-purple/13 border-purple/34 text-purple"
-                : "bg-cyan/13 border-cyan/34 text-cyan-ink"
+                ? "bg-feature/13 border-feature/34 text-feature"
+                : "bg-primary/13 border-primary/34 text-primary-strong"
             }`}
           >
             {badgeLabel}
           </span>
           <button
             type="button"
-            className="cursor-pointer text-cyan"
+            className="cursor-pointer text-primary"
             aria-label={replayLabel}
             onClick={() => onAction("speak", speech)}
           >
@@ -129,11 +129,11 @@ function SpellingAttempt({
           </button>
         </div>
 
-        <div className="rounded-2xl px-5 py-4 mb-5 border bg-cyan/13 border-cyan/34">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-cyan-ink">
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/13 border-primary/34">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-primary-strong">
             {promptLabel}
           </p>
-          <p className="font-medium leading-relaxed text-ink">
+          <p className="font-medium leading-relaxed text-text">
             {promptText}
           </p>
         </div>
@@ -141,7 +141,7 @@ function SpellingAttempt({
         <form onSubmit={submitSpelling}>
           <label
             htmlFor={`spelling-${attemptId}`}
-            className="block text-sm font-bold mb-2 text-navy"
+            className="block text-sm font-bold mb-2 text-heading"
           >
             {inputLabel}
           </label>
@@ -154,12 +154,12 @@ function SpellingAttempt({
               autoComplete="off"
               spellCheck={false}
               onChange={(event) => setAnswer(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-70 border-border-neutral bg-white text-ink"
+              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-74 border-heading/13 bg-surface text-text"
             />
             <button
               type="submit"
               disabled={locked}
-              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-navy bg-linear-[135deg] from-cyan to-sky"
+              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-48 text-heading bg-linear-[135deg] from-primary to-primary"
             >
               {submitLabel}
             </button>
@@ -167,7 +167,7 @@ function SpellingAttempt({
         </form>
 
         {validationMessage && (
-          <p className="mt-3 text-sm font-semibold text-red-strong">
+          <p className="mt-3 text-sm font-semibold text-danger">
             {validationMessage}
           </p>
         )}
@@ -180,7 +180,7 @@ function SpellingAttempt({
 
         {submissionState.status === "error" && (
           <div className="mt-4 flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold text-red-strong">
+            <p className="text-sm font-semibold text-danger">
               {errorMessage}
             </p>
             <Button label="Retry" variant="secondary" onClick={retrySubmission} />
@@ -192,13 +192,13 @@ function SpellingAttempt({
             <div>
               <p
                 className={`font-bold text-sm ${
-                  feedback.correct ? "text-lime-strong" : "text-red-strong"
+                  feedback.correct ? "text-secondary-strong" : "text-danger"
                 }`}
               >
                 {feedback.correct ? correctMessage : incorrectMessage}
               </p>
               {!feedback.correct && (
-                <p className="mt-1 text-sm text-ink">
+                <p className="mt-1 text-sm text-text">
                   {correctionLabel}: <strong>{feedback.correctAnswer}</strong>
                 </p>
               )}
