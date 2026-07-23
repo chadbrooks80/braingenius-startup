@@ -121,7 +121,7 @@ function SpellingAttempt({
           </span>
           <button
             type="button"
-            className="cursor-pointer text-primary"
+            className="cursor-pointer text-link"
             aria-label={replayLabel}
             onClick={() => onAction("speak", speech)}
           >
@@ -154,7 +154,7 @@ function SpellingAttempt({
               autoComplete="off"
               spellCheck={false}
               onChange={(event) => setAnswer(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-(--alpha-surface) border-heading/(--alpha-subtle) bg-surface text-text"
+              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-(--alpha-surface) border-heading/(--alpha-subtle) bg-surface text-text transition-colors focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)"
             />
             <button
               type="submit"

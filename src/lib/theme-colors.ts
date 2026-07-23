@@ -55,11 +55,14 @@ export const COLOR_CLASS_MAP = {
     success: "text-success",
     text: "text-text",
   },
-  /* Secondary text at --alpha-surface-soft (48%) (e.g. TestimonialCard role line) */
+  /* Secondary text (e.g. TestimonialCard role line). "surface" stays translucent
+     white for use on dark cards, where it remains readable; "text" and "heading"
+     use the full-opacity muted color since their faded form falls below the
+     4.5:1 contrast minimum on light surfaces. */
   textMuted: {
     surface: "text-surface/(--alpha-surface-soft)",
-    heading: "text-heading/(--alpha-surface-soft)",
-    text: "text-text/(--alpha-surface-soft)",
+    heading: "text-muted",
+    text: "text-muted",
   },
   /* Tinted icon backgrounds at --alpha-subtle (13%) */
   iconBg: {

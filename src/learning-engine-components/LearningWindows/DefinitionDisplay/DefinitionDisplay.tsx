@@ -50,7 +50,7 @@ export function DefinitionDisplay({
           <button
             type="button"
             onClick={() => onAction("speak", { text: replayText, tts })}
-            className="ml-auto cursor-pointer transition-colors hover:opacity-(--alpha-surface-strong) text-primary"
+            className="ml-auto cursor-pointer transition-colors hover:opacity-(--alpha-surface-strong) text-link"
             aria-label={replayLabel}
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">

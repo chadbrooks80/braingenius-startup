@@ -65,8 +65,8 @@ export default function HowItWorksSection() {
               {PROGRESS_BARS.map(({ label, value, barClassName, delay }) => (
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-(--font-size-label) text-surface/(--alpha-surface-soft)">{label}</span>
-                    <span className="text-(--font-size-label) font-semibold text-surface/(--alpha-surface)">{value}%</span>
+                    <span className="text-label text-surface/(--alpha-surface-soft)">{label}</span>
+                    <span className="text-label font-semibold text-surface/(--alpha-surface)">{value}%</span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden bg-surface/(--alpha-hairline)">
                     <div
@@ -84,7 +84,7 @@ export default function HowItWorksSection() {
                   <div className={`font-display text-2xl font-black ${textClassName}`}>
                     {value}
                   </div>
-                  <div className="text-(--font-size-label) text-muted mt-0.5">{label}</div>
+                  <div className="text-label text-surface/(--alpha-surface-soft) mt-0.5">{label}</div>
                 </div>
               ))}
             </div>

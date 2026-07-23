@@ -25,7 +25,7 @@ export default function Hero() {
         <div className="lg:col-start-2 lg:row-start-1 lg:row-span-4 animate-[bob_6s_ease-in-out_infinite]">
           <ExampleBlock label="Adaptive Session" status="Live">
             <div className="rounded-(--radius-2xl) p-5 mb-4 bg-gradient-to-br from-primary via-primary to-feature text-heading">
-              <p className="text-(--font-size-badge) font-bold uppercase tracking-(--tracking-badge) text-heading/(--alpha-surface-soft) mb-1">
+              <p className="text-badge font-bold uppercase tracking-(--tracking-badge) text-heading/(--alpha-surface-soft) mb-1">
                 What does this word mean?
               </p>
               <p className="font-display text-[2rem] font-black">Tenacious</p>
@@ -58,14 +58,14 @@ export default function Hero() {
                 <Flame className="w-4 h-4 text-energy" />
                 7-day streak
               </span>
-              <span className="bg-secondary/(--alpha-subtle) text-secondary text-(--font-size-badge) font-bold px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)">
+              <span className="bg-secondary/(--alpha-subtle) text-secondary text-badge font-bold px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)">
                 +15 XP earned
               </span>
             </div>
           </ExampleBlock>
         </div>
 
-        <p className="text-[1.1rem] leading-[1.75] text-muted max-w-[38rem] lg:col-start-1 lg:row-start-3">
+        <p className="text-[1.1rem] leading-[1.75] text-text max-w-[38rem] lg:col-start-1 lg:row-start-3">
           BrainGenius.ai combines adaptive learning with spaced repetition so
           every session feels just right — never too easy, never overwhelming.
           Students stay in the zone and actually retain what they learn.
@@ -87,7 +87,7 @@ export default function Hero() {
             See How It Works
           </a>
 
-          <p className="w-full text-(--font-size-badge) text-muted flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+          <p className="w-full text-badge text-text flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
             <span className="inline-flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-primary" />
               No credit card required

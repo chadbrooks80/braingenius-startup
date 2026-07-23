@@ -133,7 +133,7 @@ function MultipleChoiceAttempt({
             {actions.hearPronunciation !== null && (
               <button
                 type="button"
-                className="ml-auto cursor-pointer text-primary"
+                className="ml-auto cursor-pointer text-link"
                 aria-label={replayLabel}
                 onClick={actions.hearPronunciation}
               >

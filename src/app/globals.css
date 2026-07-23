@@ -40,6 +40,18 @@
 }
 
 /* ========================================================================== */
+/* SEMANTIC COLOR ALIASES — assign existing theme colors to specific jobs     */
+/* (aliases only; the 15 base colors above remain the only literal colors)    */
+/* ========================================================================== */
+
+@theme inline {
+  --color-link: var(--color-primary-strong);
+  --color-success-text: var(--color-secondary-strong);
+  --color-focus: var(--color-primary-strong);
+  --color-on-dark: var(--color-surface);
+}
+
+/* ========================================================================== */
 /* FINAL THEME — SHARED OPACITY SCALE                                         */
 /* ========================================================================== */
 
@@ -112,8 +124,8 @@
   --font-sans: var(--font-sans-raw);
   --font-display: var(--font-display-raw);
 
-  --font-size-label: var(--font-size-label);
-  --font-size-badge: var(--font-size-badge);
+  --text-label: var(--font-size-label);
+  --text-badge: var(--font-size-badge);
   --tracking-label: var(--tracking-label);
   --tracking-badge: var(--tracking-badge);
 

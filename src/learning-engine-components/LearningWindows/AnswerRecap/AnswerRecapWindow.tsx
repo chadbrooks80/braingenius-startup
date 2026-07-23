@@ -46,7 +46,7 @@ export function AnswerRecapWindow({
           </h2>
           <button
             type="button"
-            className="ml-auto cursor-pointer text-primary"
+            className="ml-auto cursor-pointer text-link"
             aria-label={replayLabel}
             onClick={() => onAction("speak", { text: speechText, tts })}
           >

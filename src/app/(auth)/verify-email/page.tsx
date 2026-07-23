@@ -11,7 +11,7 @@ const codeSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function Spinner() {
   return (
@@ -165,7 +165,7 @@ function VerifyEmailContent() {
               type="button"
               onClick={handleResend}
               disabled={isResending}
-              className="font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+              className="font-semibold text-link disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
             >
               {isResending ? "Sending..." : "Resend code"}
             </button>

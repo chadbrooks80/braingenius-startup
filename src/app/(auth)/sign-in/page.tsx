@@ -36,7 +36,7 @@ function GoogleIcon() {
 }
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function SignInContent() {
   const router = useRouter();
@@ -163,7 +163,7 @@ function SignInContent() {
                 <label htmlFor="password" className="text-sm font-semibold text-text">
                   Password
                 </label>
-                <a href="/forgot-password" className="text-sm font-semibold text-primary">
+                <a href="/forgot-password" className="text-sm font-semibold text-link">
                   Forgot password?
                 </a>
               </div>

@@ -27,7 +27,7 @@ const createChildSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 type ChildSummary = { id: string; name: string; username: string };
 
@@ -274,7 +274,7 @@ function AddChildForm({
           <button
             type="button"
             onClick={handleAutoGenerate}
-            className="cursor-pointer text-xs font-semibold text-primary hover:underline"
+            className="cursor-pointer text-xs font-semibold text-link hover:underline"
           >
             Auto Generate
           </button>
@@ -295,7 +295,7 @@ function AddChildForm({
           <p className="text-xs text-muted">Checking availability...</p>
         )}
         {usernameStatus === "available" && (
-          <p className="text-xs font-medium text-success">Available</p>
+          <p className="text-xs font-medium text-success-text">Available</p>
         )}
         {usernameStatus === "taken" && (
           <div className="space-y-1.5">

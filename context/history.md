@@ -374,3 +374,11 @@
 - Updated `src/lib/theme-colors.ts` `COLOR_CLASS_MAP` (`textMuted`, `iconBg`, `border`, `tintBg`, `tintBorder` groups) to emit the `/(--alpha-*)` syntax instead of raw percentages
 - Converted every remaining caller across auth pages, onboarding steps, layout/header components, UI components (`Button`, `CheckBadge`, `Modal`), landing page blocks, and all Learning Engine components/windows/modules — 41 files total, no functional or visual change, opacity values are unchanged, only their source of truth is now centralized
 - This removes the last hardcoded opacity duplication left over from the Host/Learning Engine theme unification effort
+
+## 2026-07-23 22:40
+
+- Completed semantic contrast batch 4 on `feature/theme-semantic-contrast-batch-4`: added job-specific semantic color aliases (`--color-link`, `--color-success-text`, `--color-focus`, `--color-on-dark`) in `src/app/globals.css` under a new `@theme inline` block, mapped onto the existing 15 base theme colors, so call sites express intent (e.g. `text-link`, `focus:border-focus`) instead of reusing raw palette tokens
+- Fixed a WCAG contrast issue in `theme-colors.ts`'s `textMuted` map: `heading`/`text` variants now resolve to solid `text-muted` instead of a translucent `text-heading/(--alpha-surface-soft)` / `text-text/(--alpha-surface-soft)`, since the faded form fell below the 4.5:1 minimum on light surfaces; the `surface` variant (used on dark cards) is unchanged since translucent white stays readable there
+- Added visible focus-ring styling (`focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)`) alongside `focus:border-focus` across all auth pages (sign-in, sign-up, forgot-password, reset-password, verify-email)
+- Converted remaining `text-(--font-size-badge)`/`text-(--font-size-label)` arbitrary-value references to the new `text-badge`/`text-label` Tailwind utilities (enabled by renaming the `--font-size-*` theme keys to `--text-*` in `globals.css`) across `Hero`, `ExampleBlock`, `HowItWorksSection`, `ChildrenStep`, and the Learning Engine window components
+- Applied the corrected `textMuted`/`text-link`/`text-badge` tokens across onboarding steps (`ChildrenStep`, `ProfileStep`) and Learning Engine windows (`AnswerRecapWindow`, `DefinitionDisplay`, `MultipleChoiceWindow`, `SpellingWindow`)
