@@ -23,12 +23,12 @@ export function VocabularyStartupContent() {
   return (
     <div className="flex flex-col gap-4">
       {/* Eyebrow */}
-      <span className="text-xs font-bold tracking-widest uppercase text-lime-strong">
+      <span className="text-xs font-bold tracking-widest uppercase text-secondary-strong">
         {EYEBROW}
       </span>
 
       {/* Title */}
-      <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-navy">
+      <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-heading">
         {TITLE}
       </h1>
 
@@ -45,18 +45,18 @@ export function VocabularyStartupContent() {
       </div>
 
       {/* Path card */}
-      <div className="rounded-2xl px-4 py-3 border bg-lime/13 border-lime/34">
-        <p className="text-[10px] font-bold tracking-widest uppercase mb-2 text-lime-ink">
+      <div className="rounded-2xl px-4 py-3 border bg-secondary/13 border-secondary/34">
+        <p className="text-[10px] font-bold tracking-widest uppercase mb-2 text-secondary-strong">
           YOUR PATH TODAY
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           {PATH_STEPS.map((step, i) => (
             <div key={step} className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-white/85 text-navy border-lime/34">
+              <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-surface/85 text-heading border-secondary/34">
                 {step}
               </span>
               {i < PATH_STEPS.length - 1 && (
-                <span className="text-xs font-bold text-lime-strong">
+                <span className="text-xs font-bold text-secondary-strong">
                   →
                 </span>
               )}
@@ -70,9 +70,9 @@ export function VocabularyStartupContent() {
 
 function StatChip({ stat }: { stat: Stat }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-white/85 border-navy/7 shadow-[0_1px_3px] shadow-navy/7">
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-surface/85 border-heading/7 shadow-[0_1px_3px] shadow-heading/7">
       <span>{stat.icon}</span>
-      <span className="font-bold text-navy">
+      <span className="font-bold text-heading">
         {stat.value}
       </span>
       <span className="text-muted">{stat.label}</span>

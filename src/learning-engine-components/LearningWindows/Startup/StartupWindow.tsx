@@ -16,7 +16,7 @@ export function StartupWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-[980px] rounded-3xl overflow-hidden bg-white/85 shadow-[0_16px_56px] shadow-navy/13 border border-white/70 grid grid-cols-1 md:grid-cols-[1.22fr_310px]"
+        className="w-full max-w-[980px] rounded-3xl overflow-hidden bg-surface/85 shadow-[0_16px_56px] shadow-heading/13 border border-surface/74 grid grid-cols-1 md:grid-cols-[1.22fr_310px]"
         style={{ backdropFilter: "blur(12px)" }}
       >
         {/* Left side: ContentPanel + ActionPanel — order-last on mobile so visual sits above */}

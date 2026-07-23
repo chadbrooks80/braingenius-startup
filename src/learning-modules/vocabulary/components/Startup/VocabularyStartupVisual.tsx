@@ -20,12 +20,12 @@ const WORD_POSITIONS: WordPosition[] = [
 export function VocabularyStartupVisual() {
   return (
     <div
-      className="relative overflow-hidden h-full bg-linear-135/srgb from-cyan/13 to-lime/13"
+      className="relative overflow-hidden h-full bg-linear-135/srgb from-primary/13 to-secondary/13"
       style={{ minHeight: 280 }}
     >
       {/* Decorative circles */}
       <div
-        className="absolute rounded-full bg-cyan/20"
+        className="absolute rounded-full bg-primary/20"
         style={{
           width: 200,
           height: 200,
@@ -34,7 +34,7 @@ export function VocabularyStartupVisual() {
         }}
       />
       <div
-        className="absolute rounded-full bg-lime/20"
+        className="absolute rounded-full bg-secondary/20"
         style={{
           width: 140,
           height: 140,
@@ -46,7 +46,7 @@ export function VocabularyStartupVisual() {
       {/* Center book stage */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div
-          className="flex items-center justify-center rounded-3xl bg-white/85 shadow-[0_8px_32px] shadow-navy/13"
+          className="flex items-center justify-center rounded-3xl bg-surface/85 shadow-[0_8px_32px] shadow-heading/13"
           style={{
             width: 120,
             height: 120,
@@ -65,7 +65,7 @@ export function VocabularyStartupVisual() {
         return (
           <div
             key={word}
-            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-white/85 text-navy shadow-[0_2px_8px] shadow-navy/13"
+            className="absolute px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-surface/85 text-heading shadow-[0_2px_8px] shadow-heading/13"
             style={{
               ...position,
               backdropFilter: "blur(4px)",

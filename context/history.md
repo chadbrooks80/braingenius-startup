@@ -347,3 +347,9 @@
 - Since usage of the migration-only aliases reached zero, removed them entirely: deleted all alias entries (`cyan`, `lime`, `indigo`, `pink`, `amber`, `teal`, `teal-green`, `white`, `dark`, `bg-top`, `text-primary`) from `COLOR_TOKENS` and every `COLOR_CLASS_MAP` group in `src/lib/theme-colors.ts`
 - Removed the corresponding `TEMPORARY LEGACY — HOST COLOR NAMES` block and related `--color-*` passthroughs from `src/app/globals.css`, and updated the `body` background gradient to use `--color-background`/`--color-surface` directly instead of the deleted `--color-bg-top`/`--color-bg-bottom`
 - This closes out the Host/Learning Engine theme unification effort started in `feature/unify-global-theme` — all components now consume the single final 15-token theme with no legacy aliases remaining
+
+## 2026-07-23 09:02
+
+- Completed Learning Engine theme migration batch 1 on `feature/learning-theme-batch-1`: converted the first batch of Learning Engine components off legacy tokens/raw CSS vars onto the final `ColorToken` set — `Header`, `Sidebar`, `StartupWindow`, `UI/Button`, `VocabularyStartupContent`, `VocabularyStartupVisual`
+- Replaced legacy names (`navy`, `lime`, `cyan`, `white`, `hairline`, `muted-light`, `track`, `surface-strong`/`surface-soft`, `lime-ink`/`lime-strong`, `cyan-ink`, `tint-lime`/`tint-cyan`, `border-lime`) with final theme tokens and opacity variants (`heading`, `secondary`/`secondary-strong`, `primary`/`primary-strong`, `surface`, `muted`) e.g. `bg-navy` → `bg-heading`, `text-lime-ink` → `text-secondary-strong`, `border-hairline` → `border-heading/7`
+- Continues the Host/Learning Engine theme unification effort, applying the same final-token conversion already completed for Host components in `feature/host-theme-batch-1` through `feature/host-theme-batch-4`
