@@ -87,14 +87,14 @@ export default function TestimonialsSection() {
           ref={(el) => { revealRefs.current[0] = el; }}
           className="reveal-item mb-12"
         >
-          <Eyebrow bgColor="indigo" textColor="indigo">
+          <Eyebrow bgColor="feature" textColor="feature">
             <Heart className="w-3.5 h-3.5" />
             Testimonials
           </Eyebrow>
-          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-text-primary mt-4 mb-3">
+          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-text mt-4 mb-3">
             Students and teachers love it
           </h2>
-          <p className="text-[1.05rem] text-text-muted leading-[1.7] max-w-(--max-width-content)">
+          <p className="text-[1.05rem] text-muted leading-[1.7] max-w-(--max-width-content)">
             Real results from real classrooms. Here&rsquo;s what educators and students are saying.
           </p>
         </div>

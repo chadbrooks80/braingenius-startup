@@ -1,3 +1,8 @@
+## 2026-07-22 00:00
+
+- Migrated second batch of Host components (`CTASection`, `ExampleBlock`, `FeatureCheckCard`, `FeatureSection`, `Hero`, `HowItWorksSection`, `TestimonialCard`, `TestimonialsSection`, `TrustSection`, `WordGeneratorSection`) from raw `var(--color-*)` Tailwind arbitrary values to the unified `ColorToken` theme utility classes (e.g. `bg-primary`, `text-text`, `text-secondary`, `text-muted`, `text-heading`, `text-surface`, `text-energy`)
+- Continues the theme unification work started in `feature/host-theme-batch-2` on top of batch 1 (commit `040eb0d`)
+
 ## 2026-07-18 21:46
 
 - Merged the standalone Learning Engine into the BrainGenius host on `feature/stage-2b-learning-engine-integration`

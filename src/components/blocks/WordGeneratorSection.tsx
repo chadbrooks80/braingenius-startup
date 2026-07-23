@@ -20,8 +20,8 @@ type CardConfig = {
 
 const CARDS: CardConfig[] = [
   {
-    icon: <GraduationCap size={24} className="text-white" />,
-    iconBackgroundColor: "white",
+    icon: <GraduationCap size={24} className="text-surface" />,
+    iconBackgroundColor: "surface",
     title: "Recommended Words by Grade Level",
     description:
       "Instantly generate a vocabulary list aligned to your students\u2019 grade. Words are curated from academic standards and leveled reading lists.",
@@ -31,14 +31,14 @@ const CARDS: CardConfig[] = [
       "Pre-loaded definitions, prompts & example sentences",
       "Instantly ready for student practice",
     ],
-    backgroundColor: "dark",
-    fontColor: "white",
+    backgroundColor: "heading",
+    fontColor: "surface",
     checkboxColor: "secondary",
     delay: "0s",
   },
   {
-    icon: <Bot size={24} className="text-(--color-primary-cyan)" />,
-    iconBackgroundColor: "cyan",
+    icon: <Bot size={24} className="text-primary" />,
+    iconBackgroundColor: "primary",
     title: "AI-Generated Words by Topic",
     description:
       "Tell the AI what you\u2019re studying \u2014 ancient civilizations, ecosystems, the Civil War \u2014 and it generates a rich vocabulary set tailored to that topic.",
@@ -51,8 +51,8 @@ const CARDS: CardConfig[] = [
     delay: "0.1s",
   },
   {
-    icon: <FileText size={24} className="text-white" />,
-    iconBackgroundColor: "white",
+    icon: <FileText size={24} className="text-surface" />,
+    iconBackgroundColor: "surface",
     title: "Words from URLs or PDF Uploads",
     description:
       "Paste a webpage link or upload a PDF \u2014 a textbook chapter, article, or passage \u2014 and BrainGenius.ai extracts the most valuable vocabulary for your students.",
@@ -62,8 +62,8 @@ const CARDS: CardConfig[] = [
       "AI picks the most academically useful words",
       "Filtered to match your grade level setting",
     ],
-    backgroundColor: "dark",
-    fontColor: "white",
+    backgroundColor: "heading",
+    fontColor: "surface",
     checkboxColor: "secondary",
     delay: "0.2s",
   },
@@ -103,10 +103,10 @@ export default function WordGeneratorSection() {
             <Wand2 className="w-3.5 h-3.5" />
             Word Generator
           </Eyebrow>
-          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-text-primary mt-4 mb-3">
+          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-text mt-4 mb-3">
             Generate words for your students to learn through various sources
           </h2>
-          <p className="text-[1.05rem] text-text-muted leading-[1.7] max-w-(--max-width-content)">
+          <p className="text-[1.05rem] text-muted leading-[1.7] max-w-(--max-width-content)">
             Stop spending hours building word lists manually. Let the AI do the heavy lifting &mdash; from grade-level standards to custom topics to extracting vocabulary straight from your curriculum.
           </p>
         </div>

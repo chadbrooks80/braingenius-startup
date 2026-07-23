@@ -16,16 +16,16 @@ export default function ExampleBlock({
 }: ExampleBlockProps) {
   return (
     <section
-      className="bg-(--color-dark) rounded-(--radius-3xl) p-(--spacing-card-pad) shadow-(--shadow-xl) text-(--color-white)"
+      className="bg-heading rounded-(--radius-3xl) p-(--spacing-card-pad) shadow-(--shadow-xl) text-surface"
     >
       <header className="flex items-center justify-between mb-4">
-        <span className="text-(--font-size-label) font-semibold text-(--color-text-light) uppercase tracking-(--tracking-label)">
+        <span className="text-(--font-size-label) font-semibold text-surface/48 uppercase tracking-(--tracking-label)">
           {label}
         </span>
 
         {status && (
           <span
-            className={`${getColorClass(statusColor, "bg")} text-(--color-dark) text-(--font-size-badge) font-extrabold tracking-(--tracking-badge) uppercase px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)`}
+            className={`${getColorClass(statusColor, "bg")} text-heading text-(--font-size-badge) font-extrabold tracking-(--tracking-badge) uppercase px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)`}
           >
             {status}
           </span>

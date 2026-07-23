@@ -16,28 +16,28 @@ const PROGRESS_BARS = [
   {
     label: "Word Mastery",
     value: 84,
-    barClassName: "bg-linear-to-r from-primary-cyan to-cyan-light",
+    barClassName: "bg-linear-to-r from-primary to-primary",
     delay: "0s",
   },
   {
     label: "Retention Rate",
     value: 91,
-    barClassName: "bg-secondary-lime",
+    barClassName: "bg-secondary",
     delay: "0.15s",
   },
   {
     label: "Session Consistency",
     value: 76,
-    barClassName: "bg-accent-indigo",
+    barClassName: "bg-feature",
     delay: "0.3s",
   },
 ];
 
 const STATS = [
-  { value: "142", label: "Words mastered", textClassName: "text-primary-cyan" },
-  { value: "12", label: "Day streak", textClassName: "text-secondary-lime" },
-  { value: "23min", label: "Avg. session", textClassName: "text-accent-indigo" },
-  { value: "4.8★", label: "Student rating", textClassName: "text-accent-pink" },
+  { value: "142", label: "Words mastered", textClassName: "text-primary" },
+  { value: "12", label: "Day streak", textClassName: "text-secondary" },
+  { value: "23min", label: "Avg. session", textClassName: "text-feature" },
+  { value: "4.8★", label: "Student rating", textClassName: "text-highlight" },
 ];
 
 export default function HowItWorksSection() {
@@ -54,7 +54,7 @@ export default function HowItWorksSection() {
         </div>
 
         {/* Mobile order 2 | Desktop: col 2, row 2 */}
-        <h2 className="font-display text-[clamp(2rem,4vw,3rem)] font-black leading-tight tracking-[-0.03em] text-(--color-text-primary) lg:col-start-2 lg:row-start-2">
+        <h2 className="font-display text-[clamp(2rem,4vw,3rem)] font-black leading-tight tracking-[-0.03em] text-text lg:col-start-2 lg:row-start-2">
           Personalized learning that never plateaus
         </h2>
 
@@ -65,10 +65,10 @@ export default function HowItWorksSection() {
               {PROGRESS_BARS.map(({ label, value, barClassName, delay }) => (
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-(--font-size-label) text-(--color-text-light)">{label}</span>
-                    <span className="text-(--font-size-label) font-semibold text-(--color-text-inverse)">{value}%</span>
+                    <span className="text-(--font-size-label) text-surface/48">{label}</span>
+                    <span className="text-(--font-size-label) font-semibold text-surface/74">{value}%</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden bg-white/10">
+                  <div className="h-2 rounded-full overflow-hidden bg-surface/7">
                     <div
                       className={`h-full rounded-full origin-left animate-[progressFill_1.5s_ease-out_both] ${barClassName}`}
                       style={{ width: `${value}%`, animationDelay: delay }}
@@ -80,11 +80,11 @@ export default function HowItWorksSection() {
 
             <div className="grid grid-cols-2 gap-3">
               {STATS.map(({ value, label, textClassName }) => (
-                <div key={label} className="rounded-(--radius-xl) p-3 bg-white/5">
+                <div key={label} className="rounded-(--radius-xl) p-3 bg-surface/7">
                   <div className={`font-display text-2xl font-black ${textClassName}`}>
                     {value}
                   </div>
-                  <div className="text-(--font-size-label) text-(--color-text-muted) mt-0.5">{label}</div>
+                  <div className="text-(--font-size-label) text-muted mt-0.5">{label}</div>
                 </div>
               ))}
             </div>
@@ -92,7 +92,7 @@ export default function HowItWorksSection() {
         </div>
 
         {/* Mobile order 4 | Desktop: col 2, row 3 */}
-        <p className="text-[1.1rem] leading-[1.75] text-(--color-text-muted) lg:col-start-2 lg:row-start-3">
+        <p className="text-[1.1rem] leading-[1.75] text-muted lg:col-start-2 lg:row-start-3">
           The engine tracks every answer, every hesitation, every review. It builds a mastery profile per word and uses that to schedule the perfect next session — keeping students challenged but never lost.
         </p>
 

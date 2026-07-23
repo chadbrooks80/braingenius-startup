@@ -19,15 +19,15 @@ export default function FeatureCheckCard({
   title,
   children,
   checkItems,
-  backgroundColor = "white",
-  fontColor = "dark",
+  backgroundColor = "surface",
+  fontColor = "heading",
   checkboxColor = "primary",
 }: FeatureCheckCardProps) {
   const fontClass = getColorClass(fontColor, "text");
 
   return (
     <div
-      className={`h-full rounded-[1.5rem] p-8 shadow-lg border border-(--color-border-soft) ${getColorClass(backgroundColor, "bg")} flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]`}
+      className={`h-full rounded-[1.5rem] p-8 shadow-lg border border-surface/74 ${getColorClass(backgroundColor, "bg")} flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]`}
     >
       <div
         className={`w-14 h-14 rounded-[16px] flex items-center justify-center mb-[1.2rem] ${getColorClass(iconBackgroundColor, "iconBg")}`}

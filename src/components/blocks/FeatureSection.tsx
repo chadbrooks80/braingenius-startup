@@ -10,7 +10,7 @@ const features = [
   {
     id: "adaptive-difficulty",
     Icon: TrendingUp,
-    accentColor: "cyan" as ColorToken,
+    accentColor: "primary" as ColorToken,
     title: "Adaptive Difficulty Engine",
     description:
       "The AI continuously adjusts question difficulty based on your performance. Too easy? It challenges you more. Struggling? It slows down and reinforces. You stay perfectly in your learning zone.",
@@ -19,7 +19,7 @@ const features = [
   {
     id: "spaced-repetition",
     Icon: RotateCcw,
-    accentColor: "lime" as ColorToken,
+    accentColor: "secondary" as ColorToken,
     title: "Spaced Repetition (SM-2)",
     description:
       "Words you know get reviewed less. Words you struggle with come back sooner. Built on the proven SM-2 algorithm — the same science behind Anki and Duolingo — for maximum long-term retention.",
@@ -28,7 +28,7 @@ const features = [
   {
     id: "ai-word-lists",
     Icon: Brain,
-    accentColor: "indigo" as ColorToken,
+    accentColor: "feature" as ColorToken,
     title: "AI-Generated Word Lists",
     description:
       "Teachers can generate grade-appropriate word sets in seconds using AI. Provide a topic, a book, a URL, or a PDF and the system builds structured vocabulary content ready for students.",
@@ -37,7 +37,7 @@ const features = [
   {
     id: "game-modes",
     Icon: Gamepad2,
-    accentColor: "pink" as ColorToken,
+    accentColor: "highlight" as ColorToken,
     title: "Multiple Game Modes",
     description:
       "Beyond multiple choice — word searches, crosswords, matching games, and fill-in-the-blank challenges. The same word list powers every game type so setup happens once.",
@@ -46,7 +46,7 @@ const features = [
   {
     id: "progress-tracking",
     Icon: BarChart2,
-    accentColor: "amber" as ColorToken,
+    accentColor: "warning" as ColorToken,
     title: "Real-Time Progress Tracking",
     description:
       "Teachers see exactly where each student stands — mastery scores, streak data, words learned, and areas needing attention. No more guessing who needs extra help.",
@@ -55,7 +55,7 @@ const features = [
   {
     id: "class-management",
     Icon: Users,
-    accentColor: "teal" as ColorToken,
+    accentColor: "success" as ColorToken,
     title: "Roster & Class Management",
     description:
       "Create student accounts directly from the teacher dashboard. Generate usernames and login codes — no student email required. Perfect for classrooms where school emails are inconsistent.",
@@ -97,10 +97,10 @@ export default function FeatureSection() {
             <Sparkles className="w-3.5 h-3.5" />
             Features
           </Eyebrow>
-          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-(--color-text-primary) mt-4 mb-3">
+          <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black leading-[1.15] tracking-[-0.025em] text-text mt-4 mb-3">
             Everything a student needs to master vocabulary
           </h2>
-          <p className="text-[1.05rem] text-(--color-text-muted) leading-[1.7] max-w-(--max-width-content)">
+          <p className="text-[1.05rem] text-muted leading-[1.7] max-w-(--max-width-content)">
             Designed for real classrooms, powered by the same science that top
             language apps use — built for K-12 students.
           </p>

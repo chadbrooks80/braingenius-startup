@@ -26,17 +26,17 @@ export default function CTASection() {
     <section className="px-(--spacing-container) mb-20">
       <div
         ref={revealRef}
-        className="reveal-item max-w-(--max-width-container) mx-auto rounded-[2rem] text-center px-12 py-16 relative overflow-hidden shadow-(--shadow-2xl) bg-linear-[135deg] from-dark to-navy-medium"
+        className="reveal-item max-w-(--max-width-container) mx-auto rounded-[2rem] text-center px-12 py-16 relative overflow-hidden shadow-(--shadow-2xl) bg-linear-[135deg] from-heading to-text"
       >
         {/* cyan glow top-right */}
-        <div className="absolute top-[-6rem] right-[-6rem] w-80 h-80 rounded-full pointer-events-none bg-radial/srgb from-primary-cyan/20 to-transparent to-70%" />
+        <div className="absolute top-[-6rem] right-[-6rem] w-80 h-80 rounded-full pointer-events-none bg-radial/srgb from-primary/20 to-transparent to-70%" />
         {/* lime glow bottom-left */}
-        <div className="absolute bottom-[-5rem] left-[-4rem] w-64 h-64 rounded-full pointer-events-none bg-radial/srgb from-secondary-lime/13 to-transparent to-70%" />
+        <div className="absolute bottom-[-5rem] left-[-4rem] w-64 h-64 rounded-full pointer-events-none bg-radial/srgb from-secondary/13 to-transparent to-70%" />
 
-        <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black text-(--color-white) mb-3 relative z-10">
+        <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black text-surface mb-3 relative z-10">
           Ready to transform how your students learn vocabulary?
         </h2>
-        <p className="text-[1.05rem] leading-[1.7] max-w-[40rem] mx-auto mb-8 relative z-10 text-(--color-text-light)">
+        <p className="text-[1.05rem] leading-[1.7] max-w-[40rem] mx-auto mb-8 relative z-10 text-surface/48">
           Join hundreds of teachers using AI-powered adaptive learning to close
           vocabulary gaps for good. Free to start — no credit card needed.
         </p>
