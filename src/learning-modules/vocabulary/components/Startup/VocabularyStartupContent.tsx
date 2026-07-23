@@ -45,14 +45,14 @@ export function VocabularyStartupContent() {
       </div>
 
       {/* Path card */}
-      <div className="rounded-2xl px-4 py-3 border bg-secondary/13 border-secondary/34">
+      <div className="rounded-2xl px-4 py-3 border bg-secondary/(--alpha-subtle) border-secondary/(--alpha-medium)">
         <p className="text-[10px] font-bold tracking-widest uppercase mb-2 text-secondary-strong">
           YOUR PATH TODAY
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           {PATH_STEPS.map((step, i) => (
             <div key={step} className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-surface/85 text-heading border-secondary/34">
+              <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-surface/(--alpha-surface-strong) text-heading border-secondary/(--alpha-medium)">
                 {step}
               </span>
               {i < PATH_STEPS.length - 1 && (
@@ -70,7 +70,7 @@ export function VocabularyStartupContent() {
 
 function StatChip({ stat }: { stat: Stat }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-surface/85 border-heading/7 shadow-[0_1px_3px] shadow-heading/7">
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border bg-surface/(--alpha-surface-strong) border-heading/(--alpha-hairline) shadow-[0_1px_3px] shadow-heading/(--alpha-hairline)">
       <span>{stat.icon}</span>
       <span className="font-bold text-heading">
         {stat.value}

@@ -36,7 +36,7 @@ export default function WelcomeVideoStep() {
         </p>
       </div>
 
-      <div className="mx-auto mt-8 aspect-video w-full max-w-xl overflow-hidden rounded-(--radius-xl) border border-surface/74 bg-surface">
+      <div className="mx-auto mt-8 aspect-video w-full max-w-xl overflow-hidden rounded-(--radius-xl) border border-surface/(--alpha-surface) bg-surface">
         <iframe
           className="h-full w-full"
           src="https://www.youtube.com/embed/tCDvOQI3pco?start=4"
@@ -55,7 +55,7 @@ export default function WelcomeVideoStep() {
         variant="primary"
         disabled={isSubmitting}
         onClick={handleContinue}
-        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-60 sm:flex"
+        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) sm:flex"
       >
         {isSubmitting ? "Continuing..." : "Continue"}
       </Button>

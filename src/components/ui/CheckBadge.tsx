@@ -16,7 +16,7 @@ export default function CheckBadge({
 }: CheckBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border border-heading/20 shadow-sm ${getColorClass(backgroundColor, "bg")} ${getColorClass(fontColor, "text")}`}
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold border border-heading/(--alpha-soft) shadow-sm ${getColorClass(backgroundColor, "bg")} ${getColorClass(fontColor, "text")}`}
     >
       <Check
         size={14}

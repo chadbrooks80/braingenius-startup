@@ -384,7 +384,7 @@ export function WordSearchWindowView({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-2xl rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-2xl rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <h2 className="font-display text-3xl font-extrabold mb-1 text-heading">
@@ -413,7 +413,7 @@ export function WordSearchWindowView({
           <>
             <div
               ref={scrollAreaRef}
-              className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-primary/13 border-primary/34"
+              className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)"
             >
               <div
                 className="relative w-fit mx-auto select-none"
@@ -500,8 +500,8 @@ export function WordSearchWindowView({
                     <span
                       className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold ${
                         isFound
-                          ? "line-through bg-secondary/13 border-secondary/34 text-secondary-strong"
-                          : "bg-surface border-heading/13 text-text"
+                          ? "line-through bg-secondary/(--alpha-subtle) border-secondary/(--alpha-medium) text-secondary-strong"
+                          : "bg-surface border-heading/(--alpha-subtle) text-text"
                       }`}
                     >
                       {display}
@@ -553,14 +553,14 @@ function SelectionLine({
 
 function getCellClass(isSelected: boolean, isFound: boolean): string {
   if (isSelected) {
-    return "bg-primary/20 border-primary/34 text-primary-strong";
+    return "bg-primary/(--alpha-soft) border-primary/(--alpha-medium) text-primary-strong";
   }
 
   if (isFound) {
-    return "bg-secondary/20 border-secondary/34 text-secondary-strong";
+    return "bg-secondary/(--alpha-soft) border-secondary/(--alpha-medium) text-secondary-strong";
   }
 
-  return "bg-surface border-heading/7 text-text";
+  return "bg-surface border-heading/(--alpha-hairline) text-text";
 }
 
 function getStatusMessage(

@@ -65,10 +65,10 @@ export default function HowItWorksSection() {
               {PROGRESS_BARS.map(({ label, value, barClassName, delay }) => (
                 <div key={label}>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-(--font-size-label) text-surface/48">{label}</span>
-                    <span className="text-(--font-size-label) font-semibold text-surface/74">{value}%</span>
+                    <span className="text-(--font-size-label) text-surface/(--alpha-surface-soft)">{label}</span>
+                    <span className="text-(--font-size-label) font-semibold text-surface/(--alpha-surface)">{value}%</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden bg-surface/7">
+                  <div className="h-2 rounded-full overflow-hidden bg-surface/(--alpha-hairline)">
                     <div
                       className={`h-full rounded-full origin-left animate-[progressFill_1.5s_ease-out_both] ${barClassName}`}
                       style={{ width: `${value}%`, animationDelay: delay }}
@@ -80,7 +80,7 @@ export default function HowItWorksSection() {
 
             <div className="grid grid-cols-2 gap-3">
               {STATS.map(({ value, label, textClassName }) => (
-                <div key={label} className="rounded-(--radius-xl) p-3 bg-surface/7">
+                <div key={label} className="rounded-(--radius-xl) p-3 bg-surface/(--alpha-hairline)">
                   <div className={`font-display text-2xl font-black ${textClassName}`}>
                     {value}
                   </div>

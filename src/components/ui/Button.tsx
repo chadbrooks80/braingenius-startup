@@ -34,16 +34,16 @@ export default function Button({
       "bg-linear-to-br from-primary to-primary",
       "text-heading font-display text-[1rem] font-extrabold",
       "px-8 py-[0.85rem] rounded-(--radius-full) border-none",
-      "shadow-[0_8px_32px] shadow-primary/34",
+      "shadow-[0_8px_32px] shadow-primary/(--alpha-medium)",
       "duration-(--transition-normal)",
-      "hover:-translate-y-1 hover:shadow-[0_12px_40px] hover:shadow-primary/34"
+      "hover:-translate-y-1 hover:shadow-[0_12px_40px] hover:shadow-primary/(--alpha-medium)"
     ),
     secondary: clsx(
-      "bg-transparent border-2 border-heading/20",
+      "bg-transparent border-2 border-heading/(--alpha-soft)",
       "text-text px-6 py-[0.82rem] rounded-(--radius-full)",
       "text-[0.95rem] font-semibold",
       "duration-(--transition-fast)",
-      "hover:border-primary hover:bg-primary/7"
+      "hover:border-primary hover:bg-primary/(--alpha-hairline)"
     ),
   };
 

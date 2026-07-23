@@ -22,12 +22,12 @@ export default function TestimonialCard({
   /* Default card background is white at --alpha-surface (74%) */
   const bgClass = backgroundColor
     ? getColorClass(backgroundColor, "bg")
-    : "bg-surface/74";
+    : "bg-surface/(--alpha-surface)";
   const fontClass = getColorClass(fontColor, "text");
 
   return (
     <div
-      className={`${bgClass} border border-surface/74 rounded-2xl p-7 shadow-lg backdrop-blur-(--blur-glass) transition-transform duration-300 ease-in-out hover:-translate-y-1`}
+      className={`${bgClass} border border-surface/(--alpha-surface) rounded-2xl p-7 shadow-lg backdrop-blur-(--blur-glass) transition-transform duration-300 ease-in-out hover:-translate-y-1`}
     >
       <div className="flex gap-1 mb-4">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -41,7 +41,7 @@ export default function TestimonialCard({
       </p>
 
       <div className="flex items-center gap-3">
-        <div className="relative w-12 h-12 shrink-0 rounded-full overflow-hidden border-2 border-primary/34">
+        <div className="relative w-12 h-12 shrink-0 rounded-full overflow-hidden border-2 border-primary/(--alpha-medium)">
           <Image
             src={imageUrl}
             alt={name}

@@ -105,7 +105,7 @@ function MultipleChoiceAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         {/* Badge */}
@@ -113,8 +113,8 @@ function MultipleChoiceAttempt({
           <span
             className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
               badgeTone === "secondary"
-                ? "bg-feature/13 border-feature/34 text-feature"
-                : "bg-primary/13 border-primary/34 text-primary-strong"
+                ? "bg-feature/(--alpha-subtle) border-feature/(--alpha-medium) text-feature"
+                : "bg-primary/(--alpha-subtle) border-primary/(--alpha-medium) text-primary-strong"
             }`}
           >
             {badgeLabel}
@@ -122,7 +122,7 @@ function MultipleChoiceAttempt({
         </div>
 
         {/* Word box */}
-        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/13 border-primary/34">
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-primary-strong">
             {prompt}
           </p>
@@ -226,12 +226,12 @@ function ChoiceRow({
   onClick,
 }: ChoiceRowProps) {
   const choiceClass = !answered
-    ? "bg-surface border-heading/13 text-text"
+    ? "bg-surface border-heading/(--alpha-subtle) text-text"
     : isCorrect
-      ? "bg-secondary/13 border-secondary text-secondary-strong"
+      ? "bg-secondary/(--alpha-subtle) border-secondary text-secondary-strong"
       : isSelected
-        ? "bg-danger/13 border-danger text-heading"
-        : "bg-surface/48 border-heading/7 text-muted";
+        ? "bg-danger/(--alpha-subtle) border-danger text-heading"
+        : "bg-surface/(--alpha-surface-soft) border-heading/(--alpha-hairline) text-muted";
 
   return (
     <button

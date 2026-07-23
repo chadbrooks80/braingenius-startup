@@ -15,7 +15,7 @@ export default function TrustSymbol({
   subtitle,
 }: TrustSymbolProps) {
   return (
-    <div className="flex items-center gap-3 bg-surface/74 border border-surface/48 rounded-full px-6 py-3 shadow-(--shadow-md) transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-lg)">
+    <div className="flex items-center gap-3 bg-surface/(--alpha-surface) border border-surface/(--alpha-surface-soft) rounded-full px-6 py-3 shadow-(--shadow-md) transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-lg)">
       <div
         className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[1.1rem] overflow-hidden ${
           iconBgColor ? getColorClass(iconBgColor, "iconBg") : ""

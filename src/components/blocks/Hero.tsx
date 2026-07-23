@@ -25,17 +25,17 @@ export default function Hero() {
         <div className="lg:col-start-2 lg:row-start-1 lg:row-span-4 animate-[bob_6s_ease-in-out_infinite]">
           <ExampleBlock label="Adaptive Session" status="Live">
             <div className="rounded-(--radius-2xl) p-5 mb-4 bg-gradient-to-br from-primary via-primary to-feature text-heading">
-              <p className="text-(--font-size-badge) font-bold uppercase tracking-(--tracking-badge) text-heading/48 mb-1">
+              <p className="text-(--font-size-badge) font-bold uppercase tracking-(--tracking-badge) text-heading/(--alpha-surface-soft) mb-1">
                 What does this word mean?
               </p>
               <p className="font-display text-[2rem] font-black">Tenacious</p>
-              <p className="text-[0.85rem] mt-1 text-heading/74">
+              <p className="text-[0.85rem] mt-1 text-heading/(--alpha-surface)">
                 Grade 7 · Vocabulary · Word 4 of 10
               </p>
             </div>
 
             <div className="grid gap-2">
-              <div className="flex items-center gap-2 bg-secondary/20 border border-secondary rounded-(--radius-xl) px-4 py-3 text-sm font-medium text-secondary">
+              <div className="flex items-center gap-2 bg-secondary/(--alpha-soft) border border-secondary rounded-(--radius-xl) px-4 py-3 text-sm font-medium text-secondary">
                 <Check className="w-4 h-4 shrink-0" />
                 Persistent; not giving up easily
               </div>
@@ -46,7 +46,7 @@ export default function Hero() {
               ].map((choice) => (
                 <div
                   key={choice}
-                  className="bg-surface/7 border border-surface/13 rounded-(--radius-xl) px-4 py-3 text-sm font-medium text-surface/74"
+                  className="bg-surface/(--alpha-hairline) border border-surface/(--alpha-subtle) rounded-(--radius-xl) px-4 py-3 text-sm font-medium text-surface/(--alpha-surface)"
                 >
                   {choice}
                 </div>
@@ -54,11 +54,11 @@ export default function Hero() {
             </div>
 
             <div className="flex items-center justify-between mt-4">
-              <span className="flex items-center gap-1.5 text-sm text-surface/48">
+              <span className="flex items-center gap-1.5 text-sm text-surface/(--alpha-surface-soft)">
                 <Flame className="w-4 h-4 text-energy" />
                 7-day streak
               </span>
-              <span className="bg-secondary/13 text-secondary text-(--font-size-badge) font-bold px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)">
+              <span className="bg-secondary/(--alpha-subtle) text-secondary text-(--font-size-badge) font-bold px-(--spacing-badge-x) py-(--spacing-badge-y) rounded-(--radius-full)">
                 +15 XP earned
               </span>
             </div>
@@ -74,14 +74,14 @@ export default function Hero() {
         <div className="flex flex-col sm:flex-row flex-wrap items-start gap-3 lg:col-start-1 lg:row-start-4">
           <a
             href="/sign-up"
-            className="inline-flex items-center gap-2 bg-gradient-to-br from-primary to-primary text-heading font-display text-base font-extrabold px-8 py-3.5 rounded-(--radius-full) shadow-[0_8px_32px] shadow-primary/34 transition-transform duration-200 hover:-translate-y-[3px]"
+            className="inline-flex items-center gap-2 bg-gradient-to-br from-primary to-primary text-heading font-display text-base font-extrabold px-8 py-3.5 rounded-(--radius-full) shadow-[0_8px_32px] shadow-primary/(--alpha-medium) transition-transform duration-200 hover:-translate-y-[3px]"
           >
             <Rocket className="w-4 h-4" />
             Get Started For Free!
           </a>
           <a
             href="#features"
-            className="inline-flex items-center gap-2 bg-transparent border-2 border-heading/20 text-text px-6 py-3 rounded-(--radius-full) text-[0.95rem] font-semibold transition-all duration-200 hover:border-primary hover:bg-primary/7"
+            className="inline-flex items-center gap-2 bg-transparent border-2 border-heading/(--alpha-soft) text-text px-6 py-3 rounded-(--radius-full) text-[0.95rem] font-semibold transition-all duration-200 hover:border-primary hover:bg-primary/(--alpha-hairline)"
           >
             <PlayCircle className="w-4 h-4" />
             See How It Works

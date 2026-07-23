@@ -21,7 +21,7 @@ export function DefinitionFunFact({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-secondary-strong">
@@ -34,7 +34,7 @@ export function DefinitionFunFact({
           </span>
         </div>
 
-        <div className="rounded-2xl px-6 py-6 mb-8 border border-secondary/34 bg-linear-135/srgb from-secondary/13 to-primary/13">
+        <div className="rounded-2xl px-6 py-6 mb-8 border border-secondary/(--alpha-medium) bg-linear-135/srgb from-secondary/(--alpha-subtle) to-primary/(--alpha-subtle)">
           <p className="text-sm font-bold mb-3 text-secondary-strong">
             {introLabel}
           </p>

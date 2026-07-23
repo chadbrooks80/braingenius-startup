@@ -33,7 +33,7 @@ export function AnswerRecapWindow({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-primary-strong">
@@ -57,7 +57,7 @@ export function AnswerRecapWindow({
           </button>
         </div>
 
-        <div className="rounded-2xl px-5 py-4 mb-4 border bg-primary/13 border-primary/34">
+        <div className="rounded-2xl px-5 py-4 mb-4 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
           <p className="font-medium leading-relaxed text-text">
             {primaryText}
           </p>

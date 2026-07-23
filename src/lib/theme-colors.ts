@@ -57,52 +57,52 @@ export const COLOR_CLASS_MAP = {
   },
   /* Secondary text at --alpha-surface-soft (48%) (e.g. TestimonialCard role line) */
   textMuted: {
-    surface: "text-surface/48",
-    heading: "text-heading/48",
-    text: "text-text/48",
+    surface: "text-surface/(--alpha-surface-soft)",
+    heading: "text-heading/(--alpha-surface-soft)",
+    text: "text-text/(--alpha-surface-soft)",
   },
   /* Tinted icon backgrounds at --alpha-subtle (13%) */
   iconBg: {
-    primary: "bg-primary/13",
-    secondary: "bg-secondary/13",
-    surface: "bg-surface/13",
-    feature: "bg-feature/13",
-    highlight: "bg-highlight/13",
-    warning: "bg-warning/13",
-    success: "bg-success/13",
+    primary: "bg-primary/(--alpha-subtle)",
+    secondary: "bg-secondary/(--alpha-subtle)",
+    surface: "bg-surface/(--alpha-subtle)",
+    feature: "bg-feature/(--alpha-subtle)",
+    highlight: "bg-highlight/(--alpha-subtle)",
+    warning: "bg-warning/(--alpha-subtle)",
+    success: "bg-success/(--alpha-subtle)",
   },
   /* FeatureCard accent border + hover glow: sets the CSS vars its
      hover:border/hover:shadow classes consume (glow = color at 20%) */
   border: {
     primary:
-      "[--card-border:var(--color-primary)] [--card-glow:color-mix(in_srgb,var(--color-primary)_20%,transparent)]",
+      "[--card-border:var(--color-primary)] [--card-glow:color-mix(in_srgb,var(--color-primary)_var(--alpha-soft),transparent)]",
     secondary:
-      "[--card-border:var(--color-secondary)] [--card-glow:color-mix(in_srgb,var(--color-secondary)_20%,transparent)]",
+      "[--card-border:var(--color-secondary)] [--card-glow:color-mix(in_srgb,var(--color-secondary)_var(--alpha-soft),transparent)]",
     feature:
-      "[--card-border:var(--color-feature)] [--card-glow:color-mix(in_srgb,var(--color-feature)_20%,transparent)]",
+      "[--card-border:var(--color-feature)] [--card-glow:color-mix(in_srgb,var(--color-feature)_var(--alpha-soft),transparent)]",
     highlight:
-      "[--card-border:var(--color-highlight)] [--card-glow:color-mix(in_srgb,var(--color-highlight)_20%,transparent)]",
+      "[--card-border:var(--color-highlight)] [--card-glow:color-mix(in_srgb,var(--color-highlight)_var(--alpha-soft),transparent)]",
     warning:
-      "[--card-border:var(--color-warning)] [--card-glow:color-mix(in_srgb,var(--color-warning)_20%,transparent)]",
+      "[--card-border:var(--color-warning)] [--card-glow:color-mix(in_srgb,var(--color-warning)_var(--alpha-soft),transparent)]",
     success:
-      "[--card-border:var(--color-success)] [--card-glow:color-mix(in_srgb,var(--color-success)_20%,transparent)]",
+      "[--card-border:var(--color-success)] [--card-glow:color-mix(in_srgb,var(--color-success)_var(--alpha-soft),transparent)]",
   },
   /* Pill backgrounds at --alpha-subtle (13%) (Eyebrow) */
   tintBg: {
-    primary: "bg-primary/13",
-    secondary: "bg-secondary/13",
-    feature: "bg-feature/13",
-    highlight: "bg-highlight/13",
-    warning: "bg-warning/13",
+    primary: "bg-primary/(--alpha-subtle)",
+    secondary: "bg-secondary/(--alpha-subtle)",
+    feature: "bg-feature/(--alpha-subtle)",
+    highlight: "bg-highlight/(--alpha-subtle)",
+    warning: "bg-warning/(--alpha-subtle)",
   },
   /* Pill borders at --alpha-medium (34%) (Eyebrow, keyed by its text color) */
   tintBorder: {
-    primary: "border-primary/34",
-    heading: "border-heading/34",
-    text: "border-text/34",
-    feature: "border-feature/34",
-    highlight: "border-highlight/34",
-    warning: "border-warning/34",
+    primary: "border-primary/(--alpha-medium)",
+    heading: "border-heading/(--alpha-medium)",
+    text: "border-text/(--alpha-medium)",
+    feature: "border-feature/(--alpha-medium)",
+    highlight: "border-highlight/(--alpha-medium)",
+    warning: "border-warning/(--alpha-medium)",
   },
 } as const satisfies Record<string, Partial<Record<ColorToken, string>>>;
 

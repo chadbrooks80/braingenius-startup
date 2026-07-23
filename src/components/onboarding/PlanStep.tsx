@@ -61,7 +61,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md)">
+        <div className="rounded-(--radius-xl) border border-surface/(--alpha-surface) bg-surface p-6 shadow-(--shadow-md)">
           <h3 className="font-display text-lg font-extrabold text-heading">
             Free trial
           </h3>
@@ -73,7 +73,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
           </div>
         </div>
 
-        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md)">
+        <div className="rounded-(--radius-xl) border border-surface/(--alpha-surface) bg-surface p-6 shadow-(--shadow-md)">
           <h3 className="font-display text-lg font-extrabold text-heading">
             Monthly
           </h3>
@@ -91,13 +91,13 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
             variant="secondary"
             disabled={isCheckoutLoading !== null}
             onClick={() => handleUpgrade("MONTHLY")}
-            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
           >
             {isCheckoutLoading === "MONTHLY" ? "Starting checkout..." : "Upgrade monthly"}
           </Button>
         </div>
 
-        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md) sm:col-span-2">
+        <div className="rounded-(--radius-xl) border border-surface/(--alpha-surface) bg-surface p-6 shadow-(--shadow-md) sm:col-span-2">
           <h3 className="font-display text-lg font-extrabold text-heading">
             Lifetime
           </h3>
@@ -113,7 +113,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
             variant="secondary"
             disabled={isCheckoutLoading !== null}
             onClick={() => handleUpgrade("LIFETIME")}
-            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
           >
             {isCheckoutLoading === "LIFETIME" ? "Starting checkout..." : "Upgrade lifetime"}
           </Button>
@@ -140,7 +140,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
         variant="primary"
         disabled={isSubmitting}
         onClick={handleFreeTrial}
-        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-60 sm:flex"
+        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) sm:flex"
       >
         {isSubmitting ? "Continuing..." : "Continue with free trial"}
       </Button>

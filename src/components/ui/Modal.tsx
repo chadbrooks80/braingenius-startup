@@ -26,11 +26,11 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-heading/48 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-heading/(--alpha-surface-soft) p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-(--radius-xl) border-2 border-heading/20 bg-surface p-6 shadow-(--shadow-xl)"
+        className="w-full max-w-md rounded-(--radius-xl) border-2 border-heading/(--alpha-soft) bg-surface p-6 shadow-(--shadow-xl)"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

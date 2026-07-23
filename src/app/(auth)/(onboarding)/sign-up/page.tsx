@@ -18,10 +18,10 @@ const codeSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 const codeInputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 function GoogleIcon() {
   return (
@@ -50,7 +50,7 @@ function Spinner() {
   return (
     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle
-        className="opacity-25"
+        className="opacity-(--alpha-soft)"
         cx="12"
         cy="12"
         r="10"
@@ -58,7 +58,7 @@ function Spinner() {
         strokeWidth="4"
       />
       <path
-        className="opacity-75"
+        className="opacity-(--alpha-surface)"
         fill="currentColor"
         d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"
       />
@@ -197,7 +197,7 @@ export default function SignUpPage() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/(--alpha-surface-strong) p-8 shadow-(--shadow-xl)">
           {phase === "form" && (
             <>
               <div className="text-center">
@@ -214,7 +214,7 @@ export default function SignUpPage() {
                 variant="secondary"
                 onClick={handleGoogleSignUp}
                 disabled={isGoogleSubmitting}
-                className="mt-8 w-full justify-center bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-8 w-full justify-center bg-surface disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
               >
                 {isGoogleSubmitting ? (
                   "Signing in..."
@@ -227,11 +227,11 @@ export default function SignUpPage() {
               </Button>
 
               <div className="my-6 flex items-center gap-3">
-                <span className="h-px flex-1 bg-heading/20" />
+                <span className="h-px flex-1 bg-heading/(--alpha-soft)" />
                 <span className="text-xs font-semibold uppercase tracking-(--tracking-label) text-muted">
                   or
                 </span>
-                <span className="h-px flex-1 bg-heading/20" />
+                <span className="h-px flex-1 bg-heading/(--alpha-soft)" />
               </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
@@ -274,7 +274,7 @@ export default function SignUpPage() {
                   type="submit"
                   variant="primary"
                   disabled={isSubmitting}
-                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
                 >
                   {isSubmitting ? "Creating account..." : "Create account"}
                 </Button>
@@ -329,7 +329,7 @@ export default function SignUpPage() {
                   type="submit"
                   variant="primary"
                   disabled={isVerifying}
-                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
                 >
                   {isVerifying && <Spinner />}
                   {isVerifying ? "Verifying..." : "Verify email"}
@@ -342,7 +342,7 @@ export default function SignUpPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={isResending}
-                  className="font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  className="font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
                 >
                   {isResending ? "Sending..." : "Resend code"}
                 </button>

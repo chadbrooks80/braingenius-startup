@@ -16,7 +16,7 @@ export default function OnboardingShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container) py-10">
-        <div className="w-full max-w-2xl rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-2xl rounded-(--radius-2xl) bg-surface/(--alpha-surface-strong) p-8 shadow-(--shadow-xl)">
           {children}
         </div>
       </div>

@@ -20,16 +20,16 @@ export function Button({
   disabled = false,
 }: ButtonProps) {
   const base =
-    "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150 select-none disabled:cursor-not-allowed disabled:opacity-48 disabled:transform-none";
+    "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150 select-none disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) disabled:transform-none";
 
   const variantClasses: Record<ButtonVariant, string> = {
     primary:
-      "bg-heading text-surface shadow-[0_2px_8px] shadow-heading/20 hover:-translate-y-0.5 hover:shadow-[0_6px_18px]",
+      "bg-heading text-surface shadow-[0_2px_8px] shadow-heading/(--alpha-soft) hover:-translate-y-0.5 hover:shadow-[0_6px_18px]",
     secondary:
-      "bg-secondary/13 text-secondary-strong border border-secondary/34 hover:-translate-y-0.5 hover:shadow-sm",
+      "bg-secondary/(--alpha-subtle) text-secondary-strong border border-secondary/(--alpha-medium) hover:-translate-y-0.5 hover:shadow-sm",
     ghost: "bg-transparent text-muted hover:-translate-y-0.5 hover:shadow-sm",
     accent:
-      "text-heading shadow-[0_8px_24px] shadow-primary/34 hover:-translate-y-0.5 hover:shadow-sm bg-linear-[135deg] from-primary to-primary",
+      "text-heading shadow-[0_8px_24px] shadow-primary/(--alpha-medium) hover:-translate-y-0.5 hover:shadow-sm bg-linear-[135deg] from-primary to-primary",
   };
 
   return (
@@ -42,7 +42,7 @@ export function Button({
       {label}
       {trailingIcon && <span aria-hidden="true">{trailingIcon}</span>}
       {helperText && (
-        <span className="text-xs opacity-74 ml-1">{helperText}</span>
+        <span className="text-xs opacity-(--alpha-surface) ml-1">{helperText}</span>
       )}
     </button>
   );

@@ -29,14 +29,14 @@ export default function CTASection() {
         className="reveal-item max-w-(--max-width-container) mx-auto rounded-[2rem] text-center px-12 py-16 relative overflow-hidden shadow-(--shadow-2xl) bg-linear-[135deg] from-heading to-text"
       >
         {/* cyan glow top-right */}
-        <div className="absolute top-[-6rem] right-[-6rem] w-80 h-80 rounded-full pointer-events-none bg-radial/srgb from-primary/20 to-transparent to-70%" />
+        <div className="absolute top-[-6rem] right-[-6rem] w-80 h-80 rounded-full pointer-events-none bg-radial/srgb from-primary/(--alpha-soft) to-transparent to-70%" />
         {/* lime glow bottom-left */}
-        <div className="absolute bottom-[-5rem] left-[-4rem] w-64 h-64 rounded-full pointer-events-none bg-radial/srgb from-secondary/13 to-transparent to-70%" />
+        <div className="absolute bottom-[-5rem] left-[-4rem] w-64 h-64 rounded-full pointer-events-none bg-radial/srgb from-secondary/(--alpha-subtle) to-transparent to-70%" />
 
         <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.6rem)] font-black text-surface mb-3 relative z-10">
           Ready to transform how your students learn vocabulary?
         </h2>
-        <p className="text-[1.05rem] leading-[1.7] max-w-[40rem] mx-auto mb-8 relative z-10 text-surface/48">
+        <p className="text-[1.05rem] leading-[1.7] max-w-[40rem] mx-auto mb-8 relative z-10 text-surface/(--alpha-surface-soft)">
           Join hundreds of teachers using AI-powered adaptive learning to close
           vocabulary gaps for good. Free to start — no credit card needed.
         </p>

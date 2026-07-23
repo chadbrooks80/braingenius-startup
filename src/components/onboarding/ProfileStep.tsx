@@ -12,7 +12,7 @@ const profileSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 export default function ProfileStep() {
   const router = useRouter();
@@ -94,7 +94,7 @@ export default function ProfileStep() {
           type="submit"
           variant="primary"
           disabled={isSubmitting}
-          className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
         >
           {isSubmitting ? "Continuing..." : "Continue"}
         </Button>

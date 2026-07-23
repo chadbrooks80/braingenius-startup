@@ -27,7 +27,7 @@ const createChildSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 type ChildSummary = { id: string; name: string; username: string };
 
@@ -82,7 +82,7 @@ export default function ChildrenStep() {
             return (
               <div
                 key={slot}
-                className="flex items-center gap-3 rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-3"
+                className="flex items-center gap-3 rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-3"
               >
                 <Check size={18} className="shrink-0 text-success" />
                 <div>
@@ -100,7 +100,7 @@ export default function ChildrenStep() {
               variant="secondary"
               disabled={locked}
               onClick={() => setActiveSlot(slot as 1 | 2)}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
             >
               + Add {slot === 1 ? "First" : "Second"} Child
             </Button>
@@ -115,7 +115,7 @@ export default function ChildrenStep() {
             variant="secondary"
             disabled={isFinishing}
             onClick={finishOnboarding}
-            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
           >
             Skip for now
           </Button>
@@ -124,7 +124,7 @@ export default function ChildrenStep() {
             variant="primary"
             disabled={isFinishing}
             onClick={finishOnboarding}
-            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
           >
             {isFinishing ? "Finishing up..." : "Finish setup"}
           </Button>
@@ -308,7 +308,7 @@ function AddChildForm({
                   key={suggestion}
                   type="button"
                   onClick={() => handleSelectSuggestion(suggestion)}
-                  className="cursor-pointer rounded-(--radius-full) border-2 border-heading/20 px-3 py-1 text-xs font-semibold text-text transition-colors duration-(--transition-fast) hover:border-primary"
+                  className="cursor-pointer rounded-(--radius-full) border-2 border-heading/(--alpha-soft) px-3 py-1 text-xs font-semibold text-text transition-colors duration-(--transition-fast) hover:border-primary"
                 >
                   {suggestion}
                 </button>
@@ -347,7 +347,7 @@ function AddChildForm({
         type="submit"
         variant="primary"
         disabled={isSubmitting}
-        className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
       >
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>

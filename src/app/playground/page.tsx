@@ -76,15 +76,15 @@ export default function PlaygroundPage() {
 
         <div className="grid grid-cols-1 gap-6 max-w-sm">
           <ExampleBlock label="Label Only">
-            <p className="text-sm text-surface/74">Placeholder content — no status badge.</p>
+            <p className="text-sm text-surface/(--alpha-surface)">Placeholder content — no status badge.</p>
           </ExampleBlock>
 
           <ExampleBlock label="With Status" status="Live">
-            <p className="text-sm text-surface/74">Placeholder content — default secondary status badge.</p>
+            <p className="text-sm text-surface/(--alpha-surface)">Placeholder content — default secondary status badge.</p>
           </ExampleBlock>
 
           <ExampleBlock label="Custom Color" status="Review" statusColor="feature">
-            <p className="text-sm text-surface/74">Placeholder content — custom feature status badge.</p>
+            <p className="text-sm text-surface/(--alpha-surface)">Placeholder content — custom feature status badge.</p>
           </ExampleBlock>
         </div>
       </section>

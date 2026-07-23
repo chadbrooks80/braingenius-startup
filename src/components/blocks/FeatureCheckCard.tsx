@@ -27,7 +27,7 @@ export default function FeatureCheckCard({
 
   return (
     <div
-      className={`h-full rounded-[1.5rem] p-8 shadow-lg border border-surface/74 ${getColorClass(backgroundColor, "bg")} flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]`}
+      className={`h-full rounded-[1.5rem] p-8 shadow-lg border border-surface/(--alpha-surface) ${getColorClass(backgroundColor, "bg")} flex flex-col transition-transform duration-[250ms] hover:-translate-y-[5px]`}
     >
       <div
         className={`w-14 h-14 rounded-[16px] flex items-center justify-center mb-[1.2rem] ${getColorClass(iconBackgroundColor, "iconBg")}`}
@@ -41,7 +41,7 @@ export default function FeatureCheckCard({
         {title}
       </h3>
 
-      <p className={`flex-1 text-[0.91rem] leading-[1.65] ${fontClass} opacity-75`}>
+      <p className={`flex-1 text-[0.91rem] leading-[1.65] ${fontClass} opacity-(--alpha-surface)`}>
         {children}
       </p>
 

@@ -19,7 +19,7 @@ export default function ExampleBlock({
       className="bg-heading rounded-(--radius-3xl) p-(--spacing-card-pad) shadow-(--shadow-xl) text-surface"
     >
       <header className="flex items-center justify-between mb-4">
-        <span className="text-(--font-size-label) font-semibold text-surface/48 uppercase tracking-(--tracking-label)">
+        <span className="text-(--font-size-label) font-semibold text-surface/(--alpha-surface-soft) uppercase tracking-(--tracking-label)">
           {label}
         </span>
 

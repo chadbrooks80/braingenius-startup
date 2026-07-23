@@ -106,15 +106,15 @@ function SpellingAttempt({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <div className="flex items-center justify-between mb-4">
           <span
             className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
               badgeTone === "secondary"
-                ? "bg-feature/13 border-feature/34 text-feature"
-                : "bg-primary/13 border-primary/34 text-primary-strong"
+                ? "bg-feature/(--alpha-subtle) border-feature/(--alpha-medium) text-feature"
+                : "bg-primary/(--alpha-subtle) border-primary/(--alpha-medium) text-primary-strong"
             }`}
           >
             {badgeLabel}
@@ -129,7 +129,7 @@ function SpellingAttempt({
           </button>
         </div>
 
-        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/13 border-primary/34">
+        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-primary-strong">
             {promptLabel}
           </p>
@@ -154,12 +154,12 @@ function SpellingAttempt({
               autoComplete="off"
               spellCheck={false}
               onChange={(event) => setAnswer(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-74 border-heading/13 bg-surface text-text"
+              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-(--alpha-surface) border-heading/(--alpha-subtle) bg-surface text-text"
             />
             <button
               type="submit"
               disabled={locked}
-              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-48 text-heading bg-linear-[135deg] from-primary to-primary"
+              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) text-heading bg-linear-[135deg] from-primary to-primary"
             >
               {submitLabel}
             </button>

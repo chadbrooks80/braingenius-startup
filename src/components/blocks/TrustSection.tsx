@@ -30,7 +30,7 @@ const TRUST_ITEMS: {
 
 export default function TrustSection() {
   return (
-    <section className="py-14 px-6 bg-surface/85 border-t border-surface/74 border-b">
+    <section className="py-14 px-6 bg-surface/(--alpha-surface-strong) border-t border-surface/(--alpha-surface) border-b">
       <div className="max-w-[1200px] mx-auto">
         <p className="text-center text-[0.78rem] font-semibold tracking-[0.2em] uppercase text-muted mb-8 flex items-center justify-center gap-1.5">
           <ShieldCheck size={14} className="text-primary" />

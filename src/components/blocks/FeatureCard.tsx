@@ -18,7 +18,7 @@ export default function FeatureCard({
 }: FeatureCardProps) {
   return (
     <div
-      className={`${getColorClass(borderColor, "border")} relative overflow-hidden cursor-default backdrop-blur-[12px] bg-surface/74 border border-surface/74 rounded-xl px-7 py-8 shadow-md transition-[transform,box-shadow,border-color] duration-300 ease-in-out hover:-translate-y-[6px] hover:shadow-[0_0_0_2px_var(--card-border),0_20px_60px_var(--card-glow)] hover:border-(--card-border) h-full`}
+      className={`${getColorClass(borderColor, "border")} relative overflow-hidden cursor-default backdrop-blur-[12px] bg-surface/(--alpha-surface) border border-surface/(--alpha-surface) rounded-xl px-7 py-8 shadow-md transition-[transform,box-shadow,border-color] duration-300 ease-in-out hover:-translate-y-[6px] hover:shadow-[0_0_0_2px_var(--card-border),0_20px_60px_var(--card-glow)] hover:border-(--card-border) h-full`}
     >
       <div
         className={`w-[52px] h-[52px] rounded-[14px] mb-[1.1rem] flex items-center justify-center ${getColorClass(iconBgColor, "iconBg")}`}

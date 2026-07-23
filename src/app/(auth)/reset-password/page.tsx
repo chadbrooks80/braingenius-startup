@@ -17,7 +17,7 @@ const resetSchema = z
   });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
+  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -73,7 +73,7 @@ function ResetPasswordContent() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/(--alpha-surface-strong) p-8 shadow-(--shadow-xl)">
           <div className="text-center">
             <h1 className="font-display text-2xl font-extrabold text-heading">
               Reset your password
@@ -121,7 +121,7 @@ function ResetPasswordContent() {
               type="submit"
               variant="primary"
               disabled={isSubmitting}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
             >
               {isSubmitting ? "Resetting..." : "Reset password"}
             </Button>

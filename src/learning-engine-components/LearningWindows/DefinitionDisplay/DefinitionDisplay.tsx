@@ -35,7 +35,7 @@ export function DefinitionDisplay({
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/74 bg-surface/85 shadow-[0_16px_56px] shadow-heading/13"
+        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
         style={{ backdropFilter: "blur(12px)" }}
       >
         <p className="text-[10px] font-bold uppercase tracking-widest mb-4 text-primary-strong">
@@ -50,7 +50,7 @@ export function DefinitionDisplay({
           <button
             type="button"
             onClick={() => onAction("speak", { text: replayText, tts })}
-            className="ml-auto cursor-pointer transition-colors hover:opacity-85 text-primary"
+            className="ml-auto cursor-pointer transition-colors hover:opacity-(--alpha-surface-strong) text-primary"
             aria-label={replayLabel}
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
@@ -61,7 +61,7 @@ export function DefinitionDisplay({
         </div>
 
         {/* Definition */}
-        <div className="rounded-2xl px-5 py-4 mb-4 border bg-primary/13 border-primary/34">
+        <div className="rounded-2xl px-5 py-4 mb-4 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-primary-strong">
             {primaryLabel}
           </p>
@@ -71,7 +71,7 @@ export function DefinitionDisplay({
         </div>
 
         {/* Example sentences */}
-        <div className="rounded-2xl px-5 py-4 mb-8 border bg-secondary/13 border-secondary/34">
+        <div className="rounded-2xl px-5 py-4 mb-8 border bg-secondary/(--alpha-subtle) border-secondary/(--alpha-medium)">
           <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-secondary-strong">
             {secondaryLabel}
           </p>
