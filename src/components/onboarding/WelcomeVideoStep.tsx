@@ -28,15 +28,15 @@ export default function WelcomeVideoStep() {
   return (
     <>
       <div className="text-center">
-        <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+        <h1 className="font-display text-2xl font-extrabold text-heading">
           Welcome to BrainGenius.ai
         </h1>
-        <p className="mt-2 text-sm text-(--color-text-muted)">
+        <p className="mt-2 text-sm text-muted">
           Watch a quick intro before we set up your account.
         </p>
       </div>
 
-      <div className="mx-auto mt-8 aspect-video w-full max-w-xl overflow-hidden rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white)">
+      <div className="mx-auto mt-8 aspect-video w-full max-w-xl overflow-hidden rounded-(--radius-xl) border border-surface/74 bg-surface">
         <iframe
           className="h-full w-full"
           src="https://www.youtube.com/embed/tCDvOQI3pco?start=4"
@@ -47,7 +47,7 @@ export default function WelcomeVideoStep() {
       </div>
 
       {error && (
-        <p className="mt-4 text-center text-sm font-medium text-(--color-accent-pink)">{error}</p>
+        <p className="mt-4 text-center text-sm font-medium text-danger">{error}</p>
       )}
 
       <Button

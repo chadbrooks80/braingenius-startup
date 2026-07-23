@@ -52,20 +52,20 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
     <>
       <div className="text-center">
         <Eyebrow>3-day free trial</Eyebrow>
-        <h1 className="mt-4 font-display text-2xl font-extrabold text-(--color-dark)">
+        <h1 className="mt-4 font-display text-2xl font-extrabold text-heading">
           Your trial is ready
         </h1>
-        <p className="mt-2 text-sm text-(--color-text-muted)">
+        <p className="mt-2 text-sm text-muted">
           Here&apos;s what&apos;s included now, and what you can upgrade to later.
         </p>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md)">
-          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
+        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md)">
+          <h3 className="font-display text-lg font-extrabold text-heading">
             Free trial
           </h3>
-          <p className="mt-1 text-sm text-(--color-text-muted)">3 days, on us.</p>
+          <p className="mt-1 text-sm text-muted">3 days, on us.</p>
           <div className="mt-4 flex flex-col gap-2">
             <CheckBadge label="1 word list" />
             <CheckBadge label="1 reading activity" />
@@ -73,11 +73,11 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
           </div>
         </div>
 
-        <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md)">
-          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
+        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md)">
+          <h3 className="font-display text-lg font-extrabold text-heading">
             Monthly
           </h3>
-          <p className="mt-1 text-sm text-(--color-text-muted)">
+          <p className="mt-1 text-sm text-muted">
             $3.99/month for 3 months, then $9.99/month
           </p>
           <div className="mt-4 flex flex-col gap-2">
@@ -97,11 +97,11 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
           </Button>
         </div>
 
-        <div className="rounded-(--radius-xl) border border-(--color-border-soft) bg-(--color-white) p-6 shadow-(--shadow-md) sm:col-span-2">
-          <h3 className="font-display text-lg font-extrabold text-(--color-dark)">
+        <div className="rounded-(--radius-xl) border border-surface/74 bg-surface p-6 shadow-(--shadow-md) sm:col-span-2">
+          <h3 className="font-display text-lg font-extrabold text-heading">
             Lifetime
           </h3>
-          <p className="mt-1 text-sm text-(--color-text-muted)">$149.99 one-time</p>
+          <p className="mt-1 text-sm text-muted">$149.99 one-time</p>
           <div className="mt-4 flex flex-col gap-2">
             <CheckBadge label="Up to 2 children" />
             <CheckBadge label="Access to all words" />
@@ -120,19 +120,19 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
         </div>
       </div>
 
-      <p className="mt-4 text-center text-xs text-(--color-text-muted)">
+      <p className="mt-4 text-center text-xs text-muted">
         Additional children: $0.99/month for 3 months then $3.99/month per child, or $69.99
         one-time per child.
       </p>
 
       {checkoutError && (
-        <p className="mt-2 text-center text-sm font-medium text-(--color-accent-pink)">
+        <p className="mt-2 text-center text-sm font-medium text-danger">
           {checkoutError}
         </p>
       )}
 
       {error && (
-        <p className="mt-2 text-center text-sm font-medium text-(--color-accent-pink)">{error}</p>
+        <p className="mt-2 text-center text-sm font-medium text-danger">{error}</p>
       )}
 
       <Button

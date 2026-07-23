@@ -27,7 +27,7 @@ const createChildSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 type ChildSummary = { id: string; name: string; username: string };
 
@@ -65,10 +65,10 @@ export default function ChildrenStep() {
   return (
     <>
       <div className="text-center">
-        <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+        <h1 className="font-display text-2xl font-extrabold text-heading">
           Your Subscription Includes Adding Up to Two Children
         </h1>
-        <p className="mt-2 text-sm text-(--color-text-muted)">
+        <p className="mt-2 text-sm text-muted">
           You can add, edit, or remove children later from Account Settings.
         </p>
       </div>
@@ -82,12 +82,12 @@ export default function ChildrenStep() {
             return (
               <div
                 key={slot}
-                className="flex items-center gap-3 rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-3"
+                className="flex items-center gap-3 rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-3"
               >
-                <Check size={18} className="shrink-0 text-(--color-primary-cyan)" />
+                <Check size={18} className="shrink-0 text-success" />
                 <div>
-                  <p className="text-sm font-semibold text-(--color-text-primary)">{child.name}</p>
-                  <p className="text-xs text-(--color-text-muted)">User ID: {child.username}</p>
+                  <p className="text-sm font-semibold text-text">{child.name}</p>
+                  <p className="text-xs text-muted">User ID: {child.username}</p>
                 </div>
               </div>
             );
@@ -107,7 +107,7 @@ export default function ChildrenStep() {
           );
         })}
 
-        {finishError && <p className="text-sm font-medium text-(--color-accent-pink)">{finishError}</p>}
+        {finishError && <p className="text-sm font-medium text-danger">{finishError}</p>}
 
         <div className="flex gap-3 pt-2">
           <Button
@@ -239,7 +239,7 @@ function AddChildForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-1.5">
-        <label htmlFor="firstName" className="text-sm font-semibold text-(--color-text-primary)">
+        <label htmlFor="firstName" className="text-sm font-semibold text-text">
           First name
         </label>
         <input
@@ -253,8 +253,8 @@ function AddChildForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="lastName" className="text-sm font-semibold text-(--color-text-primary)">
-          Last name <span className="text-(--color-text-muted)">(optional)</span>
+        <label htmlFor="lastName" className="text-sm font-semibold text-text">
+          Last name <span className="text-muted">(optional)</span>
         </label>
         <input
           id="lastName"
@@ -268,13 +268,13 @@ function AddChildForm({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label htmlFor="username" className="text-sm font-semibold text-(--color-text-primary)">
+          <label htmlFor="username" className="text-sm font-semibold text-text">
             User ID
           </label>
           <button
             type="button"
             onClick={handleAutoGenerate}
-            className="cursor-pointer text-xs font-semibold text-(--color-primary-cyan) hover:underline"
+            className="cursor-pointer text-xs font-semibold text-primary hover:underline"
           >
             Auto Generate
           </button>
@@ -292,14 +292,14 @@ function AddChildForm({
           className={inputClass}
         />
         {usernameStatus === "checking" && (
-          <p className="text-xs text-(--color-text-muted)">Checking availability...</p>
+          <p className="text-xs text-muted">Checking availability...</p>
         )}
         {usernameStatus === "available" && (
-          <p className="text-xs font-medium text-(--color-primary-cyan)">Available</p>
+          <p className="text-xs font-medium text-success">Available</p>
         )}
         {usernameStatus === "taken" && (
           <div className="space-y-1.5">
-            <p className="text-xs font-medium text-(--color-accent-pink)">
+            <p className="text-xs font-medium text-danger">
               That User ID is taken. Try one of these:
             </p>
             <div className="flex flex-wrap gap-2">
@@ -308,7 +308,7 @@ function AddChildForm({
                   key={suggestion}
                   type="button"
                   onClick={() => handleSelectSuggestion(suggestion)}
-                  className="cursor-pointer rounded-(--radius-full) border-2 border-(--color-border-muted) px-3 py-1 text-xs font-semibold text-(--color-text-primary) transition-colors duration-(--transition-fast) hover:border-(--color-primary-cyan)"
+                  className="cursor-pointer rounded-(--radius-full) border-2 border-heading/20 px-3 py-1 text-xs font-semibold text-text transition-colors duration-(--transition-fast) hover:border-primary"
                 >
                   {suggestion}
                 </button>
@@ -319,7 +319,7 @@ function AddChildForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
+        <label htmlFor="password" className="text-sm font-semibold text-text">
           Password
         </label>
         <PasswordInput
@@ -331,17 +331,17 @@ function AddChildForm({
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-(--color-text-primary)">
+      <label className="flex items-center gap-2 text-sm text-text">
         <input
           type="checkbox"
           checked={mustResetPassword}
           onChange={(e) => setMustResetPassword(e.target.checked)}
-          className="h-4 w-4 accent-(--color-primary-cyan)"
+          className="h-4 w-4 accent-primary"
         />
         Child must create a new password after logging in
       </label>
 
-      {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+      {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
       <Button
         type="submit"

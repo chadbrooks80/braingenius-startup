@@ -11,7 +11,7 @@ const codeSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 function Spinner() {
   return (
@@ -102,7 +102,7 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-bg-top)">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-(--header-height) items-center justify-center">
         <Image
           src="/logo.png"
@@ -115,19 +115,19 @@ function VerifyEmailContent() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
           <div className="text-center">
-            <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+            <h1 className="font-display text-2xl font-extrabold text-heading">
               Verify your email
             </h1>
-            <p className="mt-2 text-sm text-(--color-text-muted)">
+            <p className="mt-2 text-sm text-muted">
               We sent a 4-digit verification code to your email.
             </p>
           </div>
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-              <label htmlFor="code" className="text-sm font-semibold text-(--color-text-primary)">
+              <label htmlFor="code" className="text-sm font-semibold text-text">
                 Verification code
               </label>
               <input
@@ -143,9 +143,9 @@ function VerifyEmailContent() {
               />
             </div>
 
-            {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+            {error && <p className="text-sm font-medium text-danger">{error}</p>}
             {resendMessage && (
-              <p className="text-sm font-medium text-(--color-text-muted)">{resendMessage}</p>
+              <p className="text-sm font-medium text-muted">{resendMessage}</p>
             )}
 
             <Button
@@ -159,13 +159,13 @@ function VerifyEmailContent() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-(--color-text-muted)">
+          <p className="mt-6 text-center text-sm text-muted">
             Didn&apos;t get a code?{" "}
             <button
               type="button"
               onClick={handleResend}
               disabled={isResending}
-              className="font-semibold text-(--color-primary-cyan) disabled:cursor-not-allowed disabled:opacity-60"
+              className="font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isResending ? "Sending..." : "Resend code"}
             </button>

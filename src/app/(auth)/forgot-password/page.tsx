@@ -10,7 +10,7 @@ const emailSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-bg-top)">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-(--header-height) items-center justify-center">
         <Image
           src="/logo.png"
@@ -54,24 +54,24 @@ export default function ForgotPasswordPage() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
           <div className="text-center">
-            <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+            <h1 className="font-display text-2xl font-extrabold text-heading">
               Forgot your password?
             </h1>
-            <p className="mt-2 text-sm text-(--color-text-muted)">
+            <p className="mt-2 text-sm text-muted">
               Enter your email and we&apos;ll send you a reset link.
             </p>
           </div>
 
           {submitted ? (
-            <p className="mt-8 text-center text-sm font-medium text-(--color-text-primary)">
+            <p className="mt-8 text-center text-sm font-medium text-text">
               If an account exists for that email, we sent a reset link.
             </p>
           ) : (
             <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-semibold text-(--color-text-primary)">
+                <label htmlFor="email" className="text-sm font-semibold text-text">
                   Email
                 </label>
                 <input
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
-              {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+              {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
               <Button
                 type="submit"
@@ -98,8 +98,8 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          <p className="mt-6 text-center text-sm text-(--color-text-muted)">
-            <a href="/sign-in" className="font-semibold text-(--color-primary-cyan)">
+          <p className="mt-6 text-center text-sm text-muted">
+            <a href="/sign-in" className="font-semibold text-primary">
               Back to sign in
             </a>
           </p>

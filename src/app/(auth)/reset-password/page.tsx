@@ -17,7 +17,7 @@ const resetSchema = z
   });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -60,7 +60,7 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-bg-top)">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-(--header-height) items-center justify-center">
         <Image
           src="/logo.png"
@@ -73,17 +73,17 @@ function ResetPasswordContent() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
           <div className="text-center">
-            <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+            <h1 className="font-display text-2xl font-extrabold text-heading">
               Reset your password
             </h1>
-            <p className="mt-2 text-sm text-(--color-text-muted)">Enter a new password below.</p>
+            <p className="mt-2 text-sm text-muted">Enter a new password below.</p>
           </div>
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
+              <label htmlFor="password" className="text-sm font-semibold text-text">
                 New password
               </label>
               <input
@@ -100,7 +100,7 @@ function ResetPasswordContent() {
             <div className="space-y-1.5">
               <label
                 htmlFor="confirmPassword"
-                className="text-sm font-semibold text-(--color-text-primary)"
+                className="text-sm font-semibold text-text"
               >
                 Confirm password
               </label>
@@ -115,7 +115,7 @@ function ResetPasswordContent() {
               />
             </div>
 
-            {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+            {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
             <Button
               type="submit"

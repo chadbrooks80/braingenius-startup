@@ -16,19 +16,19 @@ function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
       <path
-        fill="#4285F4"
+        fill="currentColor"
         d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.28 1.48-1.13 2.73-2.4 3.58v2.97h3.86c2.26-2.08 3.56-5.14 3.56-8.79z"
       />
       <path
-        fill="#34A853"
+        fill="currentColor"
         d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.86-2.97c-1.07.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.07C3.26 21.3 7.31 24 12 24z"
       />
       <path
-        fill="#FBBC05"
+        fill="currentColor"
         d="M5.27 14.31c-.24-.72-.38-1.49-.38-2.31s.14-1.59.38-2.31V6.62H1.27A11.96 11.96 0 0 0 0 12c0 1.93.46 3.76 1.27 5.38l4-3.07z"
       />
       <path
-        fill="#EA4335"
+        fill="currentColor"
         d="M12 4.75c1.76 0 3.34.6 4.58 1.78l3.43-3.43C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.27 6.62l4 3.07c.95-2.85 3.6-4.94 6.73-4.94z"
       />
     </svg>
@@ -36,7 +36,7 @@ function GoogleIcon() {
 }
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 function SignInContent() {
   const router = useRouter();
@@ -88,7 +88,7 @@ function SignInContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-(--color-bg-top)">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-(--header-height) items-center justify-center">
         <Image
           src="/logo.png"
@@ -101,18 +101,18 @@ function SignInContent() {
       </header>
 
       <div className="flex flex-1 items-center justify-center px-(--spacing-container)">
-        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-(--color-surface-strong) p-8 shadow-(--shadow-xl)">
+        <div className="w-full max-w-sm rounded-(--radius-2xl) bg-surface/85 p-8 shadow-(--shadow-xl)">
           <div className="text-center">
-            <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+            <h1 className="font-display text-2xl font-extrabold text-heading">
               Welcome back
             </h1>
-            <p className="mt-2 text-sm text-(--color-text-muted)">
+            <p className="mt-2 text-sm text-muted">
               Sign in to continue to BrainGenius AI
             </p>
           </div>
 
           {justVerified && (
-            <p className="mt-4 text-center text-sm font-medium text-(--color-text-primary)">
+            <p className="mt-4 text-center text-sm font-medium text-primary-strong">
               Your email is verified. You can now sign in.
             </p>
           )}
@@ -122,7 +122,7 @@ function SignInContent() {
             variant="secondary"
             onClick={handleGoogleSignIn}
             disabled={isGoogleSubmitting}
-            className="mt-8 w-full justify-center bg-(--color-white) disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-8 w-full justify-center bg-surface disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isGoogleSubmitting ? (
               "Signing in..."
@@ -135,16 +135,16 @@ function SignInContent() {
           </Button>
 
           <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-(--color-border-muted)" />
-            <span className="text-xs font-semibold uppercase tracking-(--tracking-label) text-(--color-text-muted)">
+            <span className="h-px flex-1 bg-heading/20" />
+            <span className="text-xs font-semibold uppercase tracking-(--tracking-label) text-muted">
               or
             </span>
-            <span className="h-px flex-1 bg-(--color-border-muted)" />
+            <span className="h-px flex-1 bg-heading/20" />
           </div>
 
           <form className="space-y-4" onSubmit={handleCredentialsSubmit}>
             <div className="space-y-1.5">
-              <label htmlFor="username" className="text-sm font-semibold text-(--color-text-primary)">
+              <label htmlFor="username" className="text-sm font-semibold text-text">
                 Email or username
               </label>
               <input
@@ -160,10 +160,10 @@ function SignInContent() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-semibold text-(--color-text-primary)">
+                <label htmlFor="password" className="text-sm font-semibold text-text">
                   Password
                 </label>
-                <a href="/forgot-password" className="text-sm font-semibold text-(--color-primary-cyan)">
+                <a href="/forgot-password" className="text-sm font-semibold text-primary">
                   Forgot password?
                 </a>
               </div>
@@ -178,7 +178,7 @@ function SignInContent() {
               />
             </div>
 
-            {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+            {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
             <Button
               type="submit"

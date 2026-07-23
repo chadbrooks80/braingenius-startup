@@ -1,3 +1,8 @@
+## 2026-07-22 00:01
+
+- Migrated third batch of Host components — the auth pages (`sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email`) and onboarding components (`OnboardingShell`, `ProfileStep`, `PlanStep`, `ChildrenStep`, `WelcomeVideoStep`) — from raw `var(--color-*)` Tailwind arbitrary values to the unified `ColorToken` theme utility classes (e.g. `bg-surface`, `bg-background`, `text-heading`, `text-muted`, `text-primary-strong`, `border-heading/20`)
+- Continues the theme unification work on `feature/host-theme-batch-3`, on top of batch 1 (`040eb0d`) and batch 2 (`4fe6329`)
+
 ## 2026-07-22 00:00
 
 - Migrated second batch of Host components (`CTASection`, `ExampleBlock`, `FeatureCheckCard`, `FeatureSection`, `Hero`, `HowItWorksSection`, `TestimonialCard`, `TestimonialsSection`, `TrustSection`, `WordGeneratorSection`) from raw `var(--color-*)` Tailwind arbitrary values to the unified `ColorToken` theme utility classes (e.g. `bg-primary`, `text-text`, `text-secondary`, `text-muted`, `text-heading`, `text-surface`, `text-energy`)

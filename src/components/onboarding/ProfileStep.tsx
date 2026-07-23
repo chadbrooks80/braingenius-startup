@@ -12,7 +12,7 @@ const profileSchema = z.object({
 });
 
 const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-(--color-border-muted) bg-(--color-white) px-4 py-2.5 text-sm text-(--color-text-primary) outline-none transition-all duration-(--transition-fast) focus:border-(--color-primary-cyan)";
+  "w-full rounded-(--radius-lg) border-2 border-heading/20 bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-primary";
 
 export default function ProfileStep() {
   const router = useRouter();
@@ -49,17 +49,17 @@ export default function ProfileStep() {
   return (
     <>
       <div className="text-center">
-        <h1 className="font-display text-2xl font-extrabold text-(--color-dark)">
+        <h1 className="font-display text-2xl font-extrabold text-heading">
           Let&apos;s get you started
         </h1>
-        <p className="mt-2 text-sm text-(--color-text-muted)">
+        <p className="mt-2 text-sm text-muted">
           Please provide the information below.
         </p>
       </div>
 
       <form className="mx-auto mt-8 max-w-sm space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
-          <label htmlFor="fName" className="text-sm font-semibold text-(--color-text-primary)">
+          <label htmlFor="fName" className="text-sm font-semibold text-text">
             First name
           </label>
           <input
@@ -74,8 +74,8 @@ export default function ProfileStep() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="lName" className="text-sm font-semibold text-(--color-text-primary)">
-            Last name <span className="text-(--color-text-muted)">(optional)</span>
+          <label htmlFor="lName" className="text-sm font-semibold text-text">
+            Last name <span className="text-muted">(optional)</span>
           </label>
           <input
             id="lName"
@@ -88,7 +88,7 @@ export default function ProfileStep() {
           />
         </div>
 
-        {error && <p className="text-sm font-medium text-(--color-accent-pink)">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
 
         <Button
           type="submit"
