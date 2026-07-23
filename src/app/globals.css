@@ -1,13 +1,9 @@
 @import "tailwindcss";
 
 /*
- * BrainGenius unified theme migration file
+ * BrainGenius unified theme
  *
- * Migration order:
- * 1. New work uses only the FINAL THEME tokens.
- * 2. Existing components are converted in small, verified groups.
- * 3. A TEMPORARY LEGACY token is deleted only after its usage reaches zero.
- * 4. When migration is complete, every TEMPORARY LEGACY section is removed.
+ * New work uses only the final semantic theme tokens below.
  */
 
 /* ========================================================================== */
@@ -58,71 +54,7 @@
 }
 
 /* ========================================================================== */
-/* TEMPORARY LEGACY — LEARNING ENGINE COLOR NAMES                             */
-/*                                                                            */
-/* Keep these while Learning Engine components still use the old names.       */
-/* ========================================================================== */
-
-:root {
-  /* Exact matches now backed by the final palette */
-  --cyan: var(--color-primary);
-  --lime: var(--color-secondary);
-  --navy: var(--color-heading);
-  --ink: var(--color-text);
-  --cyan-ink: var(--color-primary-strong);
-  --lime-ink: var(--color-secondary-strong);
-  --page-background: var(--color-background);
-
-  /* Learning Engine colors still awaiting conversion */
-  --muted-light: #94a3b8;
-  --lime-strong: #65a30d;
-  --border-neutral: #e2e8f0;
-  --border-neutral-faded: #f1f5f9;
-  --red: #f87171;
-  --red-strong: var(--color-danger);
-  --red-ink: #b91c1c;
-  --sky: #38bdf8;
-
-  /* Learning Engine pre-baked color + opacity values awaiting conversion */
-  --hairline: rgba(15, 23, 42, 0.07);
-  --track: rgba(15, 23, 42, 0.08);
-  --tint-lime: rgba(163, 230, 53, 0.12);
-  --tint-lime-strong: rgba(163, 230, 53, 0.18);
-  --border-lime: rgba(163, 230, 53, 0.35);
-  --tint-cyan: rgba(34, 211, 238, 0.15);
-  --tint-cyan-strong: rgba(34, 211, 238, 0.18);
-  --border-cyan: rgba(34, 211, 238, 0.30);
-  --tint-neutral-faded: rgba(248, 250, 252, 0.50);
-  --tint-red: rgba(248, 113, 113, 0.10);
-  --shadow-cyan: rgba(34, 211, 238, 0.30);
-  --tint-purple: rgba(124, 58, 237, 0.12);
-  --border-purple: rgba(124, 58, 237, 0.35);
-  --surface-translucent: rgba(255, 255, 255, 0.88);
-  --shadow-card: rgba(15, 23, 42, 0.13);
-  --shadow-soft: rgba(15, 23, 42, 0.06);
-  --shadow-medium: rgba(15, 23, 42, 0.10);
-  --shadow-strong: rgba(15, 23, 42, 0.14);
-  --shadow-button: rgba(15, 23, 42, 0.18);
-  --shadow-button-hover: rgba(15, 23, 42, 0.22);
-}
-
-/* ========================================================================== */
-/* TEMPORARY SHARED SURFACES                                                  */
-/*                                                                            */
-/* Both files used surface-strong at 82%. Learning used surface-soft at 72%.  */
-/* The Host's old 45% surface-soft value had no active component usage.        */
-/* ========================================================================== */
-
-:root {
-  --surface-strong: rgba(255, 255, 255, 0.82);
-  --surface-soft: rgba(255, 255, 255, 0.72);
-}
-
-/* ========================================================================== */
-/* CURRENT SHARED NON-COLOR THEME — RETAINED DURING COLOR MIGRATION           */
-/*                                                                            */
-/* These are already owned by the Host file. Review and trim them separately  */
-/* after the color migration is complete.                                     */
+/* SHARED NON-COLOR THEME                                                     */
 /* ========================================================================== */
 
 :root {
@@ -173,56 +105,7 @@
 }
 
 /* ========================================================================== */
-/* TAILWIND V4 — TEMPORARY LEGACY COLOR UTILITIES                             */
-/*                                                                            */
-/* These keep existing classes working while components move to the final     */
-/* semantic classes.                                                          */
-/* ========================================================================== */
-
-@theme inline {
-  /*
-   * Temporary literal-color compatibility utilities.
-   * Remove each alias after its repository usage reaches zero.
-   */
-  --color-white: var(--color-surface);
-  --color-purple: var(--color-feature);
-
-  /* Learning Engine legacy utilities */
-  --color-cyan: var(--cyan);
-  --color-lime: var(--lime);
-  --color-navy: var(--navy);
-  --color-ink: var(--ink);
-  --color-muted-light: var(--muted-light);
-  --color-lime-strong: var(--lime-strong);
-  --color-lime-ink: var(--lime-ink);
-  --color-cyan-ink: var(--cyan-ink);
-  --color-hairline: var(--hairline);
-  --color-track: var(--track);
-  --color-tint-lime: var(--tint-lime);
-  --color-tint-lime-strong: var(--tint-lime-strong);
-  --color-border-lime: var(--border-lime);
-  --color-tint-cyan: var(--tint-cyan);
-  --color-tint-cyan-strong: var(--tint-cyan-strong);
-  --color-border-cyan: var(--border-cyan);
-  --color-border-neutral: var(--border-neutral);
-  --color-border-neutral-faded: var(--border-neutral-faded);
-  --color-tint-neutral-faded: var(--tint-neutral-faded);
-  --color-red: var(--red);
-  --color-red-strong: var(--red-strong);
-  --color-red-ink: var(--red-ink);
-  --color-tint-red: var(--tint-red);
-  --color-sky: var(--sky);
-  --color-tint-purple: var(--tint-purple);
-  --color-border-purple: var(--border-purple);
-  --color-surface-translucent: var(--surface-translucent);
-
-  /* Shared surface utilities */
-  --color-surface-strong: var(--surface-strong);
-  --color-surface-soft: var(--surface-soft);
-}
-
-/* ========================================================================== */
-/* TAILWIND V4 — CURRENT NON-COLOR UTILITIES                                  */
+/* TAILWIND V4 — NON-COLOR UTILITIES                                          */
 /* ========================================================================== */
 
 @theme inline {
@@ -316,7 +199,7 @@ body {
   );
 }
 
-/* Learning Engine routes keep their solid background during its later migration. */
+/* Learning Engine routes keep their solid background. */
 .learning-shell {
   min-height: 100vh;
   color: var(--color-text);

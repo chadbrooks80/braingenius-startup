@@ -1,3 +1,10 @@
+## 2026-07-23 10:00
+
+- Completed final cleanup of the Host/Learning Engine theme unification in `src/app/globals.css` on `feature/learning-theme-batch-3`, following the batch 1 (`3171438`) and batch 2 (`a1cbffb`) Learning Engine component migrations
+- Removed the now-unused "TEMPORARY LEGACY — LEARNING ENGINE COLOR NAMES" `:root` block, the "TEMPORARY SHARED SURFACES" `:root` block, and the "TAILWIND V4 — TEMPORARY LEGACY COLOR UTILITIES" `@theme inline` block, since every component that referenced them has been migrated to the unified `ColorToken` classes
+- Verified via repo-wide grep that no `.tsx`/`.ts`/`.css` files reference the removed legacy CSS variables or Tailwind utility classes (e.g. `--cyan`, `--lime`, `--hairline`, `bg-white`, `text-cyan`, `border-lime`) before deleting them
+- Trimmed the file header comment and stale migration-in-progress comments now that the color migration is finished
+
 ## 2026-07-22 00:01
 
 - Migrated third batch of Host components — the auth pages (`sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email`) and onboarding components (`OnboardingShell`, `ProfileStep`, `PlanStep`, `ChildrenStep`, `WelcomeVideoStep`) — from raw `var(--color-*)` Tailwind arbitrary values to the unified `ColorToken` theme utility classes (e.g. `bg-surface`, `bg-background`, `text-heading`, `text-muted`, `text-primary-strong`, `border-heading/20`)
