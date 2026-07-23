@@ -340,3 +340,10 @@
 - Converted first batch of host components off legacy tokens/raw CSS vars onto the final theme: `FeatureCard`, `TrustSymbol`, `CheckBadge`, `Eyebrow`, `Modal`, `PasswordInput`, `Button`, `Header`, `HeaderNav`, `layout.tsx`
 - Fixed `src/app/globals.css` global theme variable definitions to align with the unified token set (`613b301`)
 - Migration-only aliases intentionally left in place until remaining callers across the codebase are converted in later batches
+
+## 2026-07-22 21:40
+
+- Completed theme migration batch 4 on `feature/host-theme-batch-4`, the final conversion batch: migrated the last remaining caller, `src/app/playground/page.tsx`, off legacy alias tokens and raw `text-(--color-*)` / `bg-(--color-*)` arbitrary values onto the final `ColorToken` set (`primary`, `secondary`, `feature`, `highlight`, `warning`, `success`, `heading`, `surface`, `background`, `muted`)
+- Since usage of the migration-only aliases reached zero, removed them entirely: deleted all alias entries (`cyan`, `lime`, `indigo`, `pink`, `amber`, `teal`, `teal-green`, `white`, `dark`, `bg-top`, `text-primary`) from `COLOR_TOKENS` and every `COLOR_CLASS_MAP` group in `src/lib/theme-colors.ts`
+- Removed the corresponding `TEMPORARY LEGACY — HOST COLOR NAMES` block and related `--color-*` passthroughs from `src/app/globals.css`, and updated the `body` background gradient to use `--color-background`/`--color-surface` directly instead of the deleted `--color-bg-top`/`--color-bg-bottom`
+- This closes out the Host/Learning Engine theme unification effort started in `feature/unify-global-theme` — all components now consume the single final 15-token theme with no legacy aliases remaining

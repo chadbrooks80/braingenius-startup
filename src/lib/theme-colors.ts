@@ -26,19 +26,6 @@ export const COLOR_TOKENS = [
   "warning",
   "success",
   "energy",
-  // Migration-only aliases — old Host/Learning Engine names still passed by
-  // unconverted callers. Remove once repository usage reaches zero.
-  "cyan",
-  "lime",
-  "indigo",
-  "teal-green",
-  "dark",
-  "bg-top",
-  "text-primary",
-  "white",
-  "pink",
-  "amber",
-  "teal",
 ] as const;
 
 export type ColorToken = (typeof COLOR_TOKENS)[number];
@@ -55,16 +42,6 @@ export const COLOR_CLASS_MAP = {
     highlight: "bg-highlight",
     warning: "bg-warning",
     success: "bg-success",
-    // Migration-only aliases
-    cyan: "bg-primary",
-    lime: "bg-secondary",
-    indigo: "bg-feature",
-    pink: "bg-highlight",
-    amber: "bg-warning",
-    teal: "bg-success",
-    white: "bg-surface",
-    dark: "bg-heading",
-    "bg-top": "bg-background",
   },
   /* Text and icon foregrounds */
   text: {
@@ -77,26 +54,12 @@ export const COLOR_CLASS_MAP = {
     warning: "text-warning",
     success: "text-success",
     text: "text-text",
-    // Migration-only aliases
-    cyan: "text-primary",
-    lime: "text-secondary",
-    indigo: "text-feature",
-    pink: "text-highlight",
-    amber: "text-warning",
-    teal: "text-success",
-    white: "text-surface",
-    dark: "text-heading",
-    "text-primary": "text-text",
   },
   /* Secondary text at --alpha-surface-soft (48%) (e.g. TestimonialCard role line) */
   textMuted: {
     surface: "text-surface/48",
     heading: "text-heading/48",
     text: "text-text/48",
-    // Migration-only aliases
-    white: "text-surface/48",
-    dark: "text-heading/48",
-    "text-primary": "text-text/48",
   },
   /* Tinted icon backgrounds at --alpha-subtle (13%) */
   iconBg: {
@@ -107,15 +70,6 @@ export const COLOR_CLASS_MAP = {
     highlight: "bg-highlight/13",
     warning: "bg-warning/13",
     success: "bg-success/13",
-    // Migration-only aliases
-    cyan: "bg-primary/13",
-    lime: "bg-secondary/13",
-    indigo: "bg-feature/13",
-    pink: "bg-highlight/13",
-    amber: "bg-warning/13",
-    teal: "bg-success/13",
-    "teal-green": "bg-success/13",
-    white: "bg-surface/13",
   },
   /* FeatureCard accent border + hover glow: sets the CSS vars its
      hover:border/hover:shadow classes consume (glow = color at 20%) */
@@ -132,15 +86,6 @@ export const COLOR_CLASS_MAP = {
       "[--card-border:var(--color-warning)] [--card-glow:color-mix(in_srgb,var(--color-warning)_20%,transparent)]",
     success:
       "[--card-border:var(--color-success)] [--card-glow:color-mix(in_srgb,var(--color-success)_20%,transparent)]",
-    // Migration-only aliases
-    cyan: "[--card-border:var(--color-primary)] [--card-glow:color-mix(in_srgb,var(--color-primary)_20%,transparent)]",
-    lime: "[--card-border:var(--color-secondary)] [--card-glow:color-mix(in_srgb,var(--color-secondary)_20%,transparent)]",
-    indigo:
-      "[--card-border:var(--color-feature)] [--card-glow:color-mix(in_srgb,var(--color-feature)_20%,transparent)]",
-    pink: "[--card-border:var(--color-highlight)] [--card-glow:color-mix(in_srgb,var(--color-highlight)_20%,transparent)]",
-    amber:
-      "[--card-border:var(--color-warning)] [--card-glow:color-mix(in_srgb,var(--color-warning)_20%,transparent)]",
-    teal: "[--card-border:var(--color-success)] [--card-glow:color-mix(in_srgb,var(--color-success)_20%,transparent)]",
   },
   /* Pill backgrounds at --alpha-subtle (13%) (Eyebrow) */
   tintBg: {
@@ -149,12 +94,6 @@ export const COLOR_CLASS_MAP = {
     feature: "bg-feature/13",
     highlight: "bg-highlight/13",
     warning: "bg-warning/13",
-    // Migration-only aliases
-    cyan: "bg-primary/13",
-    lime: "bg-secondary/13",
-    indigo: "bg-feature/13",
-    pink: "bg-highlight/13",
-    amber: "bg-warning/13",
   },
   /* Pill borders at --alpha-medium (34%) (Eyebrow, keyed by its text color) */
   tintBorder: {
@@ -164,13 +103,6 @@ export const COLOR_CLASS_MAP = {
     feature: "border-feature/34",
     highlight: "border-highlight/34",
     warning: "border-warning/34",
-    // Migration-only aliases
-    dark: "border-heading/34",
-    indigo: "border-feature/34",
-    pink: "border-highlight/34",
-    cyan: "border-primary/34",
-    amber: "border-warning/34",
-    "text-primary": "border-text/34",
   },
 } as const satisfies Record<string, Partial<Record<ColorToken, string>>>;
 

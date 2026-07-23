@@ -8,9 +8,6 @@
  * 2. Existing components are converted in small, verified groups.
  * 3. A TEMPORARY LEGACY token is deleted only after its usage reaches zero.
  * 4. When migration is complete, every TEMPORARY LEGACY section is removed.
- *
- * The four fixed colors inside the Google "G" SVG are external brand artwork.
- * They are not part of the BrainGenius application palette.
  */
 
 /* ========================================================================== */
@@ -58,55 +55,6 @@
   --alpha-surface-soft: 0.48;
   --alpha-surface: 0.74;
   --alpha-surface-strong: 0.85;
-}
-
-/* ========================================================================== */
-/* TEMPORARY LEGACY — HOST COLOR NAMES                                        */
-/*                                                                            */
-/* Keep these while Host components still use the old names. Exact duplicate */
-/* colors point to the new palette; old one-off colors retain their values.   */
-/* ========================================================================== */
-
-:root {
-  /* Exact matches now backed by the final palette */
-  --primary-cyan: var(--color-primary);
-  --secondary-lime: var(--color-secondary);
-  --dark: var(--color-heading);
-  --text-primary: var(--color-text);
-  --text-muted: var(--color-muted);
-  --bg-top: var(--color-background);
-
-  --accent-cyan: var(--color-primary);
-  --accent-lime: var(--color-secondary);
-  --accent-pink: var(--color-highlight);
-  --accent-amber: var(--color-warning);
-  --accent-teal: var(--color-success);
-  --accent-orange: var(--color-energy);
-
-  /* Host colors still awaiting conversion */
-  --navy-medium: #1e3a5f;
-  --bg-bottom: #fffbe8;
-  --accent-indigo: #818cf8;
-  --cyan-light: #38bdf8;
-  --primary-hover: #1e40af;
-  --text-light: #94a3b8;
-  --text-inverse: #cbd5e1;
-  --footer-muted: #475569;
-
-  /* Host pre-baked color + opacity values awaiting conversion */
-  --surface: rgba(255, 255, 255, 0.78);
-  --icon-bg-teal: rgba(34, 211, 238, 0.12);
-  --icon-bg-indigo: rgba(129, 140, 248, 0.12);
-  --icon-bg-lime: rgba(163, 230, 53, 0.12);
-  --icon-bg-pink: rgba(244, 114, 182, 0.15);
-  --icon-bg-amber: rgba(251, 191, 36, 0.15);
-  --icon-bg-teal-green: rgba(45, 212, 191, 0.15);
-  --border-soft: rgba(255, 255, 255, 0.70);
-  --border-muted: rgba(15, 23, 42, 0.18);
-  --glow-cyan: rgba(34, 211, 238, 0.35);
-  --glow-lime: rgba(163, 230, 53, 0.30);
-  --cta-glow-cyan: rgba(34, 211, 238, 0.18);
-  --cta-glow-lime: rgba(163, 230, 53, 0.15);
 }
 
 /* ========================================================================== */
@@ -238,44 +186,6 @@
    */
   --color-white: var(--color-surface);
   --color-purple: var(--color-feature);
-  --color-pink: var(--color-highlight);
-  --color-amber: var(--color-warning);
-  --color-teal: var(--color-success);
-  --color-orange: var(--color-energy);
-
-  /* Host legacy utilities */
-  --color-primary-cyan: var(--primary-cyan);
-  --color-secondary-lime: var(--secondary-lime);
-  --color-dark: var(--dark);
-  --color-navy-medium: var(--navy-medium);
-  --color-text-primary: var(--text-primary);
-  --color-text-muted: var(--text-muted);
-  --color-bg-top: var(--bg-top);
-  --color-bg-bottom: var(--bg-bottom);
-  --color-accent-cyan: var(--accent-cyan);
-  --color-accent-lime: var(--accent-lime);
-  --color-accent-indigo: var(--accent-indigo);
-  --color-accent-pink: var(--accent-pink);
-  --color-accent-amber: var(--accent-amber);
-  --color-accent-teal: var(--accent-teal);
-  --color-accent-orange: var(--accent-orange);
-  --color-cyan-light: var(--cyan-light);
-  --color-primary-hover: var(--primary-hover);
-  --color-text-light: var(--text-light);
-  --color-text-inverse: var(--text-inverse);
-  --color-footer-muted: var(--footer-muted);
-  --color-icon-bg-teal: var(--icon-bg-teal);
-  --color-icon-bg-indigo: var(--icon-bg-indigo);
-  --color-icon-bg-lime: var(--icon-bg-lime);
-  --color-icon-bg-pink: var(--icon-bg-pink);
-  --color-icon-bg-amber: var(--icon-bg-amber);
-  --color-icon-bg-teal-green: var(--icon-bg-teal-green);
-  --color-border-soft: var(--border-soft);
-  --color-border-muted: var(--border-muted);
-  --color-glow-cyan: var(--glow-cyan);
-  --color-glow-lime: var(--glow-lime);
-  --color-cta-glow-cyan: var(--cta-glow-cyan);
-  --color-cta-glow-lime: var(--cta-glow-lime);
 
   /* Learning Engine legacy utilities */
   --color-cyan: var(--cyan);
@@ -401,16 +311,12 @@ body {
   color: var(--color-text);
   background: linear-gradient(
     to bottom,
-    var(--color-bg-top),
-    var(--color-bg-bottom)
+    var(--color-background),
+    var(--color-surface)
   );
 }
 
-/*
- * Before deleting the Learning Engine globals.css import, add
- * `learning-shell` to the Learning layout wrapper. This preserves its current
- * solid page background while the Host continues using its existing gradient.
- */
+/* Learning Engine routes keep their solid background during its later migration. */
 .learning-shell {
   min-height: 100vh;
   color: var(--color-text);

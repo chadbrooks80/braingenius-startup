@@ -26,10 +26,10 @@ import {
 export default function PlaygroundPage() {
   return (
     <main className="flex flex-col gap-10 p-10">
-      <h1 className="font-display text-2xl font-bold text-(--color-dark)">Component Playground</h1>
+      <h1 className="font-display text-2xl font-bold text-heading">Component Playground</h1>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">CheckBadge</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">CheckBadge</h2>
 
         <div className="flex flex-col gap-6 items-start">
           <div className="flex flex-wrap gap-3">
@@ -39,21 +39,21 @@ export default function PlaygroundPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <CheckBadge label="Never too easy" backgroundColor="cyan" fontColor="dark" checkboxColor="dark" />
-            <CheckBadge label="Never too hard" backgroundColor="lime" fontColor="dark" checkboxColor="dark" />
-            <CheckBadge label="Spaced reviews" backgroundColor="indigo" fontColor="white" checkboxColor="white" />
+            <CheckBadge label="Never too easy" backgroundColor="primary" fontColor="heading" checkboxColor="heading" />
+            <CheckBadge label="Never too hard" backgroundColor="secondary" fontColor="heading" checkboxColor="heading" />
+            <CheckBadge label="Spaced reviews" backgroundColor="feature" fontColor="surface" checkboxColor="surface" />
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <CheckBadge label="Mastery-based" checkboxColor="pink" />
-            <CheckBadge label="Works offline" checkboxColor="amber" />
-            <CheckBadge label="Grade-aligned" checkboxColor="teal" />
+            <CheckBadge label="Mastery-based" checkboxColor="highlight" />
+            <CheckBadge label="Works offline" checkboxColor="warning" />
+            <CheckBadge label="Grade-aligned" checkboxColor="success" />
           </div>
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">Eyebrow</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">Eyebrow</h2>
 
         <div className="flex flex-col gap-3 items-start">
           <Eyebrow>AI-Powered Vocabulary Learning</Eyebrow>
@@ -62,70 +62,70 @@ export default function PlaygroundPage() {
           <Eyebrow>Testimonials</Eyebrow>
         </div>
 
-        <h3 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest mt-4">Color Variants</h3>
+        <h3 className="font-semibold text-sm text-muted uppercase tracking-widest mt-4">Color Variants</h3>
         <div className="flex flex-col gap-3 items-start">
-          <Eyebrow bgColor="lime" textColor="dark">Lime Variant</Eyebrow>
-          <Eyebrow bgColor="indigo" textColor="indigo">Indigo Variant</Eyebrow>
-          <Eyebrow bgColor="pink" textColor="pink">Pink Variant</Eyebrow>
-          <Eyebrow bgColor="amber" textColor="dark">Amber Variant</Eyebrow>
+          <Eyebrow bgColor="secondary" textColor="heading">Secondary Variant</Eyebrow>
+          <Eyebrow bgColor="feature" textColor="feature">Feature Variant</Eyebrow>
+          <Eyebrow bgColor="highlight" textColor="highlight">Highlight Variant</Eyebrow>
+          <Eyebrow bgColor="warning" textColor="heading">Warning Variant</Eyebrow>
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">ExampleBlock</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">ExampleBlock</h2>
 
         <div className="grid grid-cols-1 gap-6 max-w-sm">
           <ExampleBlock label="Label Only">
-            <p className="text-sm text-(--color-text-inverse)">Placeholder content — no status badge.</p>
+            <p className="text-sm text-surface/74">Placeholder content — no status badge.</p>
           </ExampleBlock>
 
           <ExampleBlock label="With Status" status="Live">
-            <p className="text-sm text-(--color-text-inverse)">Placeholder content — default lime status badge.</p>
+            <p className="text-sm text-surface/74">Placeholder content — default secondary status badge.</p>
           </ExampleBlock>
 
-          <ExampleBlock label="Custom Color" status="Review" statusColor="indigo">
-            <p className="text-sm text-(--color-text-inverse)">Placeholder content — custom indigo status badge.</p>
+          <ExampleBlock label="Custom Color" status="Review" statusColor="feature">
+            <p className="text-sm text-surface/74">Placeholder content — custom feature status badge.</p>
           </ExampleBlock>
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">TrustSymbol</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">TrustSymbol</h2>
 
         <div className="flex flex-wrap gap-4">
           <TrustSymbol
-            iconOrImage={<School className="w-5 h-5 text-(--color-primary-cyan)" />}
+            iconOrImage={<School className="w-5 h-5 text-primary" />}
             iconBgColor="primary"
             title="Nixa Public Schools"
             subtitle="Nixa, Missouri"
           />
           <TrustSymbol
-            iconOrImage={<GraduationCap className="w-5 h-5 text-(--color-accent-indigo)" />}
-            iconBgColor="indigo"
+            iconOrImage={<GraduationCap className="w-5 h-5 text-feature" />}
+            iconBgColor="feature"
             title="Ozark R-VI Schools"
             subtitle="Ozark, Missouri"
           />
           <TrustSymbol
-            iconOrImage={<Award className="w-5 h-5 text-(--color-accent-lime)" />}
-            iconBgColor="lime"
+            iconOrImage={<Award className="w-5 h-5 text-secondary" />}
+            iconBgColor="secondary"
             title="EdTech Horizon Award"
             subtitle="2024 Best K-12 Tool"
           />
           <TrustSymbol
-            iconOrImage={<Star className="w-5 h-5 text-(--color-accent-amber)" />}
-            iconBgColor="amber"
+            iconOrImage={<Star className="w-5 h-5 text-warning" />}
+            iconBgColor="warning"
             title="4.9 / 5 Rating"
             subtitle="2,400+ reviews"
           />
           <TrustSymbol
-            iconOrImage={<Zap className="w-5 h-5 text-(--color-accent-amber)" />}
-            iconBgColor="amber"
+            iconOrImage={<Zap className="w-5 h-5 text-warning" />}
+            iconBgColor="warning"
             title="District Ready"
             subtitle="FERPA Compliant"
           />
           <TrustSymbol
-            iconOrImage={<BookOpen className="w-5 h-5 text-(--color-accent-teal)" />}
-            iconBgColor="teal"
+            iconOrImage={<BookOpen className="w-5 h-5 text-success" />}
+            iconBgColor="success"
             title="Reading First"
             subtitle="Curriculum Partner"
           />
@@ -146,58 +146,58 @@ export default function PlaygroundPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">FeatureCard</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">FeatureCard</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[900px]">
           <FeatureCard
-            icon={<ChartLine size={22} className="text-(--color-accent-cyan)" />}
-            iconBgColor="cyan"
-            borderColor="cyan"
+            icon={<ChartLine size={22} className="text-primary" />}
+            iconBgColor="primary"
+            borderColor="primary"
             title="Adaptive Learning"
           >
             Lessons adjust to your skill level in real time, keeping you in the optimal challenge zone.
           </FeatureCard>
 
           <FeatureCard
-            icon={<RotateCw size={22} className="text-(--color-accent-lime)" />}
-            iconBgColor="lime"
-            borderColor="lime"
+            icon={<RotateCw size={22} className="text-secondary" />}
+            iconBgColor="secondary"
+            borderColor="secondary"
             title="Spaced Repetition"
           >
             Words resurface at the perfect moment so they move from short-term recall into long-term memory.
           </FeatureCard>
 
           <FeatureCard
-            icon={<Brain size={22} className="text-(--color-accent-indigo)" />}
-            iconBgColor="indigo"
-            borderColor="indigo"
+            icon={<Brain size={22} className="text-feature" />}
+            iconBgColor="feature"
+            borderColor="feature"
             title="AI-Generated Content"
           >
             Fresh passages and questions are created on demand, tuned to your grade level and interests.
           </FeatureCard>
 
           <FeatureCard
-            icon={<Gamepad2 size={22} className="text-(--color-accent-pink)" />}
-            iconBgColor="pink"
-            borderColor="pink"
+            icon={<Gamepad2 size={22} className="text-highlight" />}
+            iconBgColor="highlight"
+            borderColor="highlight"
             title="Gamified Practice"
           >
             Earn streaks, badges, and leaderboard spots that make daily vocabulary practice feel like play.
           </FeatureCard>
 
           <FeatureCard
-            icon={<BarChart2 size={22} className="text-(--color-accent-amber)" />}
-            iconBgColor="amber"
-            borderColor="amber"
+            icon={<BarChart2 size={22} className="text-warning" />}
+            iconBgColor="warning"
+            borderColor="warning"
             title="Progress Analytics"
           >
             Visual dashboards show mastery trends so students and teachers always know what to work on next.
           </FeatureCard>
 
           <FeatureCard
-            icon={<Users size={22} className="text-(--color-accent-teal)" />}
-            iconBgColor="teal"
-            borderColor="teal"
+            icon={<Users size={22} className="text-success" />}
+            iconBgColor="success"
+            borderColor="success"
             title="Class Management"
           >
             Assign lists, track individual progress, and share reports with parents — all in one place.
@@ -206,7 +206,7 @@ export default function PlaygroundPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">TestimonialCard</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">TestimonialCard</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[900px]">
           <TestimonialCard
@@ -221,8 +221,8 @@ export default function PlaygroundPage() {
             name="Marcus T."
             title="8th Grade Science Teacher · Springfield, MO"
             imageUrl="/sara.jpeg"
-            backgroundColor="dark"
-            fontColor="white"
+            backgroundColor="heading"
+            fontColor="surface"
           >
             I used to spend hours building vocab lists for each unit. Now BrainGenius generates a complete word set with definitions in about 30 seconds.
           </TestimonialCard>
@@ -231,8 +231,8 @@ export default function PlaygroundPage() {
             name="Jayla R."
             title="9th Grade Student · Ozark High School"
             imageUrl="/sara.jpeg"
-            backgroundColor="bg-top"
-            fontColor="dark"
+            backgroundColor="background"
+            fontColor="heading"
           >
             It&apos;s like having a tutor that remembers every word I&apos;ve ever gotten wrong. I went from a C to an A in English this semester.
           </TestimonialCard>
@@ -240,11 +240,11 @@ export default function PlaygroundPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-sm text-(--color-text-muted) uppercase tracking-widest">FeatureCheckCard</h2>
+        <h2 className="font-semibold text-sm text-muted uppercase tracking-widest">FeatureCheckCard</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1200px]">
           <FeatureCheckCard
-            icon={<Bot size={24} className="text-(--color-primary-cyan)" />}
+            icon={<Bot size={24} className="text-primary" />}
             iconBackgroundColor="primary"
             title="AI-Generated Words by Topic"
             checkItems={[
@@ -258,8 +258,8 @@ export default function PlaygroundPage() {
           </FeatureCheckCard>
 
           <FeatureCheckCard
-            icon={<GraduationCap size={24} className="text-accent-indigo" />}
-            iconBackgroundColor="indigo"
+            icon={<GraduationCap size={24} className="text-feature" />}
+            iconBackgroundColor="feature"
             title="Recommended Words by Grade Level"
             checkItems={[
               "K–12 grade bands supported",
@@ -267,14 +267,14 @@ export default function PlaygroundPage() {
               "Pre-loaded definitions & example sentences",
               "Instantly ready for student practice",
             ]}
-            checkboxColor="indigo"
+            checkboxColor="feature"
           >
             Instantly generate a vocabulary list aligned to your students&apos; grade, curated from academic standards and leveled reading lists.
           </FeatureCheckCard>
 
           <FeatureCheckCard
-            icon={<FileText size={24} className="text-white" />}
-            iconBackgroundColor="white"
+            icon={<FileText size={24} className="text-surface" />}
+            iconBackgroundColor="surface"
             title="Words from URLs or PDF Uploads"
             checkItems={[
               "Paste any HTML link or article URL",
@@ -282,8 +282,8 @@ export default function PlaygroundPage() {
               "AI picks the most useful words",
               "Filtered to match your grade level",
             ]}
-            backgroundColor="dark"
-            fontColor="white"
+            backgroundColor="heading"
+            fontColor="surface"
             checkboxColor="secondary"
           >
             Upload a PDF or paste a webpage link and BrainGenius extracts the most valuable vocabulary for your students automatically.
