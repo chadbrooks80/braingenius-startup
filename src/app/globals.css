@@ -33,17 +33,17 @@
 
   /* Page and card foundations */
   --color-background: #c8f6ff;
-  --color-white: #ffffff;
+  --color-surface: #ffffff;
 
   /* Status */
   --color-danger: #dc2626;
 
-  /* Supporting accents */
-  --color-purple: #7c3aed;
-  --color-pink: #f472b6;
-  --color-amber: #fbbf24;
-  --color-teal: #2dd4bf;
-  --color-orange: #f97316;
+  /* Supporting semantic accents */
+  --color-feature: #7c3aed;
+  --color-highlight: #f472b6;
+  --color-warning: #fbbf24;
+  --color-success: #2dd4bf;
+  --color-energy: #f97316;
 }
 
 /* ========================================================================== */
@@ -78,10 +78,10 @@
 
   --accent-cyan: var(--color-primary);
   --accent-lime: var(--color-secondary);
-  --accent-pink: var(--color-pink);
-  --accent-amber: var(--color-amber);
-  --accent-teal: var(--color-teal);
-  --accent-orange: var(--color-orange);
+  --accent-pink: var(--color-highlight);
+  --accent-amber: var(--color-warning);
+  --accent-teal: var(--color-success);
+  --accent-orange: var(--color-energy);
 
   /* Host colors still awaiting conversion */
   --navy-medium: #1e3a5f;
@@ -228,10 +228,21 @@
 /* TAILWIND V4 — TEMPORARY LEGACY COLOR UTILITIES                             */
 /*                                                                            */
 /* These keep existing classes working while components move to the final     */
-/* classes such as bg-primary, text-heading, and text-danger.                 */
+/* semantic classes.                                                          */
 /* ========================================================================== */
 
 @theme inline {
+  /*
+   * Temporary literal-color compatibility utilities.
+   * Remove each alias after its repository usage reaches zero.
+   */
+  --color-white: var(--color-surface);
+  --color-purple: var(--color-feature);
+  --color-pink: var(--color-highlight);
+  --color-amber: var(--color-warning);
+  --color-teal: var(--color-success);
+  --color-orange: var(--color-energy);
+
   /* Host legacy utilities */
   --color-primary-cyan: var(--primary-cyan);
   --color-secondary-lime: var(--secondary-lime);
@@ -253,7 +264,6 @@
   --color-text-light: var(--text-light);
   --color-text-inverse: var(--text-inverse);
   --color-footer-muted: var(--footer-muted);
-  --color-surface: var(--surface);
   --color-icon-bg-teal: var(--icon-bg-teal);
   --color-icon-bg-indigo: var(--icon-bg-indigo);
   --color-icon-bg-lime: var(--icon-bg-lime);
@@ -353,7 +363,8 @@
 /* ========================================================================== */
 
 @keyframes bob {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
 
@@ -375,7 +386,9 @@
 .reveal-item {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
 }
 
 .reveal-item.reveal-visible {
