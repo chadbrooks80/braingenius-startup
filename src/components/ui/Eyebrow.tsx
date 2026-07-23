@@ -9,7 +9,7 @@ interface EyebrowProps {
 
 export default function Eyebrow({
   bgColor = "primary",
-  textColor = "text-primary",
+  textColor = "text",
   children,
 }: EyebrowProps) {
   return (

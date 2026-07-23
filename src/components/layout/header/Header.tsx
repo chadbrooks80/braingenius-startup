@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-[100] border-b border-(--color-border-soft) bg-(--color-surface-strong) backdrop-blur-header shadow-[0_10px_35px] shadow-primary-cyan/34">
+    <header className="sticky top-0 z-[100] border-b border-surface/74 bg-surface/85 backdrop-blur-header shadow-[0_10px_35px] shadow-primary/34">
       {/* Mobile: 3-col grid keeps logo perfectly centered between hamburger and CTA */}
       <div className="grid grid-cols-[auto_1fr_auto] items-center px-1 md:px-6 py-3 md:hidden max-w-(--max-width-container) mx-auto">
         <HeaderNav />

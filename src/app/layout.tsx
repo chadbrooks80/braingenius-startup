@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className={`${jakarta.variable} ${baloo.variable}`}
     >
-      <body className="font-sans min-h-screen flex flex-col text-(--color-text-primary)">
+      <body className="font-sans min-h-screen flex flex-col text-text">
         <AuthProvider>
           {children}
         </AuthProvider>

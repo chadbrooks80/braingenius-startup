@@ -30,7 +30,7 @@ export default function HeaderNav() {
           <a
             key={href}
             href={href}
-            className="px-[clamp(0.45rem,1vw,0.9rem)] py-2 rounded-(--radius-full) text-[0.9rem] font-medium text-(--color-text-primary) no-underline transition-colors duration-(--transition-fast) hover:bg-(--color-primary-cyan)/12 hover:text-(--color-dark)"
+            className="px-[clamp(0.45rem,1vw,0.9rem)] py-2 rounded-(--radius-full) text-[0.9rem] font-medium text-text no-underline transition-colors duration-(--transition-fast) hover:bg-primary/13 hover:text-heading"
           >
             {label}
           </a>
@@ -38,7 +38,7 @@ export default function HeaderNav() {
       </nav>
 
       <button
-        className="md:hidden flex items-center justify-center w-10 h-10 rounded-(--radius-md) text-(--color-text-primary) hover:bg-(--color-primary-cyan)/12 transition-colors duration-(--transition-fast)"
+        className="md:hidden flex items-center justify-center w-10 h-10 rounded-(--radius-md) text-text hover:bg-primary/13 transition-colors duration-(--transition-fast)"
         onClick={() => setOpen(true)}
         aria-label="Open menu"
       >
@@ -49,19 +49,19 @@ export default function HeaderNav() {
         <>
           {open && (
             <div
-              className="fixed inset-0 z-[200] bg-(--color-dark)/40 backdrop-blur-sm"
+              className="fixed inset-0 z-[200] bg-heading/34 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
           )}
           <div
-            className={`fixed top-0 left-0 z-[201] h-full w-72 flex flex-col bg-(--color-surface-strong) border-r border-(--color-border-soft) shadow-[4px_0_32px] shadow-primary-cyan/34 transition-transform duration-(--transition-normal) ${
+            className={`fixed top-0 left-0 z-[201] h-full w-72 flex flex-col bg-surface/85 border-r border-surface/74 shadow-[4px_0_32px] shadow-primary/34 transition-transform duration-(--transition-normal) ${
               open ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-(--color-border-soft)">
-              <span className="text-(--color-text-primary) font-semibold text-sm">Menu</span>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface/74">
+              <span className="text-text font-semibold text-sm">Menu</span>
               <button
-                className="flex items-center justify-center w-8 h-8 rounded-(--radius-md) text-(--color-text-primary) hover:bg-(--color-primary-cyan)/12 transition-colors duration-(--transition-fast)"
+                className="flex items-center justify-center w-8 h-8 rounded-(--radius-md) text-text hover:bg-primary/13 transition-colors duration-(--transition-fast)"
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
               >
@@ -74,13 +74,13 @@ export default function HeaderNav() {
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
-                  className="px-4 py-3 rounded-(--radius-md) text-[0.95rem] font-medium text-(--color-text-primary) no-underline transition-colors duration-(--transition-fast) hover:bg-(--color-primary-cyan)/12 hover:text-(--color-dark)"
+                  className="px-4 py-3 rounded-(--radius-md) text-[0.95rem] font-medium text-text no-underline transition-colors duration-(--transition-fast) hover:bg-primary/13 hover:text-heading"
                 >
                   {label}
                 </a>
               ))}
             </nav>
-            <div className="px-5 py-6 border-t border-(--color-border-soft)">
+            <div className="px-5 py-6 border-t border-surface/74">
               <Button variant="primary" href="/sign-up" className="w-full justify-center">
                 Get Started Free
               </Button>

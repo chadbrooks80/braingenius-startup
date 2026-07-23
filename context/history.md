@@ -323,3 +323,10 @@
 - Reconciled duplicate surface tokens: `--surface-strong` unified at 82%, `--surface-soft` unified at 72% (Host's unused 45% value dropped)
 - `src/app/(app)/(learning)/layout.tsx`: removed the now-deleted `./globals.css` import and added a `learning-shell` wrapper class to preserve the Learning Engine's solid page background independent of the Host's gradient body background
 - Left the non-color theme sections (typography, radius, shadows, layout, effects, motion) untouched, flagged for a separate trim pass after the color migration completes
+
+## 2026-07-22 20:15
+
+- Completed theme migration batch 1 on `feature/host-theme-batch-1`: expanded `src/lib/theme-colors.ts` `COLOR_TOKENS`/`COLOR_CLASS_MAP` with the 15-token final BrainGenius theme (`primary`, `secondary`, `primary-strong`, `secondary-strong`, `heading`, `text`, `muted`, `background`, `surface`, `danger`, `feature`, `highlight`, `warning`, `success`, `energy`), keeping old Host/Learning Engine token names (`cyan`, `lime`, `indigo`, `pink`, `amber`, `teal`, `teal-green`, `white`, `dark`, `bg-top`, `text-primary`) as migration-only aliases mapped onto the new tokens
+- Converted first batch of host components off legacy tokens/raw CSS vars onto the final theme: `FeatureCard`, `TrustSymbol`, `CheckBadge`, `Eyebrow`, `Modal`, `PasswordInput`, `Button`, `Header`, `HeaderNav`, `layout.tsx`
+- Fixed `src/app/globals.css` global theme variable definitions to align with the unified token set (`613b301`)
+- Migration-only aliases intentionally left in place until remaining callers across the codebase are converted in later batches
