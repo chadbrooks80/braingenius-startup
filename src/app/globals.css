@@ -1,119 +1,56 @@
 @import "tailwindcss";
 
+/*
+ * BrainGenius unified theme migration file
+ *
+ * Migration order:
+ * 1. New work uses only the FINAL THEME tokens.
+ * 2. Existing components are converted in small, verified groups.
+ * 3. A TEMPORARY LEGACY token is deleted only after its usage reaches zero.
+ * 4. When migration is complete, every TEMPORARY LEGACY section is removed.
+ *
+ * The four fixed colors inside the Google "G" SVG are external brand artwork.
+ * They are not part of the BrainGenius application palette.
+ */
+
+/* ========================================================================== */
+/* FINAL THEME — 15 BASE COLORS                                               */
+/* ========================================================================== */
+
+@theme {
+  /* Brand */
+  --color-primary: #22d3ee;
+  --color-secondary: #a3e635;
+
+  /* Readable brand companions */
+  --color-primary-strong: #0e7490;
+  --color-secondary-strong: #3f6212;
+
+  /* Neutral text and structure */
+  --color-heading: #0f172a;
+  --color-text: #1e293b;
+  --color-muted: #64748b;
+
+  /* Page and card foundations */
+  --color-background: #c8f6ff;
+  --color-white: #ffffff;
+
+  /* Status */
+  --color-danger: #dc2626;
+
+  /* Supporting accents */
+  --color-purple: #7c3aed;
+  --color-pink: #f472b6;
+  --color-amber: #fbbf24;
+  --color-teal: #2dd4bf;
+  --color-orange: #f97316;
+}
+
+/* ========================================================================== */
+/* FINAL THEME — SHARED OPACITY SCALE                                         */
+/* ========================================================================== */
+
 :root {
-  /* ===================== MAIN THEME COLORS ===================== */
-
-  --primary-cyan: #22d3ee;
-  --secondary-lime: #a3e635;
-
-  --dark: #0f172a;
-  --navy-medium: #1e3a5f;
-  --text-primary: #1e293b;
-  --text-muted: #64748b;
-
-  --white: #ffffff;
-
-  --bg-top: #c8f6ff;
-  --bg-bottom: #fffbe8;
-
-  /* ===================== CONTRAST COLORS (FEATURE COLORS) ===================== */
-
-  --accent-cyan: #22d3ee;
-  --accent-lime: #a3e635;
-  --accent-indigo: #818cf8;
-  --accent-pink: #f472b6;
-  --accent-amber: #fbbf24;
-  --accent-teal: #2dd4bf;
-  --accent-orange: #f97316;
-
-  /* ===================== SUPPORT / UTILITY COLORS ===================== */
-
-  --cyan-light: #38bdf8;
-  --primary-hover: #1e40af;
-
-  --text-light: #94a3b8;
-  --text-inverse: #cbd5e1;
-
-  --footer-muted: #475569;
-
-  /* ===================== SURFACE / GLASS ===================== */
-
-  --surface: rgba(255, 255, 255, 0.78);
-  --surface-strong: rgba(255, 255, 255, 0.82);
-  --surface-soft: rgba(255, 255, 255, 0.45);
-
-  --icon-bg-teal: rgba(34, 211, 238, 0.12);
-  --icon-bg-indigo: rgba(129, 140, 248, 0.12);
-  --icon-bg-lime: rgba(163, 230, 53, 0.12);
-  --icon-bg-pink: rgba(244, 114, 182, 0.15);
-  --icon-bg-amber: rgba(251, 191, 36, 0.15);
-  --icon-bg-teal-green: rgba(45, 212, 191, 0.15);
-
-  --border-soft: rgba(255, 255, 255, 0.7);
-  --border-muted: rgba(15, 23, 42, 0.18);
-
-  /* ===================== GLOW / EFFECT COLORS ===================== */
-
-  --glow-cyan: rgba(34, 211, 238, 0.35);
-  --glow-lime: rgba(163, 230, 53, 0.30);
-  --cta-glow-cyan: rgba(34, 211, 238, 0.18);
-  --cta-glow-lime: rgba(163, 230, 53, 0.15);
-
-  /* ===================== TYPOGRAPHY ===================== */
-
-  --font-sans-raw: var(--font-jakarta);
-  --font-display-raw: var(--font-baloo);
-
-  --font-size-label: 0.75rem;
-  --font-size-badge: 0.7rem;
-  --tracking-label: 0.12em;
-  --tracking-badge: 0.18em;
-
-  /* ===================== RADIUS ===================== */
-
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 1.75rem;
-  --radius-full: 9999px;
-
-  /* ===================== SHADOWS ===================== */
-
-  --shadow-sm-raw: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md-raw: 0 8px 40px rgba(15, 23, 42, 0.10);
-  --shadow-lg-raw: 0 16px 56px rgba(15, 23, 42, 0.13);
-  --shadow-xl-raw: 0 28px 70px rgba(15, 23, 42, 0.38);
-  --shadow-2xl-raw: 0 32px 80px rgba(15, 23, 42, 0.30);
-  --shadow-glow-cyan-raw: 0 8px 32px rgba(34, 211, 238, 0.35);
-
-  /* ===================== LAYOUT ===================== */
-
-  --spacing-section: 5rem;
-  --spacing-container: 1.5rem;
-  --header-height: 5rem;
-  --spacing-card-pad: 1.6rem;
-  --spacing-badge-x: 0.7rem;
-  --spacing-badge-y: 0.25rem;
-
-  --max-width-container: 1200px;
-  --max-width-reading: 700px;
-  --max-width-content: 42rem;
-
-  /* ===================== EFFECTS ===================== */
-
-  --blur-glass: 12px;
-  --blur-header: 16px;
-
-  /* ===================== TRANSITIONS ===================== */
-
-  --transition-fast: 150ms;
-  --transition-normal: 250ms;
-  --transition-slow: 300ms;
-
-  /* ===================== OPACITY SCALE ===================== */
-
   --alpha-hairline: 0.07;
   --alpha-subtle: 0.13;
   --alpha-soft: 0.20;
@@ -123,20 +60,187 @@
   --alpha-surface-strong: 0.85;
 }
 
+/* ========================================================================== */
+/* TEMPORARY LEGACY — HOST COLOR NAMES                                        */
+/*                                                                            */
+/* Keep these while Host components still use the old names. Exact duplicate */
+/* colors point to the new palette; old one-off colors retain their values.   */
+/* ========================================================================== */
+
+:root {
+  /* Exact matches now backed by the final palette */
+  --primary-cyan: var(--color-primary);
+  --secondary-lime: var(--color-secondary);
+  --dark: var(--color-heading);
+  --text-primary: var(--color-text);
+  --text-muted: var(--color-muted);
+  --bg-top: var(--color-background);
+
+  --accent-cyan: var(--color-primary);
+  --accent-lime: var(--color-secondary);
+  --accent-pink: var(--color-pink);
+  --accent-amber: var(--color-amber);
+  --accent-teal: var(--color-teal);
+  --accent-orange: var(--color-orange);
+
+  /* Host colors still awaiting conversion */
+  --navy-medium: #1e3a5f;
+  --bg-bottom: #fffbe8;
+  --accent-indigo: #818cf8;
+  --cyan-light: #38bdf8;
+  --primary-hover: #1e40af;
+  --text-light: #94a3b8;
+  --text-inverse: #cbd5e1;
+  --footer-muted: #475569;
+
+  /* Host pre-baked color + opacity values awaiting conversion */
+  --surface: rgba(255, 255, 255, 0.78);
+  --icon-bg-teal: rgba(34, 211, 238, 0.12);
+  --icon-bg-indigo: rgba(129, 140, 248, 0.12);
+  --icon-bg-lime: rgba(163, 230, 53, 0.12);
+  --icon-bg-pink: rgba(244, 114, 182, 0.15);
+  --icon-bg-amber: rgba(251, 191, 36, 0.15);
+  --icon-bg-teal-green: rgba(45, 212, 191, 0.15);
+  --border-soft: rgba(255, 255, 255, 0.70);
+  --border-muted: rgba(15, 23, 42, 0.18);
+  --glow-cyan: rgba(34, 211, 238, 0.35);
+  --glow-lime: rgba(163, 230, 53, 0.30);
+  --cta-glow-cyan: rgba(34, 211, 238, 0.18);
+  --cta-glow-lime: rgba(163, 230, 53, 0.15);
+}
+
+/* ========================================================================== */
+/* TEMPORARY LEGACY — LEARNING ENGINE COLOR NAMES                             */
+/*                                                                            */
+/* Keep these while Learning Engine components still use the old names.       */
+/* ========================================================================== */
+
+:root {
+  /* Exact matches now backed by the final palette */
+  --cyan: var(--color-primary);
+  --lime: var(--color-secondary);
+  --navy: var(--color-heading);
+  --ink: var(--color-text);
+  --cyan-ink: var(--color-primary-strong);
+  --lime-ink: var(--color-secondary-strong);
+  --page-background: var(--color-background);
+
+  /* Learning Engine colors still awaiting conversion */
+  --muted-light: #94a3b8;
+  --lime-strong: #65a30d;
+  --border-neutral: #e2e8f0;
+  --border-neutral-faded: #f1f5f9;
+  --red: #f87171;
+  --red-strong: var(--color-danger);
+  --red-ink: #b91c1c;
+  --sky: #38bdf8;
+
+  /* Learning Engine pre-baked color + opacity values awaiting conversion */
+  --hairline: rgba(15, 23, 42, 0.07);
+  --track: rgba(15, 23, 42, 0.08);
+  --tint-lime: rgba(163, 230, 53, 0.12);
+  --tint-lime-strong: rgba(163, 230, 53, 0.18);
+  --border-lime: rgba(163, 230, 53, 0.35);
+  --tint-cyan: rgba(34, 211, 238, 0.15);
+  --tint-cyan-strong: rgba(34, 211, 238, 0.18);
+  --border-cyan: rgba(34, 211, 238, 0.30);
+  --tint-neutral-faded: rgba(248, 250, 252, 0.50);
+  --tint-red: rgba(248, 113, 113, 0.10);
+  --shadow-cyan: rgba(34, 211, 238, 0.30);
+  --tint-purple: rgba(124, 58, 237, 0.12);
+  --border-purple: rgba(124, 58, 237, 0.35);
+  --surface-translucent: rgba(255, 255, 255, 0.88);
+  --shadow-card: rgba(15, 23, 42, 0.13);
+  --shadow-soft: rgba(15, 23, 42, 0.06);
+  --shadow-medium: rgba(15, 23, 42, 0.10);
+  --shadow-strong: rgba(15, 23, 42, 0.14);
+  --shadow-button: rgba(15, 23, 42, 0.18);
+  --shadow-button-hover: rgba(15, 23, 42, 0.22);
+}
+
+/* ========================================================================== */
+/* TEMPORARY SHARED SURFACES                                                  */
+/*                                                                            */
+/* Both files used surface-strong at 82%. Learning used surface-soft at 72%.  */
+/* The Host's old 45% surface-soft value had no active component usage.        */
+/* ========================================================================== */
+
+:root {
+  --surface-strong: rgba(255, 255, 255, 0.82);
+  --surface-soft: rgba(255, 255, 255, 0.72);
+}
+
+/* ========================================================================== */
+/* CURRENT SHARED NON-COLOR THEME — RETAINED DURING COLOR MIGRATION           */
+/*                                                                            */
+/* These are already owned by the Host file. Review and trim them separately  */
+/* after the color migration is complete.                                     */
+/* ========================================================================== */
+
+:root {
+  /* Typography */
+  --font-sans-raw: var(--font-jakarta);
+  --font-display-raw: var(--font-baloo);
+  --font-size-label: 0.75rem;
+  --font-size-badge: 0.7rem;
+  --tracking-label: 0.12em;
+  --tracking-badge: 0.18em;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm-raw: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md-raw: 0 8px 40px rgba(15, 23, 42, 0.10);
+  --shadow-lg-raw: 0 16px 56px rgba(15, 23, 42, 0.13);
+  --shadow-xl-raw: 0 28px 70px rgba(15, 23, 42, 0.38);
+  --shadow-2xl-raw: 0 32px 80px rgba(15, 23, 42, 0.30);
+  --shadow-glow-cyan-raw: 0 8px 32px rgba(34, 211, 238, 0.35);
+
+  /* Layout */
+  --spacing-section: 5rem;
+  --spacing-container: 1.5rem;
+  --header-height: 5rem;
+  --spacing-card-pad: 1.6rem;
+  --spacing-badge-x: 0.7rem;
+  --spacing-badge-y: 0.25rem;
+  --max-width-container: 1200px;
+  --max-width-reading: 700px;
+  --max-width-content: 42rem;
+
+  /* Effects */
+  --blur-glass: 12px;
+  --blur-header: 16px;
+
+  /* Motion */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 300ms;
+}
+
+/* ========================================================================== */
+/* TAILWIND V4 — TEMPORARY LEGACY COLOR UTILITIES                             */
+/*                                                                            */
+/* These keep existing classes working while components move to the final     */
+/* classes such as bg-primary, text-heading, and text-danger.                 */
+/* ========================================================================== */
+
 @theme inline {
+  /* Host legacy utilities */
   --color-primary-cyan: var(--primary-cyan);
   --color-secondary-lime: var(--secondary-lime);
-
   --color-dark: var(--dark);
   --color-navy-medium: var(--navy-medium);
   --color-text-primary: var(--text-primary);
   --color-text-muted: var(--text-muted);
-
-  --color-white: var(--white);
-
   --color-bg-top: var(--bg-top);
   --color-bg-bottom: var(--bg-bottom);
-
   --color-accent-cyan: var(--accent-cyan);
   --color-accent-lime: var(--accent-lime);
   --color-accent-indigo: var(--accent-indigo);
@@ -144,34 +248,64 @@
   --color-accent-amber: var(--accent-amber);
   --color-accent-teal: var(--accent-teal);
   --color-accent-orange: var(--accent-orange);
-
   --color-cyan-light: var(--cyan-light);
   --color-primary-hover: var(--primary-hover);
-
   --color-text-light: var(--text-light);
   --color-text-inverse: var(--text-inverse);
-
   --color-footer-muted: var(--footer-muted);
-
   --color-surface: var(--surface);
-  --color-surface-strong: var(--surface-strong);
-  --color-surface-soft: var(--surface-soft);
-
   --color-icon-bg-teal: var(--icon-bg-teal);
   --color-icon-bg-indigo: var(--icon-bg-indigo);
   --color-icon-bg-lime: var(--icon-bg-lime);
   --color-icon-bg-pink: var(--icon-bg-pink);
   --color-icon-bg-amber: var(--icon-bg-amber);
   --color-icon-bg-teal-green: var(--icon-bg-teal-green);
-
   --color-border-soft: var(--border-soft);
   --color-border-muted: var(--border-muted);
-
   --color-glow-cyan: var(--glow-cyan);
   --color-glow-lime: var(--glow-lime);
   --color-cta-glow-cyan: var(--cta-glow-cyan);
   --color-cta-glow-lime: var(--cta-glow-lime);
 
+  /* Learning Engine legacy utilities */
+  --color-cyan: var(--cyan);
+  --color-lime: var(--lime);
+  --color-navy: var(--navy);
+  --color-ink: var(--ink);
+  --color-muted-light: var(--muted-light);
+  --color-lime-strong: var(--lime-strong);
+  --color-lime-ink: var(--lime-ink);
+  --color-cyan-ink: var(--cyan-ink);
+  --color-hairline: var(--hairline);
+  --color-track: var(--track);
+  --color-tint-lime: var(--tint-lime);
+  --color-tint-lime-strong: var(--tint-lime-strong);
+  --color-border-lime: var(--border-lime);
+  --color-tint-cyan: var(--tint-cyan);
+  --color-tint-cyan-strong: var(--tint-cyan-strong);
+  --color-border-cyan: var(--border-cyan);
+  --color-border-neutral: var(--border-neutral);
+  --color-border-neutral-faded: var(--border-neutral-faded);
+  --color-tint-neutral-faded: var(--tint-neutral-faded);
+  --color-red: var(--red);
+  --color-red-strong: var(--red-strong);
+  --color-red-ink: var(--red-ink);
+  --color-tint-red: var(--tint-red);
+  --color-sky: var(--sky);
+  --color-tint-purple: var(--tint-purple);
+  --color-border-purple: var(--border-purple);
+  --color-surface-translucent: var(--surface-translucent);
+
+  /* Shared surface utilities */
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-soft: var(--surface-soft);
+}
+
+/* ========================================================================== */
+/* TAILWIND V4 — CURRENT NON-COLOR UTILITIES                                  */
+/* ========================================================================== */
+
+@theme inline {
   --font-sans: var(--font-sans-raw);
   --font-display: var(--font-display-raw);
 
@@ -214,14 +348,28 @@
   --transition-slow: var(--transition-slow);
 }
 
+/* ========================================================================== */
+/* EXISTING GLOBAL BEHAVIOR                                                   */
+/* ========================================================================== */
+
 @keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 @keyframes progressFill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .reveal-item {
@@ -229,6 +377,7 @@
   transform: translateY(24px);
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
+
 .reveal-item.reveal-visible {
   opacity: 1;
   transform: translateY(0);
@@ -236,10 +385,21 @@
 
 body {
   font-family: var(--font-sans);
+  color: var(--color-text);
   background: linear-gradient(
     to bottom,
     var(--color-bg-top),
     var(--color-bg-bottom)
   );
-  color: var(--color-text-primary);
+}
+
+/*
+ * Before deleting the Learning Engine globals.css import, add
+ * `learning-shell` to the Learning layout wrapper. This preserves its current
+ * solid page background while the Host continues using its existing gradient.
+ */
+.learning-shell {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
 }

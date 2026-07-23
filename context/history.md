@@ -314,3 +314,12 @@
 - Completed CSS variable cleanup phase 3 on `var-cleanup-phase-3`: removed redundant `var(--color-*)` shadow-color arguments from `box-shadow` arbitrary values (e.g. `shadow-[0_16px_56px_var(--color-navy)]` → `shadow-[0_16px_56px]`) across host and Learning Engine components, since the adjacent `shadow-<color>/<alpha>` utility already supplies the shadow color
 - Converted remaining `color-mix(in srgb, var(--color-*) ...)` inline gradient `style` props to Tailwind v4 `bg-linear-*/srgb` and `bg-radial/srgb` utilities with color/opacity classes (`CTASection.tsx`, `DefinitionFunFact.tsx`, `VocabularyStartupVisual.tsx`), eliminating the last inline `style` gradients tied to CSS vars
 - Files touched: `CTASection.tsx`, `Header.tsx`, `HeaderNav.tsx`, `components/ui/Button.tsx`, `learning-engine-components/Blocks/Header.tsx`, `UI/Button.tsx`, all `LearningWindows/*` window components, `VocabularyStartupContent.tsx`, `VocabularyStartupVisual.tsx`
+
+## 2026-07-22 18:58
+
+- Unified the Host and Learning Engine theme files on `feature/unify-global-theme`: deleted `src/app/(app)/(learning)/globals.css` and merged its tokens into the single `src/app/globals.css`
+- Defined a "final theme" of 15 base colors under `@theme` (`--color-primary`, `--color-secondary`, `--color-heading`, `--color-text`, `--color-muted`, `--color-background`, `--color-white`, `--color-danger`, plus accents) and a shared opacity scale, as the long-term target for both Host and Learning Engine components
+- Kept old Host and Learning Engine token names as "temporary legacy" aliases pointing at the new final-theme variables (or their original values where no equivalent existed yet), so no component classes broke during the merge
+- Reconciled duplicate surface tokens: `--surface-strong` unified at 82%, `--surface-soft` unified at 72% (Host's unused 45% value dropped)
+- `src/app/(app)/(learning)/layout.tsx`: removed the now-deleted `./globals.css` import and added a `learning-shell` wrapper class to preserve the Learning Engine's solid page background independent of the Host's gradient body background
+- Left the non-color theme sections (typography, radius, shadows, layout, effects, motion) untouched, flagged for a separate trim pass after the color migration completes

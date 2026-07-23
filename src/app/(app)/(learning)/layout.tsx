@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BrainGenius – Learning Engine",
@@ -11,5 +10,9 @@ export default function LearningLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <div className="min-h-full flex flex-col">{children}</div>;
+  return (
+    <div className="learning-shell min-h-full flex flex-col">
+      {children}
+    </div>
+  );
 }
