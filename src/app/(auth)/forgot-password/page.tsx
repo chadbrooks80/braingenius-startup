@@ -4,13 +4,11 @@ import { FormEvent, useState } from "react";
 import Image from "next/image";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 const emailSchema = z.object({
   email: z.email("Invalid email address"),
 });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -74,14 +72,13 @@ export default function ForgotPasswordPage() {
                 <label htmlFor="email" className="text-sm font-semibold text-text">
                   Email
                 </label>
-                <input
+                <Input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
                 />
               </div>
 
@@ -91,7 +88,7 @@ export default function ForgotPasswordPage() {
                 type="submit"
                 variant="primary"
                 disabled={isSubmitting}
-                className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+                className="w-full justify-center"
               >
                 {isSubmitting ? "Sending..." : "Send reset link"}
               </Button>

@@ -1,12 +1,12 @@
 import { School, GraduationCap, Award, ShieldCheck } from "lucide-react";
 import TrustSymbol from "@/components/blocks/TrustSymbol";
-import type { ColorToken } from "@/lib/theme-colors";
+import type { ColorTokenFor } from "@/lib/theme-colors";
 
 const TRUST_ITEMS: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
-  iconBgColor: ColorToken;
+  iconBgColor: ColorTokenFor<"iconBg">;
 }[] = [
   {
     title: "Nixa Public Schools",

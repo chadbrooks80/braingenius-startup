@@ -1,9 +1,9 @@
 import React from "react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
 
 type TrustSymbolProps = {
   iconOrImage: React.ReactNode;
-  iconBgColor?: ColorToken;
+  iconBgColor?: ColorTokenFor<"iconBg">;
   title: string;
   subtitle: string;
 };

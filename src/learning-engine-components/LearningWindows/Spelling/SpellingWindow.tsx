@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { Button } from "@/learning-engine-components/UI/Button";
+import Button from "@/components/ui/Button";
+import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import Input from "@/components/ui/Input";
 import type { OnAction, SpeakActionPayload } from "@/types/learning";
 import {
   IDLE_SPELLING_SUBMISSION_STATE,
@@ -104,110 +106,109 @@ function SpellingAttempt({
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
-        style={{ backdropFilter: "blur(12px)" }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <span
-            className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
-              badgeTone === "secondary"
-                ? "bg-feature/(--alpha-subtle) border-feature/(--alpha-medium) text-feature"
-                : "bg-primary/(--alpha-subtle) border-primary/(--alpha-medium) text-primary-strong"
-            }`}
-          >
-            {badgeLabel}
-          </span>
+    <LearningWindowShell>
+      <div className="flex items-center justify-between mb-4">
+        <span
+          className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
+            badgeTone === "secondary"
+              ? "bg-feature/(--alpha-subtle) border-feature/(--alpha-medium) text-feature"
+              : "bg-primary/(--alpha-subtle) border-primary/(--alpha-medium) text-primary-strong"
+          }`}
+        >
+          {badgeLabel}
+        </span>
+        <button
+          type="button"
+          className="cursor-pointer text-link"
+          aria-label={replayLabel}
+          onClick={() => onAction("speak", speech)}
+        >
+          <SpeakerIcon />
+        </button>
+      </div>
+
+      <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-primary-strong">
+          {promptLabel}
+        </p>
+        <p className="font-medium leading-relaxed text-text">
+          {promptText}
+        </p>
+      </div>
+
+      <form onSubmit={submitSpelling}>
+        <label
+          htmlFor={`spelling-${attemptId}`}
+          className="block text-sm font-bold mb-2 text-heading"
+        >
+          {inputLabel}
+        </label>
+        <div className="flex gap-3">
+          <Input
+            variant="learning-answer"
+            id={`spelling-${attemptId}`}
+            autoFocus
+            value={answer}
+            disabled={locked}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => setAnswer(event.target.value)}
+          />
           <button
-            type="button"
-            className="cursor-pointer text-link"
-            aria-label={replayLabel}
-            onClick={() => onAction("speak", speech)}
+            type="submit"
+            disabled={locked}
+            className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) text-heading bg-linear-[135deg] from-primary to-primary"
           >
-            <SpeakerIcon />
+            {submitLabel}
           </button>
         </div>
+      </form>
 
-        <div className="rounded-2xl px-5 py-4 mb-5 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-primary-strong">
-            {promptLabel}
+      {validationMessage && (
+        <p className="mt-3 text-sm font-semibold text-danger">
+          {validationMessage}
+        </p>
+      )}
+
+      {submissionState.status === "pending" && (
+        <p className="mt-4 text-sm font-semibold text-muted">
+          {pendingMessage}
+        </p>
+      )}
+
+      {submissionState.status === "error" && (
+        <div className="mt-4 flex items-center justify-between gap-4" role="alert">
+          <p className="text-sm font-semibold text-danger">
+            {errorMessage}
           </p>
-          <p className="font-medium leading-relaxed text-text">
-            {promptText}
-          </p>
+          <Button variant="learning-secondary" onClick={retrySubmission}>
+            Retry
+          </Button>
         </div>
+      )}
 
-        <form onSubmit={submitSpelling}>
-          <label
-            htmlFor={`spelling-${attemptId}`}
-            className="block text-sm font-bold mb-2 text-heading"
-          >
-            {inputLabel}
-          </label>
-          <div className="flex gap-3">
-            <input
-              id={`spelling-${attemptId}`}
-              autoFocus
-              value={answer}
-              disabled={locked}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setAnswer(event.target.value)}
-              className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-base outline-none disabled:opacity-(--alpha-surface) border-heading/(--alpha-subtle) bg-surface text-text transition-colors focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)"
-            />
-            <button
-              type="submit"
-              disabled={locked}
-              className="rounded-xl px-5 py-3 text-sm font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) text-heading bg-linear-[135deg] from-primary to-primary"
+      {feedback && (
+        <div className="mt-5 flex items-end justify-between gap-4">
+          <div>
+            <p
+              className={`font-bold text-sm ${
+                feedback.correct ? "text-secondary-strong" : "text-danger"
+              }`}
             >
-              {submitLabel}
-            </button>
-          </div>
-        </form>
-
-        {validationMessage && (
-          <p className="mt-3 text-sm font-semibold text-danger">
-            {validationMessage}
-          </p>
-        )}
-
-        {submissionState.status === "pending" && (
-          <p className="mt-4 text-sm font-semibold text-muted">
-            {pendingMessage}
-          </p>
-        )}
-
-        {submissionState.status === "error" && (
-          <div className="mt-4 flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold text-danger">
-              {errorMessage}
+              {feedback.correct ? correctMessage : incorrectMessage}
             </p>
-            <Button label="Retry" variant="secondary" onClick={retrySubmission} />
-          </div>
-        )}
-
-        {feedback && (
-          <div className="mt-5 flex items-end justify-between gap-4">
-            <div>
-              <p
-                className={`font-bold text-sm ${
-                  feedback.correct ? "text-secondary-strong" : "text-danger"
-                }`}
-              >
-                {feedback.correct ? correctMessage : incorrectMessage}
+            {!feedback.correct && (
+              <p className="mt-1 text-sm text-text">
+                {correctionLabel}: <strong>{feedback.correctAnswer}</strong>
               </p>
-              {!feedback.correct && (
-                <p className="mt-1 text-sm text-text">
-                  {correctionLabel}: <strong>{feedback.correctAnswer}</strong>
-                </p>
-              )}
-            </div>
-            <Button label="Next →" variant="accent" onClick={() => onAction("next")} />
+            )}
           </div>
-        )}
-      </div>
-    </div>
+          <Button variant="learning-accent" onClick={() => onAction("next")}>
+            Next →
+          </Button>
+        </div>
+      )}
+    </LearningWindowShell>
   );
 }
 

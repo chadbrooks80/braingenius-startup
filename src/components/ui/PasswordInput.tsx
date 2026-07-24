@@ -3,6 +3,7 @@
 import { InputHTMLAttributes, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { clsx } from "clsx";
+import Input from "@/components/ui/Input";
 
 interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   className?: string;
@@ -13,9 +14,9 @@ export default function PasswordInput({ className, ...props }: PasswordInputProp
 
   return (
     <div className="relative">
-      <input
+      <Input
         type={visible ? "text" : "password"}
-        className={clsx("w-full pr-10", className)}
+        className={clsx("pr-10", className)}
         {...props}
       />
       <button

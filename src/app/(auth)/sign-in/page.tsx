@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 const credentialsSchema = z.object({
   username: z.string().min(1, "Email or username is required"),
@@ -34,9 +35,6 @@ function GoogleIcon() {
     </svg>
   );
 }
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function SignInContent() {
   const router = useRouter();
@@ -119,10 +117,10 @@ function SignInContent() {
 
           <Button
             type="button"
-            variant="secondary"
+            variant="oauth"
             onClick={handleGoogleSignIn}
             disabled={isGoogleSubmitting}
-            className="mt-8 w-full justify-center bg-surface disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+            className="mt-8 w-full justify-center"
           >
             {isGoogleSubmitting ? (
               "Signing in..."
@@ -147,14 +145,13 @@ function SignInContent() {
               <label htmlFor="username" className="text-sm font-semibold text-text">
                 Email or username
               </label>
-              <input
+              <Input
                 id="username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className={inputClass}
               />
             </div>
 
@@ -167,14 +164,13 @@ function SignInContent() {
                   Forgot password?
                 </a>
               </div>
-              <input
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
               />
             </div>
 
@@ -184,7 +180,7 @@ function SignInContent() {
               type="submit"
               variant="primary"
               disabled={isSubmitting}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+              className="w-full justify-center"
             >
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>

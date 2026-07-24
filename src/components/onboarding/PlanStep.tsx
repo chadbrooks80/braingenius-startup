@@ -91,7 +91,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
             variant="secondary"
             disabled={isCheckoutLoading !== null}
             onClick={() => handleUpgrade("MONTHLY")}
-            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+            className="mt-4 w-full justify-center"
           >
             {isCheckoutLoading === "MONTHLY" ? "Starting checkout..." : "Upgrade monthly"}
           </Button>
@@ -113,7 +113,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
             variant="secondary"
             disabled={isCheckoutLoading !== null}
             onClick={() => handleUpgrade("LIFETIME")}
-            className="mt-4 w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+            className="mt-4 w-full justify-center"
           >
             {isCheckoutLoading === "LIFETIME" ? "Starting checkout..." : "Upgrade lifetime"}
           </Button>
@@ -140,7 +140,7 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
         variant="primary"
         disabled={isSubmitting}
         onClick={handleFreeTrial}
-        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) sm:flex"
+        className="mx-auto mt-6 w-full max-w-sm justify-center sm:flex"
       >
         {isSubmitting ? "Continuing..." : "Continue with free trial"}
       </Button>

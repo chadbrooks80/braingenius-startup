@@ -1,16 +1,39 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { TrendingUp, RotateCcw, Brain, Gamepad2, BarChart2, Users, Sparkles } from "lucide-react";
+import {
+  TrendingUp,
+  RotateCcw,
+  Brain,
+  Gamepad2,
+  BarChart2,
+  Users,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import Eyebrow from "@/components/ui/Eyebrow";
 import FeatureCard from "@/components/blocks/FeatureCard";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
+
+type FeatureAccentColor = Extract<
+  Extract<ColorTokenFor<"text">, ColorTokenFor<"iconBg">>,
+  ColorTokenFor<"border">
+>;
+
+type Feature = {
+  id: string;
+  Icon: LucideIcon;
+  accentColor: FeatureAccentColor;
+  title: string;
+  description: string;
+  delay: string;
+};
 
 const features = [
   {
     id: "adaptive-difficulty",
     Icon: TrendingUp,
-    accentColor: "primary" as ColorToken,
+    accentColor: "primary",
     title: "Adaptive Difficulty Engine",
     description:
       "The AI continuously adjusts question difficulty based on your performance. Too easy? It challenges you more. Struggling? It slows down and reinforces. You stay perfectly in your learning zone.",
@@ -19,7 +42,7 @@ const features = [
   {
     id: "spaced-repetition",
     Icon: RotateCcw,
-    accentColor: "secondary" as ColorToken,
+    accentColor: "secondary",
     title: "Spaced Repetition (SM-2)",
     description:
       "Words you know get reviewed less. Words you struggle with come back sooner. Built on the proven SM-2 algorithm — the same science behind Anki and Duolingo — for maximum long-term retention.",
@@ -28,7 +51,7 @@ const features = [
   {
     id: "ai-word-lists",
     Icon: Brain,
-    accentColor: "feature" as ColorToken,
+    accentColor: "feature",
     title: "AI-Generated Word Lists",
     description:
       "Teachers can generate grade-appropriate word sets in seconds using AI. Provide a topic, a book, a URL, or a PDF and the system builds structured vocabulary content ready for students.",
@@ -37,7 +60,7 @@ const features = [
   {
     id: "game-modes",
     Icon: Gamepad2,
-    accentColor: "highlight" as ColorToken,
+    accentColor: "highlight",
     title: "Multiple Game Modes",
     description:
       "Beyond multiple choice — word searches, crosswords, matching games, and fill-in-the-blank challenges. The same word list powers every game type so setup happens once.",
@@ -46,7 +69,7 @@ const features = [
   {
     id: "progress-tracking",
     Icon: BarChart2,
-    accentColor: "warning" as ColorToken,
+    accentColor: "warning",
     title: "Real-Time Progress Tracking",
     description:
       "Teachers see exactly where each student stands — mastery scores, streak data, words learned, and areas needing attention. No more guessing who needs extra help.",
@@ -55,13 +78,13 @@ const features = [
   {
     id: "class-management",
     Icon: Users,
-    accentColor: "success" as ColorToken,
+    accentColor: "success",
     title: "Roster & Class Management",
     description:
       "Create student accounts directly from the teacher dashboard. Generate usernames and login codes — no student email required. Perfect for classrooms where school emails are inconsistent.",
     delay: "0.5s",
   },
-];
+] satisfies Feature[];
 
 export default function FeatureSection() {
   const revealRefs = useRef<(HTMLDivElement | null)[]>([]);

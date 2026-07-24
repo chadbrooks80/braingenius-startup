@@ -1,3 +1,15 @@
+## 2026-07-23 19:15
+
+- Completed batch 5 of the shared theme/recipe unification on `feature/shared-theme-recipes-batch-5`
+- Extended `src/lib/theme-colors.ts`: replaced the single generic `getColorClass(token, kind)` with a per-`ColorKind` overload set (backed by `ColorTokenFor<K>` and a `colorClassOrThrow` helper), so each call site is type-checked against only the tokens that actually exist for that kind, with no `as`/`any` casts; added `src/lib/theme-colors.type-check.ts` as a compile-only assertion file for the new overloads
+- Consolidated `Button` variants: merged the standalone Learning Engine `src/learning-engine-components/UI/Button.tsx` into the shared `src/components/ui/Button.tsx` (deleted the duplicate), adding `oauth`, `learning-primary`, `learning-secondary`, `learning-ghost`, and `learning-accent` variants plus `trailingIcon`/`helperText` props alongside the existing `cta`/`primary`/`secondary` recipes
+- Added a new shared `src/components/ui/Input.tsx` (default, code, and learning-answer recipes) and refactored `PasswordInput.tsx` to reuse it while preserving the visibility-toggle button and accessibility behavior
+- Added a new shared `src/learning-engine-components/UI/LearningWindowShell.tsx` (standard, wide, center-aligned, backdrop, and no-backdrop layout variants) and migrated all Learning Engine windows (`AnswerRecap`, `DefinitionDisplay`, `DefinitionFunFact`, `Error`, `LessonComplete`, `MultipleChoice`, `Spelling`, `Startup`, `WordSearch`) to use it instead of duplicated shell markup
+- Migrated auth pages (`sign-in`, `sign-up`, `forgot-password`, `reset-password`, `verify-email`), onboarding steps (`ChildrenStep`, `PlanStep`, `ProfileStep`, `WelcomeVideoStep`), and remaining marketing blocks (`ExampleBlock`, `FeatureCard`, `FeatureCheckCard`, `FeatureSection`, `TestimonialCard`, `TrustSection`, `TrustSymbol`, `WordGeneratorSection`, `CheckBadge`, `Eyebrow`) onto the new `Button`/`Input` recipes and theme tokens
+- Updated `docs/components/Button.md` and `docs/components/PasswordInput.md`, and added `docs/components/Input.md` and `docs/components/LearningWindowShell.md`
+- Added `tests/components/themeRecipes.test.tsx` covering `Button` (anchor vs. button rendering, default `type`, variant class recipes, disabled styling), `Input` (default/code/learning-answer recipes, focus utilities), `PasswordInput` (reuse of `Input`, visibility toggle a11y), and `LearningWindowShell` (all five layout variants)
+- Verified: `node --import tsx --test tests/components/themeRecipes.test.tsx` (7/7 passing), `npx tsc --noEmit` clean, `npm run lint` clean, `npm run build` succeeds
+
 ## 2026-07-23 10:00
 
 - Completed final cleanup of the Host/Learning Engine theme unification in `src/app/globals.css` on `feature/learning-theme-batch-3`, following the batch 1 (`3171438`) and batch 2 (`a1cbffb`) Learning Engine component migrations

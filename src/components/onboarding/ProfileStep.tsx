@@ -4,15 +4,13 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { saveProfile } from "@/actions/onboarding";
 
 const profileSchema = z.object({
   fName: z.string().min(1, "First name is required"),
   lName: z.string().optional(),
 });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 export default function ProfileStep() {
   const router = useRouter();
@@ -62,14 +60,13 @@ export default function ProfileStep() {
           <label htmlFor="fName" className="text-sm font-semibold text-text">
             First name
           </label>
-          <input
+          <Input
             id="fName"
             name="fName"
             type="text"
             autoComplete="given-name"
             value={fName}
             onChange={(e) => setFName(e.target.value)}
-            className={inputClass}
           />
         </div>
 
@@ -77,14 +74,13 @@ export default function ProfileStep() {
           <label htmlFor="lName" className="text-sm font-semibold text-text">
             Last name <span className="text-muted">(optional)</span>
           </label>
-          <input
+          <Input
             id="lName"
             name="lName"
             type="text"
             autoComplete="family-name"
             value={lName}
             onChange={(e) => setLName(e.target.value)}
-            className={inputClass}
           />
         </div>
 
@@ -94,7 +90,7 @@ export default function ProfileStep() {
           type="submit"
           variant="primary"
           disabled={isSubmitting}
-          className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+          className="w-full justify-center"
         >
           {isSubmitting ? "Continuing..." : "Continue"}
         </Button>

@@ -10,7 +10,8 @@ import {
   type PointerEvent,
   type Ref,
 } from "react";
-import { Button } from "@/learning-engine-components/UI/Button";
+import Button from "@/components/ui/Button";
+import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
 import type { OnAction } from "@/types/learning";
 import { generateWordList } from "./generateWordList";
 import {
@@ -382,148 +383,146 @@ export function WordSearchWindowView({
   const showPuzzle = loadStatus === "ready" && puzzle !== null;
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div
-        className="w-full max-w-2xl rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
-        style={{ backdropFilter: "blur(12px)" }}
-      >
-        <h2 className="font-display text-3xl font-extrabold mb-1 text-heading">
-          {title}
-        </h2>
-        <p className="text-sm font-medium mb-5 text-muted">
-          {instructions}
+    <LearningWindowShell size="wide">
+      <h2 className="font-display text-3xl font-extrabold mb-1 text-heading">
+        {title}
+      </h2>
+      <p className="text-sm font-medium mb-5 text-muted">
+        {instructions}
+      </p>
+
+      {loadStatus === "loading" && (
+        <p className="text-sm font-semibold text-muted">
+          {LOADING_MESSAGE}
         </p>
+      )}
 
-        {loadStatus === "loading" && (
-          <p className="text-sm font-semibold text-muted">
-            {LOADING_MESSAGE}
+      {loadStatus === "error" && (
+        <div className="flex items-center justify-between gap-4" role="alert">
+          <p className="text-sm font-semibold text-danger">
+            {ERROR_MESSAGE}
           </p>
-        )}
+          <Button variant="learning-secondary" onClick={onRetry}>
+            Retry
+          </Button>
+        </div>
+      )}
 
-        {loadStatus === "error" && (
-          <div className="flex items-center justify-between gap-4" role="alert">
-            <p className="text-sm font-semibold text-danger">
-              {ERROR_MESSAGE}
-            </p>
-            <Button label="Retry" variant="secondary" onClick={onRetry} />
-          </div>
-        )}
-
-        {showPuzzle && (
-          <>
+      {showPuzzle && (
+        <>
+          <div
+            ref={scrollAreaRef}
+            className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)"
+          >
             <div
-              ref={scrollAreaRef}
-              className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)"
+              className="relative w-fit mx-auto select-none"
+              style={{ touchAction: "none" }}
+              onPointerDown={onGridPointerDown}
+              onPointerMove={onGridPointerMove}
+              onPointerUp={onGridPointerUp}
+              onPointerCancel={onGridPointerCancel}
+              onKeyDown={onGridKeyDown}
+              onFocus={onGridFocus}
             >
-              <div
-                className="relative w-fit mx-auto select-none"
-                style={{ touchAction: "none" }}
-                onPointerDown={onGridPointerDown}
-                onPointerMove={onGridPointerMove}
-                onPointerUp={onGridPointerUp}
-                onPointerCancel={onGridPointerCancel}
-                onKeyDown={onGridKeyDown}
-                onFocus={onGridFocus}
-              >
-                <div role="grid" aria-label={title}>
-                  {puzzle.rows.map((rowLetters, row) => (
-                    <div key={row} role="row" className="flex">
-                      {rowLetters.map((letter, col) => {
-                        const cellKey = `${row}:${col}`;
-                        const isSelected = selectedCellKeys.has(cellKey);
-                        const isFound = foundCellKeys.has(cellKey);
-                        const isCursor =
-                          cursor.row === row && cursor.col === col;
+              <div role="grid" aria-label={title}>
+                {puzzle.rows.map((rowLetters, row) => (
+                  <div key={row} role="row" className="flex">
+                    {rowLetters.map((letter, col) => {
+                      const cellKey = `${row}:${col}`;
+                      const isSelected = selectedCellKeys.has(cellKey);
+                      const isFound = foundCellKeys.has(cellKey);
+                      const isCursor =
+                        cursor.row === row && cursor.col === col;
 
-                        return (
-                          <button
-                            key={cellKey}
-                            type="button"
-                            role="gridcell"
-                            data-ws-cell={cellKey}
-                            ref={
-                              registerCellRef
-                                ? (element) => registerCellRef(cellKey, element)
-                                : undefined
-                            }
-                            tabIndex={isCursor ? 0 : -1}
-                            aria-selected={isSelected}
-                            aria-label={`Row ${row + 1}, column ${col + 1}, letter ${letter}${isFound ? ", found word" : ""}`}
-                            className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border text-sm font-bold uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-strong motion-safe:transition-colors sm:h-10 sm:w-10 sm:text-base ${getCellClass(isSelected, isFound)}`}
-                          >
-                            {letter}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-
-                <svg
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 h-full w-full"
-                  viewBox={`0 0 ${puzzle.gridSize} ${puzzle.gridSize}`}
-                  preserveAspectRatio="none"
-                >
-                  {(interaction?.foundWords ?? []).map((found) => (
-                    <SelectionLine
-                      key={found.word}
-                      cells={found.cells}
-                      strokeClassName="stroke-secondary"
-                    />
-                  ))}
-                  {selectedCells.length > 1 && (
-                    <SelectionLine cells={selectedCells} strokeClassName="stroke-primary" />
-                  )}
-                </svg>
+                      return (
+                        <button
+                          key={cellKey}
+                          type="button"
+                          role="gridcell"
+                          data-ws-cell={cellKey}
+                          ref={
+                            registerCellRef
+                              ? (element) => registerCellRef(cellKey, element)
+                              : undefined
+                          }
+                          tabIndex={isCursor ? 0 : -1}
+                          aria-selected={isSelected}
+                          aria-label={`Row ${row + 1}, column ${col + 1}, letter ${letter}${isFound ? ", found word" : ""}`}
+                          className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border text-sm font-bold uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-strong motion-safe:transition-colors sm:h-10 sm:w-10 sm:text-base ${getCellClass(isSelected, isFound)}`}
+                        >
+                          {letter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            </div>
 
-            <div className="mt-4 flex items-center justify-between gap-4">
-              <p
-                aria-live="polite"
-                className={`text-sm font-semibold ${complete ? "text-secondary-strong" : "text-muted"}`}
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                viewBox={`0 0 ${puzzle.gridSize} ${puzzle.gridSize}`}
+                preserveAspectRatio="none"
               >
-                {getStatusMessage(interaction, words)}
-              </p>
-              <p className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-primary-strong">
-                {foundWordSet.size} of {words.length} found
-              </p>
+                {(interaction?.foundWords ?? []).map((found) => (
+                  <SelectionLine
+                    key={found.word}
+                    cells={found.cells}
+                    strokeClassName="stroke-secondary"
+                  />
+                ))}
+                {selectedCells.length > 1 && (
+                  <SelectionLine cells={selectedCells} strokeClassName="stroke-primary" />
+                )}
+              </svg>
             </div>
+          </div>
 
-            <ul aria-label="Words to find" className="mt-4 flex flex-wrap gap-2">
-              {words.map(({ display, normalized }) => {
-                const isFound = foundWordSet.has(normalized);
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <p
+              aria-live="polite"
+              className={`text-sm font-semibold ${complete ? "text-secondary-strong" : "text-muted"}`}
+            >
+              {getStatusMessage(interaction, words)}
+            </p>
+            <p className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-primary-strong">
+              {foundWordSet.size} of {words.length} found
+            </p>
+          </div>
 
-                return (
-                  <li key={normalized}>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                        isFound
-                          ? "line-through bg-secondary/(--alpha-subtle) border-secondary/(--alpha-medium) text-secondary-strong"
-                          : "bg-surface border-heading/(--alpha-subtle) text-text"
-                      }`}
-                    >
-                      {display}
-                      {isFound && <span className="sr-only"> (found)</span>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+          <ul aria-label="Words to find" className="mt-4 flex flex-wrap gap-2">
+            {words.map(({ display, normalized }) => {
+              const isFound = foundWordSet.has(normalized);
 
-            <div className="mt-6 flex justify-end">
-              <Button
-                label={actionLabel}
-                variant="accent"
-                disabled={!complete}
-                onClick={onNext}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+              return (
+                <li key={normalized}>
+                  <span
+                    className={`inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                      isFound
+                        ? "line-through bg-secondary/(--alpha-subtle) border-secondary/(--alpha-medium) text-secondary-strong"
+                        : "bg-surface border-heading/(--alpha-subtle) text-text"
+                    }`}
+                  >
+                    {display}
+                    {isFound && <span className="sr-only"> (found)</span>}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-6 flex justify-end">
+            <Button
+              variant="learning-accent"
+              disabled={!complete}
+              onClick={onNext}
+            >
+              {actionLabel}
+            </Button>
+          </div>
+        </>
+      )}
+    </LearningWindowShell>
   );
 }
 

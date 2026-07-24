@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
 
 interface ExampleBlockProps {
   label: string;
   status?: string;
-  statusColor?: ColorToken;
+  statusColor?: ColorTokenFor<"bg">;
   children: ReactNode;
 }
 

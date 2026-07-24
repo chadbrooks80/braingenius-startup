@@ -1,16 +1,16 @@
 import React from "react";
 import { Check } from "lucide-react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
 
 interface FeatureCheckCardProps {
   icon: React.ReactNode;
-  iconBackgroundColor: ColorToken;
+  iconBackgroundColor: ColorTokenFor<"iconBg">;
   title: string;
   children: React.ReactNode;
   checkItems: string[];
-  backgroundColor?: ColorToken;
-  fontColor?: ColorToken;
-  checkboxColor?: ColorToken;
+  backgroundColor?: ColorTokenFor<"bg">;
+  fontColor?: ColorTokenFor<"text">;
+  checkboxColor?: ColorTokenFor<"text">;
 }
 
 export default function FeatureCheckCard({

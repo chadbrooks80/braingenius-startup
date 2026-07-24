@@ -1,3 +1,5 @@
+import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+
 export type LessonCompleteWindowProps = {
   title: string;
   message: string;
@@ -10,23 +12,19 @@ export function LessonCompleteWindow({
   stats,
 }: LessonCompleteWindowProps) {
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div
-        className="w-full max-w-lg rounded-3xl p-8 border border-surface/(--alpha-surface) bg-surface/(--alpha-surface-strong) shadow-[0_16px_56px] shadow-heading/(--alpha-subtle)"
-      >
-        <h1 className="font-display text-4xl font-extrabold mb-3 text-heading">
-          {title}
-        </h1>
-        <p className="mb-6 leading-relaxed text-muted">
-          {message}
-        </p>
-        <dl className="grid grid-cols-3 gap-3">
-          {stats.map((stat) => (
-            <Stat key={stat.label} label={stat.label} value={stat.value} />
-          ))}
-        </dl>
-      </div>
-    </div>
+    <LearningWindowShell backdrop={false}>
+      <h1 className="font-display text-4xl font-extrabold mb-3 text-heading">
+        {title}
+      </h1>
+      <p className="mb-6 leading-relaxed text-muted">
+        {message}
+      </p>
+      <dl className="grid grid-cols-3 gap-3">
+        {stats.map((stat) => (
+          <Stat key={stat.label} label={stat.label} value={stat.value} />
+        ))}
+      </dl>
+    </LearningWindowShell>
   );
 }
 

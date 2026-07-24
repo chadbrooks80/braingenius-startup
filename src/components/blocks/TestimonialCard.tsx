@@ -1,14 +1,16 @@
 import Image from "next/image";
 import { Star } from "lucide-react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
+
+type TestimonialFontColor = Extract<ColorTokenFor<"text">, ColorTokenFor<"textMuted">>;
 
 interface TestimonialCardProps {
   children: React.ReactNode;
   name: string;
   title: string;
   imageUrl: string;
-  backgroundColor?: ColorToken;
-  fontColor?: ColorToken;
+  backgroundColor?: ColorTokenFor<"bg">;
+  fontColor?: TestimonialFontColor;
 }
 
 export default function TestimonialCard({

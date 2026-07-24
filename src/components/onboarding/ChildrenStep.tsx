@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { z } from "zod";
 import { Check } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import PasswordInput from "@/components/ui/PasswordInput";
 import {
@@ -25,9 +26,6 @@ const createChildSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   mustResetPassword: z.boolean(),
 });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 type ChildSummary = { id: string; name: string; username: string };
 
@@ -100,7 +98,7 @@ export default function ChildrenStep() {
               variant="secondary"
               disabled={locked}
               onClick={() => setActiveSlot(slot as 1 | 2)}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+              className="w-full justify-center"
             >
               + Add {slot === 1 ? "First" : "Second"} Child
             </Button>
@@ -115,7 +113,7 @@ export default function ChildrenStep() {
             variant="secondary"
             disabled={isFinishing}
             onClick={finishOnboarding}
-            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+            className="flex-1 justify-center"
           >
             Skip for now
           </Button>
@@ -124,7 +122,7 @@ export default function ChildrenStep() {
             variant="primary"
             disabled={isFinishing}
             onClick={finishOnboarding}
-            className="flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+            className="flex-1 justify-center"
           >
             {isFinishing ? "Finishing up..." : "Finish setup"}
           </Button>
@@ -242,13 +240,12 @@ function AddChildForm({
         <label htmlFor="firstName" className="text-sm font-semibold text-text">
           First name
         </label>
-        <input
+        <Input
           id="firstName"
           name="firstName"
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          className={inputClass}
         />
       </div>
 
@@ -256,13 +253,12 @@ function AddChildForm({
         <label htmlFor="lastName" className="text-sm font-semibold text-text">
           Last name <span className="text-muted">(optional)</span>
         </label>
-        <input
+        <Input
           id="lastName"
           name="lastName"
           type="text"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          className={inputClass}
         />
       </div>
 
@@ -279,7 +275,7 @@ function AddChildForm({
             Auto Generate
           </button>
         </div>
-        <input
+        <Input
           id="username"
           name="username"
           type="text"
@@ -289,7 +285,6 @@ function AddChildForm({
             setUsernameStatus("idle");
           }}
           onBlur={handleUsernameBlur}
-          className={inputClass}
         />
         {usernameStatus === "checking" && (
           <p className="text-xs text-muted">Checking availability...</p>
@@ -327,7 +322,6 @@ function AddChildForm({
           name="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className={inputClass}
         />
       </div>
 
@@ -347,7 +341,7 @@ function AddChildForm({
         type="submit"
         variant="primary"
         disabled={isSubmitting}
-        className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+        className="w-full justify-center"
       >
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>

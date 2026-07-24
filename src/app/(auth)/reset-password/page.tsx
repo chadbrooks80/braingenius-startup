@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 const resetSchema = z
   .object({
@@ -15,9 +16,6 @@ const resetSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -86,14 +84,13 @@ function ResetPasswordContent() {
               <label htmlFor="password" className="text-sm font-semibold text-text">
                 New password
               </label>
-              <input
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
               />
             </div>
 
@@ -104,14 +101,13 @@ function ResetPasswordContent() {
               >
                 Confirm password
               </label>
-              <input
+              <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={inputClass}
               />
             </div>
 
@@ -121,7 +117,7 @@ function ResetPasswordContent() {
               type="submit"
               variant="primary"
               disabled={isSubmitting}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+              className="w-full justify-center"
             >
               {isSubmitting ? "Resetting..." : "Reset password"}
             </Button>

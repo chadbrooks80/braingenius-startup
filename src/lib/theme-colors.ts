@@ -111,13 +111,62 @@ export const COLOR_CLASS_MAP = {
 
 export type ColorKind = keyof typeof COLOR_CLASS_MAP;
 
-export function getColorClass(token: ColorToken, kind: ColorKind): string {
-  const cls = (COLOR_CLASS_MAP[kind] as Partial<Record<ColorToken, string>>)[
-    token
-  ];
+/**
+ * The literal token union actually defined for a given color kind (e.g.
+ * ColorTokenFor<"tintBorder"> excludes tokens that have no tintBorder class),
+ * so callers can narrow their props to only the combinations that compile.
+ */
+export type ColorTokenFor<K extends ColorKind> = keyof (typeof COLOR_CLASS_MAP)[K];
+
+/**
+ * A `(token, kind)` pair for a single, concrete `K`. Distributing the mapped
+ * type over `ColorKind` (rather than writing `[ColorTokenFor<K>, K]` once for
+ * a generic `K`) keeps each branch's token type tied to its own kind, so the
+ * switch below narrows `token` purely from narrowing `kind` — no cast needed.
+ */
+type ColorClassArgs = {
+  [K in ColorKind]: [token: ColorTokenFor<K>, kind: K];
+}[ColorKind];
+
+/**
+ * One overload per color kind (rather than a single generic declaration)
+ * keeps every call site checked against `ColorTokenFor<K>` for its literal
+ * `kind`, while giving the implementation below a concrete union
+ * (`ColorClassArgs`) it can narrow via `switch` — no cast needed to prove
+ * the lookup is a string.
+ */
+export function getColorClass(token: ColorTokenFor<"bg">, kind: "bg"): string;
+export function getColorClass(token: ColorTokenFor<"text">, kind: "text"): string;
+export function getColorClass(token: ColorTokenFor<"textMuted">, kind: "textMuted"): string;
+export function getColorClass(token: ColorTokenFor<"iconBg">, kind: "iconBg"): string;
+export function getColorClass(token: ColorTokenFor<"border">, kind: "border"): string;
+export function getColorClass(token: ColorTokenFor<"tintBg">, kind: "tintBg"): string;
+export function getColorClass(token: ColorTokenFor<"tintBorder">, kind: "tintBorder"): string;
+export function getColorClass(...[token, kind]: ColorClassArgs): string {
+  switch (kind) {
+    case "bg":
+      return colorClassOrThrow(COLOR_CLASS_MAP.bg[token], token, kind);
+    case "text":
+      return colorClassOrThrow(COLOR_CLASS_MAP.text[token], token, kind);
+    case "textMuted":
+      return colorClassOrThrow(COLOR_CLASS_MAP.textMuted[token], token, kind);
+    case "iconBg":
+      return colorClassOrThrow(COLOR_CLASS_MAP.iconBg[token], token, kind);
+    case "border":
+      return colorClassOrThrow(COLOR_CLASS_MAP.border[token], token, kind);
+    case "tintBg":
+      return colorClassOrThrow(COLOR_CLASS_MAP.tintBg[token], token, kind);
+    case "tintBorder":
+      return colorClassOrThrow(COLOR_CLASS_MAP.tintBorder[token], token, kind);
+    default:
+      return colorClassOrThrow(undefined, token, kind);
+  }
+}
+
+function colorClassOrThrow(cls: string | undefined, token: unknown, kind: unknown): string {
   if (!cls) {
     throw new Error(
-      `theme-colors: no "${kind}" class defined for color token "${token}". ` +
+      `theme-colors: no "${String(kind)}" class defined for color token "${String(token)}". ` +
         `Add the combination to COLOR_CLASS_MAP in src/lib/theme-colors.ts.`
     );
   }

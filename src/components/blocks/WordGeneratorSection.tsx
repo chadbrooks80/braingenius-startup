@@ -4,17 +4,17 @@ import { useEffect, useRef } from "react";
 import { Wand2, GraduationCap, Bot, FileText } from "lucide-react";
 import Eyebrow from "@/components/ui/Eyebrow";
 import FeatureCheckCard from "@/components/blocks/FeatureCheckCard";
-import type { ColorToken } from "@/lib/theme-colors";
+import type { ColorTokenFor } from "@/lib/theme-colors";
 
 type CardConfig = {
   icon: React.ReactNode;
-  iconBackgroundColor: ColorToken;
+  iconBackgroundColor: ColorTokenFor<"iconBg">;
   title: string;
   description: string;
   checkItems: string[];
-  backgroundColor?: ColorToken;
-  fontColor?: ColorToken;
-  checkboxColor?: ColorToken;
+  backgroundColor?: ColorTokenFor<"bg">;
+  fontColor?: ColorTokenFor<"text">;
+  checkboxColor?: ColorTokenFor<"text">;
   delay: string;
 };
 

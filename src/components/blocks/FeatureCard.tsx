@@ -1,11 +1,11 @@
 import React from "react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
-  iconBgColor: ColorToken;
+  iconBgColor: ColorTokenFor<"iconBg">;
   title: string;
-  borderColor: ColorToken;
+  borderColor: ColorTokenFor<"border">;
   children: React.ReactNode;
 }
 

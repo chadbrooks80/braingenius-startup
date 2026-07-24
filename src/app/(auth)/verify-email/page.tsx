@@ -5,13 +5,11 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 const codeSchema = z.object({
   code: z.string().length(4, "Enter the 4-digit code"),
 });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function Spinner() {
   return (
@@ -130,7 +128,8 @@ function VerifyEmailContent() {
               <label htmlFor="code" className="text-sm font-semibold text-text">
                 Verification code
               </label>
-              <input
+              <Input
+                variant="code"
                 id="code"
                 name="code"
                 type="text"
@@ -139,7 +138,6 @@ function VerifyEmailContent() {
                 maxLength={4}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className={inputClass}
               />
             </div>
 
@@ -152,7 +150,7 @@ function VerifyEmailContent() {
               type="submit"
               variant="primary"
               disabled={isSubmitting}
-              className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+              className="w-full justify-center"
             >
               {isSubmitting && <Spinner />}
               {isSubmitting ? "Verifying..." : "Verify email"}

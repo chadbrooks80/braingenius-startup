@@ -55,7 +55,7 @@ export default function WelcomeVideoStep() {
         variant="primary"
         disabled={isSubmitting}
         onClick={handleContinue}
-        className="mx-auto mt-6 w-full max-w-sm justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft) sm:flex"
+        className="mx-auto mt-6 w-full max-w-sm justify-center sm:flex"
       >
         {isSubmitting ? "Continuing..." : "Continue"}
       </Button>

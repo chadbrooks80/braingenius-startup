@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { registerUser } from "@/actions/register";
 
 const signUpSchema = z.object({
@@ -16,12 +17,6 @@ const signUpSchema = z.object({
 const codeSchema = z.object({
   code: z.string().length(4, "Enter the 4-digit code"),
 });
-
-const inputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-sm text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
-
-const codeInputClass =
-  "w-full rounded-(--radius-lg) border-2 border-heading/(--alpha-soft) bg-surface px-4 py-2.5 text-center text-lg tracking-(--tracking-label) text-text outline-none transition-all duration-(--transition-fast) focus:border-focus focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)";
 
 function GoogleIcon() {
   return (
@@ -211,10 +206,10 @@ export default function SignUpPage() {
 
               <Button
                 type="button"
-                variant="secondary"
+                variant="oauth"
                 onClick={handleGoogleSignUp}
                 disabled={isGoogleSubmitting}
-                className="mt-8 w-full justify-center bg-surface disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+                className="mt-8 w-full justify-center"
               >
                 {isGoogleSubmitting ? (
                   "Signing in..."
@@ -239,14 +234,13 @@ export default function SignUpPage() {
                   <label htmlFor="email" className="text-sm font-semibold text-text">
                     Email
                   </label>
-                  <input
+                  <Input
                     id="email"
                     name="email"
                     type="email"
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={inputClass}
                   />
                 </div>
 
@@ -257,14 +251,13 @@ export default function SignUpPage() {
                   >
                     Password
                   </label>
-                  <input
+                  <Input
                     id="password"
                     name="password"
                     type="password"
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
                   />
                 </div>
 
@@ -274,7 +267,7 @@ export default function SignUpPage() {
                   type="submit"
                   variant="primary"
                   disabled={isSubmitting}
-                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+                  className="w-full justify-center"
                 >
                   {isSubmitting ? "Creating account..." : "Create account"}
                 </Button>
@@ -305,7 +298,8 @@ export default function SignUpPage() {
                   <label htmlFor="code" className="text-sm font-semibold text-text">
                     Verification code
                   </label>
-                  <input
+                  <Input
+                    variant="code"
                     id="code"
                     name="code"
                     type="text"
@@ -314,7 +308,6 @@ export default function SignUpPage() {
                     maxLength={4}
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    className={codeInputClass}
                   />
                 </div>
 
@@ -329,7 +322,7 @@ export default function SignUpPage() {
                   type="submit"
                   variant="primary"
                   disabled={isVerifying}
-                  className="w-full justify-center disabled:cursor-not-allowed disabled:opacity-(--alpha-surface-soft)"
+                  className="w-full justify-center"
                 >
                   {isVerifying && <Spinner />}
                   {isVerifying ? "Verifying..." : "Verify email"}

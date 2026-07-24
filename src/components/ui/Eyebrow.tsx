@@ -1,9 +1,11 @@
 import { ReactNode } from "react";
-import { getColorClass, type ColorToken } from "@/lib/theme-colors";
+import { getColorClass, type ColorTokenFor } from "@/lib/theme-colors";
+
+type EyebrowTextColor = Extract<ColorTokenFor<"text">, ColorTokenFor<"tintBorder">>;
 
 interface EyebrowProps {
-  bgColor?: ColorToken;
-  textColor?: ColorToken;
+  bgColor?: ColorTokenFor<"tintBg">;
+  textColor?: EyebrowTextColor;
   children: ReactNode;
 }
 
