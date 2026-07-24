@@ -1,4 +1,4 @@
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 
 export type LessonCompleteWindowProps = {
   title: string;

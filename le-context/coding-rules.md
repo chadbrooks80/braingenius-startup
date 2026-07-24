@@ -170,7 +170,7 @@ A Learning Window is a reusable learner-facing React component controlled by the
 Learning Windows belong under:
 
 ```text
-src/components/LearningWindows/<WindowName>/
+src/components/learning-engine/windows/<WindowName>/
 ```
 
 When creating or changing a Learning Window:

@@ -5,7 +5,7 @@ import {
   MAX_WORD_SEARCH_WORD_COUNT,
   MIN_WORD_SEARCH_GRID_SIZE,
   parseWordSearchWindowProps,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/parseWordSearchWindowProps";
+} from "../../src/components/learning-engine/windows/WordSearch/parseWordSearchWindowProps";
 
 const VALID_WORDS = ["cat", "dog", "bird"];
 

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { generateWordList } from "../../src/learning-engine-components/LearningWindows/WordSearch/generateWordList";
+import { generateWordList } from "../../src/components/learning-engine/windows/WordSearch/generateWordList";
 import {
   WORD_SEARCH_DIRECTION_NAMES,
   getWordSearchPlacementCells,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchDirections";
+} from "../../src/components/learning-engine/windows/WordSearch/wordSearchDirections";
 
 const REQUEST = {
   gridSize: 10,

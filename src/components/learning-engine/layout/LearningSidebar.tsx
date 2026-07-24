@@ -1,6 +1,6 @@
 import { BOOK_EMOJI, PENCIL_EMOJI, TIMER_EMOJI, TROPHY_EMOJI } from "@/lib/emojis";
 
-export function Sidebar() {
+export function LearningSidebar() {
   return (
     <aside className="w-60 shrink-0 flex flex-col overflow-y-auto bg-surface/(--alpha-surface) backdrop-blur-md border-r border-surface/(--alpha-surface)">
       <div className="px-5 pt-4 pb-3 border-b border-heading/(--alpha-hairline)">

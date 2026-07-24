@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-export function Header() {
+export function LearningHeader() {
   return (
     <header className="flex items-center justify-between px-6 py-3 sticky top-0 z-10 border-b border-surface/(--alpha-surface-soft) bg-surface/(--alpha-surface-strong) backdrop-blur-md shadow-[0_10px_35px] shadow-heading/(--alpha-hairline)">
       <Image

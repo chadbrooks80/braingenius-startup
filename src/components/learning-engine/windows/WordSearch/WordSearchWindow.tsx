@@ -11,7 +11,7 @@ import {
   type Ref,
 } from "react";
 import Button from "@/components/ui/Button";
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import type { OnAction } from "@/types/learning";
 import { generateWordList } from "./generateWordList";
 import {

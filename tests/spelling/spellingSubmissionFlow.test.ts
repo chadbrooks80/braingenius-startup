@@ -4,7 +4,7 @@ import {
   IDLE_SPELLING_SUBMISSION_STATE,
   submitSpellingAnswer,
   type SpellingSubmissionState,
-} from "../../src/learning-engine-components/LearningWindows/Spelling/spellingSubmissionFlow";
+} from "../../src/components/learning-engine/windows/Spelling/spellingSubmissionFlow";
 
 function createHarness() {
   const stateRef = {

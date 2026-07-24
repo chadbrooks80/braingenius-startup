@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { ScreenRenderer } from "@/learning-engine-components/Blocks/ScreenRenderer";
-import { Header } from "@/learning-engine-components/Blocks/Header";
-import { Sidebar } from "@/learning-engine-components/Blocks/Sidebar";
+import { ScreenRenderer } from "@/components/learning-engine/ScreenRenderer";
+import { LearningHeader } from "@/components/learning-engine/layout/LearningHeader";
+import { LearningSidebar } from "@/components/learning-engine/layout/LearningSidebar";
 import LearningEngine from "@/lib/learning-engine/LearningEngine";
 import { cancelSpeech } from "@/lib/learning-engine/speech/speechPlaybackService";
 import type { ActiveScreen, AnswerFeedback } from "@/types/learning";
@@ -87,9 +87,9 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
 
   return (
     <>
-      {showHeader && <Header />}
+      {showHeader && <LearningHeader />}
       <div className="flex flex-1">
-        {showSidebar && <Sidebar />}
+        {showSidebar && <LearningSidebar />}
         <ScreenRenderer
           screen={activeScreen}
           answerFeedback={answerFeedback}

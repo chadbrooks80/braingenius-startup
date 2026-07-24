@@ -15,4 +15,4 @@ The module supplies an opaque attempt ID, badge copy/tone, prompt, question, cho
 
 Local interaction state belongs to the window; subject-specific answer parsing, validation, feedback interpretation, and lesson progression remain in the active module. The shared Learning Engine forwards the payload and stores feedback opaquely.
 
-Sources: `src/components/LearningWindows/MultipleChoice/`, `src/learning-modules/vocabulary/screens/multipleChoiceScreen.ts`, and `src/app/playground/page.tsx`.
+Sources: `src/components/learning-engine/windows/MultipleChoice/`, `src/learning-modules/vocabulary/screens/multipleChoiceScreen.ts`, and `src/app/playground/page.tsx`.

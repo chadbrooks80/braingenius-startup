@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import LearningErrorWindow from "../../src/learning-engine-components/LearningWindows/Error/LearningErrorWindow";
+import LearningErrorWindow from "../../src/components/learning-engine/windows/Error/LearningErrorWindow";
 import {
   LEARNING_ROUTE_ERROR_HOME_PATH,
   getLearningRouteErrorPresentation,

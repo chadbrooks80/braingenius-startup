@@ -4,11 +4,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import WordSearchWindow, {
   WordSearchWindowView,
   type WordSearchWindowViewProps,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/WordSearchWindow";
+} from "../../src/components/learning-engine/windows/WordSearch/WordSearchWindow";
 import { resolveLearningWindow } from "../../src/lib/learning-engine/LearningWindowRegistry"
-import { generateWordList } from "../../src/learning-engine-components/LearningWindows/WordSearch/generateWordList";
-import { createWordSearchInteractionState } from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchInteraction";
-import type { WordSearchPuzzleResponse } from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchTypes";
+import { generateWordList } from "../../src/components/learning-engine/windows/WordSearch/generateWordList";
+import { createWordSearchInteractionState } from "../../src/components/learning-engine/windows/WordSearch/wordSearchInteraction";
+import type { WordSearchPuzzleResponse } from "../../src/components/learning-engine/windows/WordSearch/wordSearchTypes";
 
 const WORDS = [
   { display: "cat", normalized: "CAT" },

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getMultipleChoiceActions } from "../../src/learning-engine-components/LearningWindows/MultipleChoice/getMultipleChoiceActions";
+import { getMultipleChoiceActions } from "../../src/components/learning-engine/windows/MultipleChoice/getMultipleChoiceActions";
 import type { ActionPayload } from "../../src/types/learning";
 
 const VALID_TTS = {

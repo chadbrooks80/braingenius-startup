@@ -394,3 +394,11 @@
 - Added visible focus-ring styling (`focus-visible:ring-2 focus-visible:ring-focus/(--alpha-medium)`) alongside `focus:border-focus` across all auth pages (sign-in, sign-up, forgot-password, reset-password, verify-email)
 - Converted remaining `text-(--font-size-badge)`/`text-(--font-size-label)` arbitrary-value references to the new `text-badge`/`text-label` Tailwind utilities (enabled by renaming the `--font-size-*` theme keys to `--text-*` in `globals.css`) across `Hero`, `ExampleBlock`, `HowItWorksSection`, `ChildrenStep`, and the Learning Engine window components
 - Applied the corrected `textMuted`/`text-link`/`text-badge` tokens across onboarding steps (`ChildrenStep`, `ProfileStep`) and Learning Engine windows (`AnswerRecapWindow`, `DefinitionDisplay`, `MultipleChoiceWindow`, `SpellingWindow`)
+
+## 2026-07-23 22:37
+
+- Completed the Learning Engine component graft on `refactor/learning-engine-component-graft`: relocated all components from `src/learning-engine-components/**` into `src/components/learning-engine/**`, aligning the Learning Engine's component tree with the Host app's `src/components/` layout
+- Renamed and regrouped along the way: `UI/LearningWindowShell.tsx` → `LearningWindowShell.tsx`, `Blocks/Header.tsx` → `layout/LearningHeader.tsx`, `Blocks/Sidebar.tsx` → `layout/LearningSidebar.tsx`, `Blocks/ScreenRenderer.tsx` → `ScreenRenderer.tsx`, and every `LearningWindows/<Window>/` folder → `windows/<Window>/`
+- Updated all internal imports and the `LearningWindowRegistry` to the new paths, plus every test file under `tests/` (`multiple-choice`, `spelling`, `word-search`, `learning-engine`, `components`) that referenced the old `@/learning-engine-components/...` alias
+- Updated path references in `le-context/coding-rules.md`, `le-context/project-overview.md`, and the `le-docs/components/*.md` / `docs/components/LearningWindowShell.md` docs to point at the new `src/components/learning-engine/windows/<WindowName>/` location
+- Verified the change is import-path-only: diffed against the pre-graft tree and confirmed no test regressions were introduced (the local `npx vitest` run fails identically before and after the graft, due to a pre-existing missing vitest config/dependency in the repo rather than anything from this refactor)

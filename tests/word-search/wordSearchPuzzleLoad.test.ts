@@ -5,8 +5,8 @@ import {
   applyWordSearchPuzzleLoadFailure,
   applyWordSearchPuzzleLoadSuccess,
   retryWordSearchPuzzleLoad,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchPuzzleLoad";
-import type { WordSearchPuzzleResponse } from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchTypes";
+} from "../../src/components/learning-engine/windows/WordSearch/wordSearchPuzzleLoad";
+import type { WordSearchPuzzleResponse } from "../../src/components/learning-engine/windows/WordSearch/wordSearchTypes";
 
 const PUZZLE: WordSearchPuzzleResponse = {
   gridSize: 8,

@@ -27,4 +27,4 @@ The module supplies `gridSize` (both the row and column count) and the visible `
 
 The window owns presentation, selection state, and local found-word state for the mounted puzzle only. Lesson progression, attempts, mastery, persistence, and authoritative validation remain with the calling module and its server boundary; the Learning Engine routes the emitted actions without understanding grids, placements, or completion rules.
 
-Sources: `src/components/LearningWindows/WordSearch/`, `src/lib/learning-engine/LearningWindowRegistry.ts`, and `src/app/playground/page.tsx`.
+Sources: `src/components/learning-engine/windows/WordSearch/`, `src/lib/learning-engine/LearningWindowRegistry.ts`, and `src/app/playground/page.tsx`.

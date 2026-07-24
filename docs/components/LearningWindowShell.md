@@ -1,6 +1,6 @@
 # LearningWindowShell
 
-**Path:** `src/learning-engine-components/UI/LearningWindowShell.tsx`
+**Path:** `src/components/learning-engine/LearningWindowShell.tsx`
 
 A small presentational shell that renders the repeated Learning Window frame: a centered outer wrapper and an inner themed card. It holds no state or feature logic.
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import { LEARNING_ROUTE_ERROR_HOME_PATH } from "@/lib/learning-engine/errors/LearningRouteError";
 
 export type LearningErrorWindowProps = {

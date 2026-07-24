@@ -6,4 +6,4 @@ The active module supplies the eyebrow, title, section labels and content, repla
 
 The vocabulary screen factory uses this contract for a word, its definition, and three examples. Other subjects can provide their own concept title and supporting material without changing the window.
 
-Sources: `src/components/LearningWindows/DefinitionDisplay/` and `src/learning-modules/vocabulary/screens/definitionDisplayScreen.ts`.
+Sources: `src/components/learning-engine/windows/DefinitionDisplay/` and `src/learning-modules/vocabulary/screens/definitionDisplayScreen.ts`.

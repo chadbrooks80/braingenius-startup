@@ -8,4 +8,4 @@ The `speech` prop is passed through to `onAction("speak", speech)` unchanged for
 
 Submission emits `{ attemptId, answer }` without a vocabulary answer discriminant. The active module owns parsing, attempt validation, API communication, and feedback interpretation. Vocabulary configures the interaction as spelling; the target word is absent from all browser-visible screen data before confirmed feedback and appears only in post-grading `correctAnswer` feedback.
 
-Sources: `src/components/LearningWindows/Spelling/`, `src/learning-modules/vocabulary/screens/spellingScreen.ts`, and `src/app/playground/page.tsx`.
+Sources: `src/components/learning-engine/windows/Spelling/`, `src/learning-modules/vocabulary/screens/spellingScreen.ts`, and `src/app/playground/page.tsx`.

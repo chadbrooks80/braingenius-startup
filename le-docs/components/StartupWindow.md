@@ -6,4 +6,4 @@ The registered `"startup"` window owns the responsive presentation shell and act
 
 This boundary lets modules control subject-specific copy and visuals without resolving windows, calling React setters, or controlling the Learning Engine directly. Changes to vocabulary startup content belong under `src/learning-modules/vocabulary/components/Startup/`, not in the shared window.
 
-Sources: `src/components/LearningWindows/Startup/StartupWindow.tsx`, `src/learning-modules/vocabulary/screens/startupScreen.tsx`, and `src/types/learning.ts`.
+Sources: `src/components/learning-engine/windows/Startup/StartupWindow.tsx`, `src/learning-modules/vocabulary/screens/startupScreen.tsx`, and `src/types/learning.ts`.

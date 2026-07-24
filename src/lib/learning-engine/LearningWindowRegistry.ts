@@ -1,12 +1,12 @@
-import StartupWindow from "@/learning-engine-components/LearningWindows/Startup";
-import MultipleChoiceWindow from "@/learning-engine-components/LearningWindows/MultipleChoice";
-import LearningErrorWindow from "@/learning-engine-components/LearningWindows/Error";
-import DefinitionDisplay from "@/learning-engine-components/LearningWindows/DefinitionDisplay";
-import DefinitionFunFact from "@/learning-engine-components/LearningWindows/DefinitionFunFact";
-import SpellingWindow from "@/learning-engine-components/LearningWindows/Spelling";
-import AnswerRecapWindow from "@/learning-engine-components/LearningWindows/AnswerRecap";
-import LessonCompleteWindow from "@/learning-engine-components/LearningWindows/LessonComplete";
-import WordSearchWindow from "@/learning-engine-components/LearningWindows/WordSearch";
+import StartupWindow from "@/components/learning-engine/windows/Startup";
+import MultipleChoiceWindow from "@/components/learning-engine/windows/MultipleChoice";
+import LearningErrorWindow from "@/components/learning-engine/windows/Error";
+import DefinitionDisplay from "@/components/learning-engine/windows/DefinitionDisplay";
+import DefinitionFunFact from "@/components/learning-engine/windows/DefinitionFunFact";
+import SpellingWindow from "@/components/learning-engine/windows/Spelling";
+import AnswerRecapWindow from "@/components/learning-engine/windows/AnswerRecap";
+import LessonCompleteWindow from "@/components/learning-engine/windows/LessonComplete";
+import WordSearchWindow from "@/components/learning-engine/windows/WordSearch";
 
 export const LEARNING_WINDOWS = {
   startup: StartupWindow,

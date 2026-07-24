@@ -6,4 +6,4 @@ The active module supplies the eyebrow, title, introductory label, and body. The
 
 The vocabulary screen factory continues to use `ScreenRequest.speak` to read its module-owned fact automatically.
 
-Sources: `src/components/LearningWindows/DefinitionFunFact/` and `src/learning-modules/vocabulary/screens/definitionFunFactScreen.ts`.
+Sources: `src/components/learning-engine/windows/DefinitionFunFact/` and `src/learning-modules/vocabulary/screens/definitionFunFactScreen.ts`.

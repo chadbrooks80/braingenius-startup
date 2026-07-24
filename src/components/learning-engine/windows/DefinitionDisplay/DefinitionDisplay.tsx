@@ -1,7 +1,7 @@
 "use client";
 
 import Button from "@/components/ui/Button";
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import type { OnAction, TtsConfiguration } from "@/types/learning";
 
 export type DefinitionDisplayProps = {

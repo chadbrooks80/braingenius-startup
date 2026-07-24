@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Button from "@/components/ui/Button";
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import Input from "@/components/ui/Input";
 import type { OnAction, SpeakActionPayload } from "@/types/learning";
 import {

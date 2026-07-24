@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import Button from "../../src/components/ui/Button";
 import Input from "../../src/components/ui/Input";
 import PasswordInput from "../../src/components/ui/PasswordInput";
-import { LearningWindowShell } from "../../src/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "../../src/components/learning-engine/LearningWindowShell";
 
 test("Button renders an anchor when href is supplied and a button otherwise", () => {
   const anchorMarkup = renderToStaticMarkup(<Button href="/x">Go</Button>);

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ScreenRenderer } from "../../src/learning-engine-components/Blocks/ScreenRenderer";
-import MultipleChoiceWindow from "../../src/learning-engine-components/LearningWindows/MultipleChoice/MultipleChoiceWindow";
-import SpellingWindow from "../../src/learning-engine-components/LearningWindows/Spelling/SpellingWindow";
-import AnswerRecapWindow from "../../src/learning-engine-components/LearningWindows/AnswerRecap/AnswerRecapWindow";
-import LessonCompleteWindow from "../../src/learning-engine-components/LearningWindows/LessonComplete/LessonCompleteWindow";
+import { ScreenRenderer } from "../../src/components/learning-engine/ScreenRenderer";
+import MultipleChoiceWindow from "../../src/components/learning-engine/windows/MultipleChoice/MultipleChoiceWindow";
+import SpellingWindow from "../../src/components/learning-engine/windows/Spelling/SpellingWindow";
+import AnswerRecapWindow from "../../src/components/learning-engine/windows/AnswerRecap/AnswerRecapWindow";
+import LessonCompleteWindow from "../../src/components/learning-engine/windows/LessonComplete/LessonCompleteWindow";
 import { resolveLearningWindow } from "../../src/lib/learning-engine/LearningWindowRegistry";
 import { changeLearningEngineScreen } from "../../src/lib/learning-engine/screens/changeLearningEngineScreen";
 import { vocabularyTts } from "../../src/learning-modules/vocabulary/data/vocabularyTts";

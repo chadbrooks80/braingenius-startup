@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Button from "@/components/ui/Button";
-import { LearningWindowShell } from "@/learning-engine-components/UI/LearningWindowShell";
+import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import {
   IDLE_ANSWER_SUBMISSION_STATE,
   isAnswerSubmissionLocked,

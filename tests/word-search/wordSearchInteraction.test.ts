@@ -11,12 +11,12 @@ import {
   releaseWordSearchPress,
   toggleWordSearchAnchor,
   type WordSearchInteractionState,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchInteraction";
-import { getWordSearchCellsBetween } from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchDirections";
+} from "../../src/components/learning-engine/windows/WordSearch/wordSearchInteraction";
+import { getWordSearchCellsBetween } from "../../src/components/learning-engine/windows/WordSearch/wordSearchDirections";
 import type {
   WordSearchCell,
   WordSearchPuzzleResponse,
-} from "../../src/learning-engine-components/LearningWindows/WordSearch/wordSearchTypes";
+} from "../../src/components/learning-engine/windows/WordSearch/wordSearchTypes";
 
 // A hand-built puzzle with one word per supported direction and neutral "Q"
 // filler so no word appears by accident.

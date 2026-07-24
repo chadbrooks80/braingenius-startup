@@ -317,7 +317,7 @@ Strictly parses Vocabulary answer payloads with one shared, pure parser used at 
 Reusable learner-facing components live under:
 
 ```text
-src/components/LearningWindows/<WindowName>/
+src/components/learning-engine/windows/<WindowName>/
 ```
 
 Current important windows include:

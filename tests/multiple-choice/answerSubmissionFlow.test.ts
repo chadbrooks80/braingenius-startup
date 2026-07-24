@@ -4,7 +4,7 @@ import {
   IDLE_ANSWER_SUBMISSION_STATE,
   submitMultipleChoiceAnswer,
   type AnswerSubmissionState,
-} from "../../src/learning-engine-components/LearningWindows/MultipleChoice/answerSubmissionFlow";
+} from "../../src/components/learning-engine/windows/MultipleChoice/answerSubmissionFlow";
 
 function createStateHarness() {
   const stateRef = { current: IDLE_ANSWER_SUBMISSION_STATE as AnswerSubmissionState };
