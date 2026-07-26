@@ -1,15 +1,24 @@
-# BrainGenius.ai — Project Overview
+# Brain Genius
 
-Goal:
-An AI-powered learning platform focused on vocabulary development and reading comprehension using adaptive difficulty and spaced repetition.
+Brain Genius is a web-based educational platform for interactive, structured learning experiences.
 
-Core Modules:
+The application includes:
 
-- Vocabulary (multiple choice + spelling mastery)
-- Reading (AI-generated passages with interactive word learning)
+- A public website
+- Authentication and user accounts
+- Subscription and onboarding systems
+- A reusable Learning Engine
+- Vocabulary as the first complete learning module
+- Shared components, theme tokens, and application-wide design rules
 
-ONLY READ if at any time u are asked for performing any coding features auditing, or testing, read the following:
-- context/project-overview.md
-- context/coding-process.md
-- context/coding-rules.md
-- context/tech-stack.md
+## Required Context
+
+For general questions, this summary is enough.
+
+Before writing, changing, reviewing, auditing, or testing code, read and follow:
+
+- `context/project-overview.md`
+- `context/coding-rules.md`
+- `context/coding-process.md`
+
+Those files are authoritative. Do not make code changes based only on this summary.
