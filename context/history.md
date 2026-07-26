@@ -409,3 +409,9 @@
 - Removed the `.codex/skills` directory entirely and converted every `.agents/skills/<name>/SKILL.md` file into a thin pointer that reads and follows `.claude/skills/<name>/SKILL.md` as the authoritative workflow
 - Added new `compress` and `verify` skills to both `.agents/skills` and `.claude/skills`, and expanded `.claude/skills/audit/SKILL.md` and `.claude/skills/feature/SKILL.md` with the merged, more detailed workflow content from their `le-*` counterparts
 - Key decision: `.claude/skills/` is now the single source of truth for skill workflow content; other agent-tool directories (`.agents/skills`) only reference it, eliminating drift between duplicate copies
+
+## 2026-07-26 17:04
+
+- Completed the project documentation rebuild with a source-aligned index and dedicated architecture, module, service, operations, reference, and component documentation
+- Consolidated Host and Learning Engine documentation under `docs/`, reorganized component contracts by source ownership, and moved historical migration material into `docs/archive/`
+- Verified documentation coverage, structure, links, and technical claims against the current repository; implementation review and approval passed

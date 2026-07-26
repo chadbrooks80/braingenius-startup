@@ -1,0 +1,60 @@
+# System Overview
+
+Brain Genius is a Next.js App Router application with a public marketing site, account and onboarding flows, a small application area, a reusable browser-side Learning Engine, and Vocabulary as the first complete learning module.
+
+## Runtime and framework
+
+The installed versions in `package.json` and `.nvmrc` are authoritative:
+
+| Area | Current version or contract |
+| --- | --- |
+| Node.js | `24.14.1` (`>=24.14.1 <25`) |
+| Next.js | `16.2.9`, App Router |
+| React / React DOM | `19.2.4` |
+| TypeScript | `^5`, strict, no emit |
+| Tailwind CSS | v4 CSS configuration in `src/app/globals.css` |
+| Prisma | `7.8.0`, PostgreSQL through `@prisma/adapter-pg` |
+| Authentication | NextAuth v4.24.14 with JWT sessions and Prisma adapter |
+| Validation | Zod v4.4.3 plus strict custom parsers at learning security boundaries |
+
+The root layout loads Plus Jakarta Sans and Baloo 2, imports the one global stylesheet, and wraps the application in `SessionProvider`.
+
+## Product surfaces
+
+- `src/app/(website)/` owns the public home and blog pages and composes the marketing header and blocks.
+- `src/app/(auth)/` owns sign-in, credentials/Google sign-up, email verification, password reset, and authenticated onboarding.
+- `src/app/(app)/dashboard/` is currently a placeholder.
+- `src/app/(app)/(learning)/learning/[...learning]/` hosts a client-side learning session.
+- `src/app/playground/` and `src/app/le-playground/` expose development/demo surfaces; they are not production access controls.
+- `src/app/api/` exposes NextAuth, account recovery, Vocabulary content/grading/speech, generic TTS, and Stripe webhook HTTP boundaries.
+
+## Subsystems and data flow
+
+```mermaid
+flowchart LR
+  Browser --> Routes[App Router pages]
+  Routes --> Auth[NextAuth and onboarding]
+  Routes --> Engine[Learning Engine]
+  Engine --> Vocab[Vocabulary module]
+  Vocab --> VAPI[Vocabulary APIs]
+  VAPI --> Cap[Capability and attempt store]
+  VAPI --> TTS[TTS provider layer]
+  Auth --> DB[(PostgreSQL via Prisma)]
+  Auth --> Email[Resend]
+  Auth --> Stripe[Stripe Checkout]
+  Stripe --> Webhook[Verified webhook]
+  Webhook --> DB
+```
+
+The host application owns authentication, accounts, onboarding, subscriptions, database infrastructure, and email. The Learning Engine is subject-neutral: it loads a module, routes generic actions, applies module `ScreenRequest` objects, resolves registered windows, and coordinates speech. Vocabulary owns subject content, attempts, progression, mastery, review scheduling, and completion.
+
+## Current limitations
+
+- Learning progress and Vocabulary capability state are process-local and are not persisted to PostgreSQL. The capability store is unsuitable as a multi-instance guarantee.
+- The current Vocabulary route uses the server fixture ID `word_list_id`; there is no database-backed list selection.
+- The proxy matcher covers `/dashboard` and `/getting-started`, not `/learning/**`. It also lets requests without a token continue, so the dashboard is not proven protected by the current proxy/page source.
+- The generic `/api/tts` route has validation and provider allowlists but no authentication, quotas, rate limiting, concurrency accounting, or usage tracking.
+- The plan-success query path advances onboarding before re-reading webhook-established subscription state. This is implemented behavior, not the stricter billing rule in `.claude/rules/backend/billing-webhooks.md`.
+- The dashboard and blog pages are placeholders, and learning header/sidebar values are static presentation data.
+
+See [Application and Route Map](application-and-route-map.md), [Learning Engine and Module Boundaries](learning-engine-and-module-boundaries.md), and [Security and Server Boundaries](security-and-server-boundaries.md).
