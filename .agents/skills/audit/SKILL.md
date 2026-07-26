@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Audit the Brain Genius project without changing files. Use when the user invokes /audit, requests an audit of the current feature, or requests a full codebase audit.
+description: Audit Brain Genius feature work or the full codebase without modifying project files. Use when the user invokes /audit feature, requests an audit of the current feature, invokes /audit full, or requests a full codebase audit.
 ---
 
-@.claude/skills/audit/SKILL.md
+Read `.claude/skills/audit/SKILL.md` completely and follow it as the authoritative workflow.

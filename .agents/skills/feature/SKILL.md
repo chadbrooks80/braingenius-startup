@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Implement or complete a Brain Genius feature using the project's feature workflow. Use when the user invokes /feature implement, /feature i, or /feature complete.
+description: Implement or complete the current Brain Genius feature. Use when the user invokes /feature implement, /feature i, or /feature complete.
 ---
 
-@.claude/skills/feature/SKILL.md
+Read `.claude/skills/feature/SKILL.md` completely and follow it as the authoritative workflow.

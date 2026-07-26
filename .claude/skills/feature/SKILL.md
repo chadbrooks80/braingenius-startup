@@ -1,65 +1,83 @@
-# Feature Skill
-
-Use this skill to implement or complete a feature for the Brain Genius AI project.
-
+---
+name: feature
+description: Implement or complete the current Brain Genius feature. Use when the user invokes /feature implement, /feature i, or /feature complete.
 ---
 
-## NOTE: if no option is selected below or something else is written, output a summary of the options below
+# Feature
 
-## `/feature implement` OR '/feature i'
+## Commands
 
-### Steps:
+- `/feature implement` or `/feature i`
+- `/feature complete`
 
-1. **Read the current feature file**
-   - Use the Google Drive MCP to read `dev-instructions/brain-genius-startup/current-feature.md`
-   - Read the full contents of that file to understand the feature name and implementation instructions
+If no valid command is provided, show these commands with a short description.
 
-2. **Create a new Git branch**
-   - Extract the feature name from `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
-   - Create a new branch named after the feature (use kebab-case, e.g. `feature/auth-setup`)
-   - Switch to that branch before doing anything else
+## `/feature implement`
 
-3. **Implement the feature**
-   - Follow all instructions defined in `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
-   - Stay on the new branch throughout the entire implementation
+1. Resolve and read the exact Google Drive path:
 
----
+   `dev-instructions/brain-genius-startup/current-feature.md`
+
+   - Traverse the complete folder path live.
+   - Do not search by filename alone or reuse a stored Drive ID.
+   - Stop if the file cannot be resolved, read, or is empty.
+
+2. Read:
+
+   - `context/project-overview.md`
+   - `context/coding-process.md`
+
+3. Get the feature name and requirements from `current-feature.md`.
+
+4. Create and switch to `feature/<kebab-case-name>`.
+   - If already on the matching feature branch, continue there.
+   - If another feature branch is active, stop and ask the user before continuing.
+
+5. Inspect the relevant code and nearest comparable implementations.
+
+6. Implement only the specified feature.
+   - Stay within the approved scope.
+   - Do not make unrelated changes or add unapproved dependencies.
+
+7. Run the appropriate existing tests, lint, type-check, and build checks.
+   - Fix problems caused by the implementation.
+   - Report checks that could not be run.
+
+8. Create the complete implementation handoff required by `current-feature.md`.
+   - Always create both the required `implementation-report.md` and feature handoff ZIP before stopping.
+   - Upload `implementation-report.md` to the Drive destination required by `current-feature.md`.
+   - Do not upload the feature handoff ZIP to Google Drive. When the environment supports file clipboard operations, copy the completed ZIP file to the clipboard automatically using the same behavior as `/compress` and confirm that it succeeded.
+   - If clipboard access is unavailable, leave the completed ZIP on disk and report its exact path. Do not shrink, rebuild, or otherwise deviate from the ZIP requirements.
+   - Follow the exact filenames, report fields, ZIP contents, exclusions, and checksums required by `current-feature.md`.
+   - Treat handoff creation and upload as a mandatory part of `/feature implement`, not as feature completion.
+   - Do not ask whether the handoff should be produced when `current-feature.md` requires it.
+
+9. Stay on the feature branch and summarize:
+   - what was implemented;
+   - important files changed;
+   - verification performed;
+   - the uploaded report and clipboard-ready handoff ZIP;
+   - anything remaining.
+
+Do not automatically audit, approve, commit, merge, complete, close the feature, or clear `current-feature.md`. This restriction does not prohibit or postpone the mandatory implementation handoff in step 8.
 
 ## `/feature complete`
 
-### Steps:
+Use this only after the feature is fully implemented, verified, and approved by the user.
 
-1. **Log the completed work**
-   - Open `context/history.md`
-   - Append a new entry at the end of the file using the format below
-   - Include a timestamp (date and time)
-   - Write a short, concise summary of what was implemented
-   - Only log work that has been fully completed — do not log incomplete, rejected, or in-progress work
+1. Append a concise entry to `context/history.md`:
 
-### History Entry Format:
-
-```md
+```markdown
 ## YYYY-MM-DD HH:MM
 
-- Brief summary of what was completed
-- Any key decisions or integrations worth noting
-- Verification steps passed (if applicable)
-
+- Completed work
+- Key decisions or integrations
+- Verification passed
 ```
 
-### Example:
+2. Log only completed work. Do not log rejected, incomplete, or in-progress work.
 
-```md
-## 2026-04-17 14:32
-
-- Completed auth setup with Google login
-- Added protected dashboard routing
-- Verified login, logout, and session persistence
-- Passed audit and user review
-```
-
-2. **Output the completion message**
-   - At the end, output exactly:
+3. Output exactly:
 
 ```text
 EVERYTHING COMPLETE PLEASE EMPTY THE current-feature.md CONTENTS

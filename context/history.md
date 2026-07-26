@@ -402,3 +402,10 @@
 - Updated all internal imports and the `LearningWindowRegistry` to the new paths, plus every test file under `tests/` (`multiple-choice`, `spelling`, `word-search`, `learning-engine`, `components`) that referenced the old `@/learning-engine-components/...` alias
 - Updated path references in `le-context/coding-rules.md`, `le-context/project-overview.md`, and the `le-docs/components/*.md` / `docs/components/LearningWindowShell.md` docs to point at the new `src/components/learning-engine/windows/<WindowName>/` location
 - Verified the change is import-path-only: diffed against the pre-graft tree and confirmed no test regressions were introduced (the local `npx vitest` run fails identically before and after the graft, due to a pre-existing missing vitest config/dependency in the repo rather than anything from this refactor)
+
+## 2026-07-26 00:00
+
+- Completed the skills restructure on `refactor/claude-skills-context`: consolidated the duplicated `le-audit`, `le-commit`, `le-compress`, `le-current-feature`, `le-feature`, and `le-verify` skill definitions (previously repeated across `.agents/skills`, `.claude/skills`, and `.codex/skills`) into the single canonical skill set under `.claude/skills` (`audit`, `commit`, `compress`, `feature`, `new`, `verify`)
+- Removed the `.codex/skills` directory entirely and converted every `.agents/skills/<name>/SKILL.md` file into a thin pointer that reads and follows `.claude/skills/<name>/SKILL.md` as the authoritative workflow
+- Added new `compress` and `verify` skills to both `.agents/skills` and `.claude/skills`, and expanded `.claude/skills/audit/SKILL.md` and `.claude/skills/feature/SKILL.md` with the merged, more detailed workflow content from their `le-*` counterparts
+- Key decision: `.claude/skills/` is now the single source of truth for skill workflow content; other agent-tool directories (`.agents/skills`) only reference it, eliminating drift between duplicate copies

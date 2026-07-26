@@ -1,1 +1,0 @@
-@.claude/skills/compress/SKILL.md

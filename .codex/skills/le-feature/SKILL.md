@@ -1,1 +1,0 @@
-@.claude/skills/le-feature/SKILL.md
