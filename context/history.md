@@ -421,3 +421,13 @@
 - Completed the Google G brand-color fix on `fix/google-g-brand-colors` for the sign-in and sign-up authentication controls
 - Restored Google’s official four-color SVG fills and documented the narrowly scoped third-party brand exception without adding the colors to the Brain Genius theme
 - Verification and user approval passed
+
+## 2026-07-27 00:00
+
+- Completed the audit repair bundle on `fix/audit-repair-bundle-1`, addressing several authentication security findings
+- Added `src/lib/auth-return-path.ts` to validate and sanitize post-auth redirect targets (rejects protocol-relative URLs, absolute URLs, and encoded traversal/control-character segments, falling back to `/dashboard`) and wired it into sign-in and sign-up return-path handling
+- Fixed `src/actions/register.ts` to stop revealing account existence: registration now always returns the same accepted response regardless of whether the email is new, already verified, or already unverified, treats a concurrent duplicate registration race as a no-op instead of surfacing the unique-constraint error, and only sends a new verification email when the account is genuinely unverified
+- Hardened `src/app/api/auth/verify-email-code/route.ts` and `src/app/api/auth/resend-verification-code/route.ts` against related enumeration and abuse issues
+- Updated `docs/architecture/application-and-route-map.md`, `docs/reference/api-routes.md`, `docs/reference/server-actions.md`, `docs/reference/testing.md`, `docs/reference/theme-and-styling.md`, `docs/services/authentication-and-accounts.md`, and `docs/services/email-verification-and-password-reset.md` to match the corrected behavior
+- Added `tests/auth/` (`authReturnPath.test.ts`, `emailVerificationRoutes.test.ts`, `registerUser.test.ts`) covering the new redirect validation and the registration/verification security fixes
+- Verification and user approval passed

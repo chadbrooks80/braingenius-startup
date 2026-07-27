@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { sanitizeReturnPath } from "@/lib/auth-return-path";
 
 const credentialsSchema = z.object({
   username: z.string().min(1, "Email or username is required"),
@@ -40,7 +41,9 @@ function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Default into /dashboard; proxy.ts redirects to /getting-started if onboarding isn't complete.
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  // The raw search parameter is untrusted, so it's sanitized once here and the
+  // sanitized value is the only one ever passed to NextAuth or the router.
+  const callbackUrl = sanitizeReturnPath(searchParams.get("callbackUrl"));
   const justVerified = searchParams.get("verified") === "1";
 
   const [username, setUsername] = useState("");

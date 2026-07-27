@@ -17,7 +17,7 @@ Route-group names do not create URLs and do not themselves prove authentication.
 | `/` | `src/app/(website)/page.tsx` | Server | Public marketing composition: `Hero`, trust, features, process, word-generator, testimonials, CTA. |
 | `/blog` | `src/app/(website)/blog/page.tsx` | Server | Public placeholder text. |
 | `/sign-up` | `src/app/(auth)/(onboarding)/sign-up/page.tsx` | Client | Credentials registration and inline email-code verification, or Google sign-in; no page-level redirect. |
-| `/sign-in` | `src/app/(auth)/sign-in/page.tsx` | Client | Credentials or Google sign-in. Default callback is `/dashboard`; supplied `callbackUrl` is used directly. |
+| `/sign-in` | `src/app/(auth)/sign-in/page.tsx` | Client | Credentials or Google sign-in. The supplied `callbackUrl` is sanitized once through `src/lib/auth-return-path.ts` before use; every rejected, missing, or unsafe value falls back to `/dashboard`. |
 | `/verify-email` | `src/app/(auth)/verify-email/page.tsx` | Client | Reads `email` from search parameters and calls verification/resend APIs. |
 | `/forgot-password` | `src/app/(auth)/forgot-password/page.tsx` | Client | Requests a reset through a generic-response API. |
 | `/reset-password` | `src/app/(auth)/reset-password/page.tsx` | Client | Reads `token` and `email`, validates matching passwords, then calls reset confirmation. |
@@ -33,7 +33,7 @@ Route-group names do not create URLs and do not themselves prove authentication.
 | `/le-playground` | `src/app/le-playground/page.tsx` | Client Learning Window gallery, including word-search states; no gate. |
 | `/playground/register` | `src/app/playground/register/page.tsx` | Client `useActionState` wrapper over `registerUser`; no gate. |
 | `/playground/restrict` | `src/app/playground/restrict/page.tsx` | Server page that redirects to `/sign-in` without a session. |
-| `/playground/users` | `src/app/playground/users/page.tsx`, `src/app/playground/users/signInOut.tsx` | Server page that lists all user email fields and includes client sign-in/out controls; no page-level gate. This is a current security limitation. |
+| `/playground/users` | `src/app/playground/users/page.tsx`, `src/app/playground/users/signInOut.tsx` | Server page gated by a server session check; redirects unauthenticated requests to `/sign-in` before querying any data, then renders only the active session identity and sign-out control. |
 
 ## Proxy-controlled paths
 

@@ -11,12 +11,18 @@ const CLIENT_STATIC_DIR = path.join(BUILD_DIR, "static");
 // Strings that exist only in server-only fixture and resolution code. Their
 // presence in any browser-delivered chunk means answer-bearing data or a
 // server-only helper was bundled for the client.
+//
+// Standalone learner words (e.g. "transform") are deliberately excluded:
+// ordinary English words collide with normal browser-bundle code and
+// framework/runtime identifiers, producing false positives without proving
+// an actual answer leak. Every remaining marker is either an opaque
+// identifier or a multi-word phrase distinctive enough that it cannot
+// reasonably collide with unrelated code.
 function collectServerOnlyMarkers(): string[] {
   const words = getWordList("word_list_id")!;
   const markers = new Set<string>(["Spell the word:", "vocabulary-choice-projection-v1"]);
 
   for (const word of words) {
-    markers.add(JSON.stringify(word.word));
     markers.add(word.definition);
     markers.add(word.interestingFact);
     markers.add(word.definitionAttemptId);
@@ -32,6 +38,30 @@ function collectServerOnlyMarkers(): string[] {
 
   return [...markers];
 }
+
+test("marker collection excludes ambiguous standalone learner words and keeps high-confidence server-only markers", () => {
+  const markers = collectServerOnlyMarkers();
+  const words = getWordList("word_list_id")!;
+
+  assert.ok(markers.length > 0, "expected at least one server-only marker");
+  assert.equal(new Set(markers).size, markers.length, "markers must be deduplicated");
+
+  for (const word of words) {
+    assert.ok(
+      !markers.includes(word.word) && !markers.includes(JSON.stringify(word.word)),
+      `standalone learner word "${word.word}" must not be collected as a marker`
+    );
+  }
+
+  assert.ok(markers.includes("Spell the word:"));
+  assert.ok(markers.includes("vocabulary-choice-projection-v1"));
+
+  const transformWord = words.find((word) => word.word === "transform")!;
+  assert.ok(markers.includes(transformWord.definitionAttemptId));
+  assert.ok(markers.includes(transformWord.spellingAttemptId));
+  assert.ok(markers.includes(`"${transformWord.choices[0].id}"`));
+  assert.ok(markers.includes(transformWord.definition));
+});
 
 test("production client bundles contain no canonical fixture answers or server-only resolution helpers", async (t) => {
   if (!existsSync(path.join(BUILD_DIR, "BUILD_ID"))) {

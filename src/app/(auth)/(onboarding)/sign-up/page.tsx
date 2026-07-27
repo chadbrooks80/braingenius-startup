@@ -289,7 +289,7 @@ export default function SignUpPage() {
                   Verify your email
                 </h1>
                 <p className="mt-2 text-sm text-muted">
-                  We sent a 4-digit verification code to {email}.
+                  If {email} can be registered, we sent a 4-digit verification code to it.
                 </p>
               </div>
 

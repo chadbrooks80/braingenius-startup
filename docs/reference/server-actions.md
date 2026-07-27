@@ -6,9 +6,9 @@
 
 - Input: `email` and `password` from `FormData`; Zod requires a valid email and eight-character minimum.
 - Auth: public sign-up action.
-- Side effects: rejects an existing email, bcrypt-hashes the password, creates a parent user and three-day free-trial subscription, creates a hashed 10-minute verification code, and attempts Resend delivery.
-- Return: `{ success: true }` or `{ success: false, error }`. Email failure is logged after account/code creation and still returns success so resend can recover.
-- Consumers/evidence: `/sign-up`, `/playground/register`; no focused action test.
+- Side effects: for an email with no existing account, bcrypt-hashes the password and creates a parent user plus three-day free-trial subscription; a concurrent duplicate create is caught and treated the same as an existing account. Whenever the email now belongs to an unverified account (new or pre-existing), creates a hashed 10-minute verification code and attempts Resend delivery. An existing verified account, or any other existing account's password/verification/subscription/onboarding state, is never modified or sent a new-account email.
+- Return: `{ success: true }` for every syntactically valid email, whether new, existing unverified, or existing verified, so the response never reveals stored account state. Validation failures and unexpected errors return `{ success: false, error }`. Email delivery failure is logged after account/code creation and still returns success so resend can recover.
+- Consumers/evidence: `/sign-up` (neutral post-acceptance copy that doesn't claim the address was new), `/playground/register`; `tests/auth/registerUser.test.ts`.
 
 ## `src/actions/checkout.ts`
 

@@ -20,6 +20,7 @@ Direct Node tests can be run by passing explicit files:
 
 ```bash
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/api/*.test.ts
+node --import ./tests/registerServerOnly.mjs --import tsx --test tests/auth/*.test.ts
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/components/*.test.tsx tests/learning-engine/*.test.ts tests/learning-engine/*.test.tsx
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/multiple-choice/*.test.ts tests/spelling/*.test.ts
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/tts/*.test.ts
@@ -43,13 +44,14 @@ node --import ./tests/registerServerOnly.mjs --import tsx --test tests/e2e/wordS
 ## Coverage by area
 
 - `tests/api/`: TTS request handling, Vocabulary projections, learner cookie, protected speech, grading, and answer evaluator.
-- `tests/components/`: shared Button/Input/PasswordInput/LearningWindowShell recipes.
+- `tests/auth/`: sign-in return-path sanitization, and the account-enumeration-resistant registration and email-verification/resend route contracts.
+- `tests/components/`: shared Button/Input/PasswordInput/LearningWindowShell recipes, plus a `VocabularyStartupVisual` regression proving no inline `style` attribute and representative required geometry/rotation/blur classes.
 - `tests/learning-engine/`: registry, screen injection/reset, generic action forwarding, route error presentation, and subject-neutral window rendering.
 - `tests/vocabulary/`, `tests/multiple-choice/`, `tests/spelling/`: state machine, attempts, strict payloads, projections, answer security, retries, and window flows.
 - `tests/tts/`: payload/config parsing, queue/cancellation, Google and Lemonfox adapters, and provider dispatch.
 - `tests/word-search/`: prop parsing, deterministic generation, interaction, loading, rendering, accessibility, and completion.
 - `tests/integration/`: full Vocabulary module plus real content/answer handlers without a browser.
-- `tests/security/`: post-build scan for server-only fixture markers in client chunks.
+- `tests/security/`: marker-quality regression (excludes ambiguous standalone learner words, keeps high-confidence identifiers/phrases) plus the post-build scan for those server-only fixture markers in client chunks.
 - `tests/e2e/`: real running Vocabulary route; mouse/keyboard/touch word-search browser flow.
 
 ## Known evidence limitation

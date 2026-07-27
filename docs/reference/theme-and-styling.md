@@ -40,4 +40,6 @@ Supported token categories:
 
 Reusable components expose typed variants or color-token props. `className` is a caller layout escape hatch, not permission to replace a component's color, state, type, or accessibility recipe. `Button`, `Input`, and `LearningWindowShell` keep complete variant recipes in their source. See individual component docs for exact contracts.
 
+`VocabularyStartupVisual` (`src/learning-modules/vocabulary/components/Startup/VocabularyStartupVisual.tsx`) expresses its fixed decorative geometry (minimum height, circle sizes/offsets, center-stage size/blur, emoji size, and each word chip's position/rotation/blur) entirely through literal Tailwind arbitrary-value classes. It emits no `style` prop. Each word chip's position and rotation is a complete literal class string in a `WORD_CHIPS` array rather than a shared position object, so Tailwind can statically discover every class during the build.
+
 Applicable rules are `.claude/rules/frontend/theme.md`, `.claude/rules/frontend/globals-css.md`, and `.claude/rules/frontend/components.md`.

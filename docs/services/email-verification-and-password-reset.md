@@ -6,9 +6,9 @@
 
 ## Email verification
 
-Credentials registration creates a random four-digit code, stores only its SHA-256 hash, and sets a 10-minute expiry. Verification loads the latest unused code for the email, rejects expiry or five prior failed attempts, increments attempts for a mismatch, and transactionally sets `emailVerified`, advances to `WELCOME_VIDEO`, and marks the code used on success.
+Credentials registration creates a random four-digit code, stores only its SHA-256 hash, and sets a 10-minute expiry, whenever the target email currently belongs to an unverified account (newly created or pre-existing). Verification loads the latest unused code for the email and returns one identical `400` learner-safe response for no active code, expiry, five prior failed attempts, and a wrong code; a mismatch still increments `attempts`. Success transactionally sets `emailVerified`, advances to `WELCOME_VIDEO`, and marks the code used.
 
-Resend enforces 60 seconds since the latest code. For an existing unverified user it marks all unused codes used, creates a replacement, and attempts delivery. Unknown/already-verified accounts get generic success. A rate-limited request gets a specific `429`.
+Resend enforces 60 seconds since the latest code, but enforces it silently: an unknown email, an already-verified account, a cooldown-active request, and an eligible unverified account (which invalidates unused codes, creates a replacement, and attempts delivery) all return the identical generic `200 { success: true }`. Both verification and resend responses set `Cache-Control: no-store`.
 
 ## Password reset
 

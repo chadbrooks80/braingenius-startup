@@ -29,17 +29,17 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 ### `POST /api/auth/resend-verification-code`
 
 - Source: `src/app/api/auth/resend-verification-code/route.ts`; public endpoint.
-- Request: Zod `email`; invalid input returns generic `200 { success: true }`.
-- Success/side effects: for an existing unverified user, invalidates unused codes, creates a hashed four-digit code with 10-minute expiry, and attempts email delivery. Requests within 60 seconds of the latest code return `429`.
-- Security/tests: unknown or already verified accounts receive generic success. No focused automated route test.
+- Request: Zod `email`; invalid input, unknown email, already-verified account, cooldown-active request, and eligible-unverified-account request all return the identical generic `200 { success: true }` with `Cache-Control: no-store`.
+- Success/side effects: for an existing unverified user outside the silent 60-second cooldown, invalidates unused codes, creates a hashed four-digit code with 10-minute expiry, and attempts email delivery. The cooldown is enforced only by skipping that work; it is never revealed through status, body, or client copy.
+- Security/tests: `tests/auth/emailVerificationRoutes.test.ts`.
 
 ### `POST /api/auth/verify-email-code`
 
 - Source: `src/app/api/auth/verify-email-code/route.ts`; public endpoint.
 - Request: Zod `email` and exactly four-character `code`.
-- Success: atomically sets `emailVerified`, advances `VERIFY_EMAIL` to `WELCOME_VIDEO`, and marks the code used; returns `200 { success: true }`.
-- Errors: malformed input, no active code, expiry, five prior failures, or mismatch returns `400`; mismatches increment `attempts`.
-- Tests: no focused automated route test.
+- Success: atomically sets `emailVerified`, advances `VERIFY_EMAIL` to `WELCOME_VIDEO`, and marks the code used; returns `200 { success: true }` with `Cache-Control: no-store`.
+- Errors: malformed input returns a distinct `400 { error: "Invalid request." }`. No active code, expiry, five prior failures, and a wrong code all return the identical `400` learner-safe response with `Cache-Control: no-store`; a mismatch still increments `attempts`.
+- Tests: `tests/auth/emailVerificationRoutes.test.ts`.
 
 ## Vocabulary
 

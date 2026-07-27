@@ -19,6 +19,10 @@ Credentials sign-up validates email/password, hashes the password, creates a `PA
 
 Child creation requires the parent session, checks the unique lowercase-alphanumeric username and current relation count, hashes the child password, and transactionally creates a `CHILD` plus `ParentStudent`. The optional `mustResetPassword` flag is stored, but no source currently enforces a password-change screen at child sign-in.
 
+## Sign-in return path
+
+`src/lib/auth-return-path.ts` exports `sanitizeReturnPath`, a pure helper that turns the untrusted `callbackUrl` search parameter on `/sign-in` into a safe, root-relative, same-origin path. It rejects absolute and protocol-relative URLs, non-HTTP schemes, raw and percent-encoded backslash/slash/dot-segment confusion, control characters, malformed percent-encoding, and self-referential `/sign-in` destinations, falling back to `/dashboard` for anything rejected, missing, or blank. `/sign-in` reads the parameter once and uses the single sanitized result for Google `signIn`, Credentials `signIn`, and the successful `router.push`.
+
 ## Funnel and route gating
 
 Order is `VERIFY_EMAIL → WELCOME_VIDEO → PROFILE → PLAN → CHILDREN → COMPLETE`. `getOnboardingRoute` maps verified incomplete users to `/getting-started` and completed users to `/dashboard`.
@@ -29,6 +33,8 @@ Order is `VERIFY_EMAIL → WELCOME_VIDEO → PROFILE → PLAN → CHILDREN → C
 
 Zod validates browser forms and server mutations, while server session checks establish identity. User-facing failures are generally safe result objects. Some server logs include action names and raw unexpected error objects; they do not intentionally log passwords.
 
+Registration (`registerUser`) and the two email-verification routes (`/api/auth/verify-email-code`, `/api/auth/resend-verification-code`) return identical public responses regardless of whether the target email belongs to an existing, verified, unverified, rate-limited, or absent account; only syntax validation (malformed email, short password, malformed request body) is distinguishable. See [Server Actions](../reference/server-actions.md) and [API Routes](../reference/api-routes.md).
+
 ## Tests and limitations
 
-There are no focused automated tests for Credentials/Google sign-in, adapter callbacks, JWT refresh, onboarding actions, proxy redirects, or parent-child authorization. Playground routes include a separately session-checked page and an ungated user-list page. See [Application and Route Map](../architecture/application-and-route-map.md).
+There are no focused automated tests for Credentials/Google sign-in, adapter callbacks, JWT refresh, onboarding actions, proxy redirects, or parent-child authorization. Both playground diagnostic routes (`/playground/restrict` and `/playground/users`) now perform their own server session check and redirect unauthenticated requests to `/sign-in`. See [Application and Route Map](../architecture/application-and-route-map.md).

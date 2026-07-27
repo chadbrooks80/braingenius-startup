@@ -5,6 +5,7 @@ import Button from "../../src/components/ui/Button";
 import Input from "../../src/components/ui/Input";
 import PasswordInput from "../../src/components/ui/PasswordInput";
 import { LearningWindowShell } from "../../src/components/learning-engine/LearningWindowShell";
+import { VocabularyStartupVisual } from "../../src/learning-modules/vocabulary/components/Startup/VocabularyStartupVisual";
 
 test("Button renders an anchor when href is supplied and a button otherwise", () => {
   const anchorMarkup = renderToStaticMarkup(<Button href="/x">Go</Button>);
@@ -105,4 +106,18 @@ test("LearningWindowShell standard, wide, center-aligned, backdrop, and no-backd
     <LearningWindowShell backdrop={false}>content</LearningWindowShell>
   );
   assert.doesNotMatch(noBackdrop, /backdrop-blur/);
+});
+
+test("VocabularyStartupVisual renders no inline style attribute and preserves its static geometry classes", () => {
+  const markup = renderToStaticMarkup(<VocabularyStartupVisual />);
+
+  assert.doesNotMatch(markup, /style=/);
+  assert.match(markup, /min-h-\[280px\]/);
+  assert.match(markup, /-top-\[60px\]/);
+  assert.match(markup, /-bottom-\[40px\]/);
+  assert.match(markup, /backdrop-blur-\[8px\]/);
+  assert.match(markup, /text-\[60px\]/);
+  assert.match(markup, /-rotate-\[6deg\]/);
+  assert.match(markup, /rotate-\[5deg\]/);
+  assert.match(markup, /backdrop-blur-\[4px\]/);
 });

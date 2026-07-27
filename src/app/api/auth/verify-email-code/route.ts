@@ -10,12 +10,28 @@ const VerifySchema = z.object({
   code: z.string().length(4),
 });
 
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+
+// One identical learner-safe response for every normal failure state (no
+// active code, wrong code, expired code, exhausted attempts) so the caller
+// can't learn which of those states applies -- and therefore can't learn
+// whether the email exists, is already verified, or has an active code.
+function genericFailure(): NextResponse {
+  return NextResponse.json(
+    { success: false, error: "That code is incorrect or has expired. Please request a new one." },
+    { status: 400, headers: NO_STORE_HEADERS }
+  );
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const parsed = VerifySchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ success: false, error: "Invalid request." }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "Invalid request." },
+      { status: 400, headers: NO_STORE_HEADERS }
+    );
   }
 
   const { email, code } = parsed.data;
@@ -26,24 +42,15 @@ export async function POST(request: NextRequest) {
   });
 
   if (!verificationCode) {
-    return NextResponse.json(
-      { success: false, error: "No active verification code found." },
-      { status: 400 }
-    );
+    return genericFailure();
   }
 
   if (verificationCode.expiresAt < new Date()) {
-    return NextResponse.json(
-      { success: false, error: "This code has expired. Please request a new one." },
-      { status: 400 }
-    );
+    return genericFailure();
   }
 
   if (verificationCode.attempts >= VERIFICATION_CODE_MAX_ATTEMPTS) {
-    return NextResponse.json(
-      { success: false, error: "Too many failed attempts. Please request a new code." },
-      { status: 400 }
-    );
+    return genericFailure();
   }
 
   if (hashValue(code) !== verificationCode.codeHash) {
@@ -52,7 +59,7 @@ export async function POST(request: NextRequest) {
       data: { attempts: { increment: 1 } },
     });
 
-    return NextResponse.json({ success: false, error: "Incorrect code." }, { status: 400 });
+    return genericFailure();
   }
 
   await prisma.$transaction([
@@ -69,5 +76,5 @@ export async function POST(request: NextRequest) {
     }),
   ]);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { headers: NO_STORE_HEADERS });
 }
