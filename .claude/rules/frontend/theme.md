@@ -34,6 +34,13 @@ paths:
 - Use `danger` for errors, `warning` for caution, and `success` for confirmed positive status. Do not substitute a decorative accent for a status meaning.
 - Gradients must use semantic theme tokens.
 
+### Google G Brand Exception
+
+- The Google G in authentication controls is an approved third-party brand exception.
+- Its four official literal path fills may appear only inside the Google logo SVG implementations.
+- These colors must not become Brain Genius theme tokens, semantic aliases, reusable application colors, or styling for non-Google UI.
+- This exception does not weaken the prohibition on raw colors for normal Brain Genius interface styling.
+
 ## Opacity and Effects
 
 - Use the shared opacity scale from `src/app/globals.css`: `hairline`, `subtle`, `soft`, `medium`, `surface-soft`, `surface`, and `surface-strong`.

@@ -8,6 +8,10 @@ The 15 literal base colors are `primary`, `secondary`, `primary-strong`, `second
 
 The shared opacity scale is `hairline`, `subtle`, `soft`, `medium`, `surface-soft`, `surface`, and `surface-strong`. The same file exposes typography, radius, shadow, layout, blur, and transition tokens. Global animations are `bob`, `progressFill`, and the IntersectionObserver-driven `.reveal-item` transition.
 
+### Google G brand exception
+
+The Google G in authentication controls is an approved third-party brand exception. Its four official literal path fills may appear only inside the Google logo SVG implementations. These colors must not become Brain Genius theme tokens, semantic aliases, reusable application colors, or styling for non-Google UI. This exception does not weaken the prohibition on raw colors for normal Brain Genius interface styling.
+
 ## Typed configurable colors
 
 `src/lib/theme-colors.ts` owns:
