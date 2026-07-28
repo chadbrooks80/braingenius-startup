@@ -1,3 +1,12 @@
+## 2026-07-28 22:38
+
+- Completed Phase 2 of Playground-Independent Product Test Cleanup on `test/playground-independent-product-tests`, closing the two verified Phase 1 audit findings (PIPT-P1-01, PIPT-P1-02) without touching the deleted playground E2E or adding a real-route Word Search E2E
+- Extracted the Word Search completion effect's boolean decision into a new pure, independently tested function, `shouldEmitWordSearchCompletion` (`src/components/learning-engine/windows/WordSearch/wordSearchCompletionGate.ts`), called by `WordSearchWindow.tsx`'s completion `useEffect` in place of inlined logic — no props, action IDs, payloads, or visible/puzzle behavior changed
+- Added `tests/word-search/wordSearchCompletionGate.test.ts`: direct gate coverage for all four boolean combinations, plus an integration-style simulation driving real `wordSearchInteraction.ts` state transitions across a full find-all-six-words sequence, proving exactly one `submitAnswer` completion emission with the correct payload and no duplicate/early/seeded-complete emissions
+- Updated `docs/components/learning-engine/windows/WordSearchWindow.md` to enumerate the exact six focused test files (previously described only by category)
+- Verified: focused Word Search suite 62/62, broader learning/vocabulary/integration tests 33/33, `npx tsc --noEmit` clean, `npm run lint` clean, `npm run build` succeeded, real Vocabulary route E2E passing; no commit made, changes remain in the working tree
+- Verified and approved by the user
+
 ## 2026-07-27 00:00
 
 - Made onboarding funnel state database-authoritative on `fix/authoritative-onboarding-state`, fixing a class of bugs where a stale or forged client-supplied step/claim could desync the funnel or bypass the two-child limit

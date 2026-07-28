@@ -52,7 +52,16 @@ The window validates public props and owns local mechanics only. It does not aut
 
 ## Playground and tests
 
-`/le-playground` includes loading, failure/retry, active, partial, completed, large, long-word, and narrow examples. Unit/component tests cover parsing, deterministic placement, all interaction modes, stale loads, accessibility rendering, and completion. The browser E2E currently targets `/playground` instead of the source gallery route, a known test/source mismatch.
+`/le-playground` includes loading, failure/retry, active, partial, completed, large, long-word, and narrow examples, but this is a development gallery, not product acceptance evidence. No current subject module returns this window, so there is no real-route product E2E for Word Search yet; real-route browser coverage will be added once a production learning module actually uses it.
+
+The exact focused test files that remain are:
+
+- `tests/word-search/generateWordList.test.ts` — deterministic puzzle generation.
+- `tests/word-search/parseWordSearchWindowProps.test.ts` — prop validation and normalization.
+- `tests/word-search/wordSearchPuzzleLoad.test.ts` — loading, failure, retry, and stale-result handling.
+- `tests/word-search/wordSearchInteraction.test.ts` — mouse/pointer, touch, and keyboard interaction across all supported directions, found-word persistence, and duplicate prevention.
+- `tests/word-search/wordSearchCompletionGate.test.ts` — the completion-emission gate shared with `WordSearchPuzzleSession`, proving `onAction("submitAnswer", { complete: true, foundWords: [...] })` fires exactly once on learner completion, never before completion, never again on a repeated render, and never for a puzzle seeded as already complete.
+- `tests/word-search/wordSearchWindow.test.tsx` — registry resolution, loading/error/ready rendering, accessible grid and word list, and Next disabled-before/enabled-after completion.
 
 ## Usage
 

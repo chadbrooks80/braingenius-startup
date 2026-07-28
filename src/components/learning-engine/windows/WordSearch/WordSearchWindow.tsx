@@ -38,6 +38,7 @@ import {
   type WordSearchInteractionSeed,
   type WordSearchInteractionState,
 } from "./wordSearchInteraction";
+import { shouldEmitWordSearchCompletion } from "./wordSearchCompletionGate";
 import type {
   GenerateWordSearchPuzzle,
   WordSearchCell,
@@ -175,20 +176,22 @@ function WordSearchPuzzleSession({
   }, [loadState, generate, parsedProps]);
 
   useEffect(() => {
-    if (!activeInteraction?.complete || completionEmittedRef.current) {
+    if (
+      !activeInteraction ||
+      !shouldEmitWordSearchCompletion({
+        activeComplete: activeInteraction.complete,
+        initiallyComplete: initialInteraction?.complete ?? false,
+        alreadyEmitted: completionEmittedRef.current,
+      })
+    ) {
       return;
     }
 
     completionEmittedRef.current = true;
-
-    // A puzzle seeded as already complete must not emit a completion the
-    // learner did not perform.
-    if (!initialInteraction?.complete) {
-      void onAction(
-        "submitAnswer",
-        buildWordSearchCompletionPayload(parsedProps.words, activeInteraction)
-      );
-    }
+    void onAction(
+      "submitAnswer",
+      buildWordSearchCompletionPayload(parsedProps.words, activeInteraction)
+    );
   }, [activeInteraction, initialInteraction, onAction, parsedProps]);
 
   function updateInteraction(

@@ -38,7 +38,6 @@ Browser tests launch the locally installed Google Chrome, start their own Next p
 
 ```bash
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/e2e/vocabularyRoute.e2e.ts
-node --import ./tests/registerServerOnly.mjs --import tsx --test tests/e2e/wordSearchPlayground.e2e.ts
 ```
 
 ## Coverage by area
@@ -49,11 +48,7 @@ node --import ./tests/registerServerOnly.mjs --import tsx --test tests/e2e/wordS
 - `tests/learning-engine/`: registry, screen injection/reset, generic action forwarding, route error presentation, and subject-neutral window rendering.
 - `tests/vocabulary/`, `tests/multiple-choice/`, `tests/spelling/`: state machine, attempts, strict payloads, projections, answer security, retries, and window flows.
 - `tests/tts/`: payload/config parsing, queue/cancellation, Google and Lemonfox adapters, and provider dispatch.
-- `tests/word-search/`: prop parsing, deterministic generation, interaction, loading, rendering, accessibility, and completion.
+- `tests/word-search/`: prop parsing, deterministic generation, mouse/keyboard/touch interaction, loading, rendering, accessibility, and completion. No current subject module returns the Word Search Learning Window, so this coverage is focused unit/component/interaction coverage rather than a real-route browser flow; real-route Word Search browser coverage will be added once a production learning module uses it.
 - `tests/integration/`: full Vocabulary module plus real content/answer handlers without a browser.
 - `tests/security/`: marker-quality regression (excludes ambiguous standalone learner words, keeps high-confidence identifiers/phrases) plus the post-build scan for those server-only fixture markers in client chunks.
-- `tests/e2e/`: real running Vocabulary route; mouse/keyboard/touch word-search browser flow.
-
-## Known evidence limitation
-
-`tests/e2e/wordSearchPlayground.e2e.ts` navigates to `/playground`, but current source renders Word Search examples at `/le-playground`. The test's intended contract and route source disagree; documentation follows current source, and verification must report the actual test result rather than treating the test name as proof.
+- `tests/e2e/`: real running Vocabulary route.
