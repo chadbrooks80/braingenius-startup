@@ -6,6 +6,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { saveProfile } from "@/actions/onboarding";
+import { handleOnboardingRecovery } from "@/lib/onboarding-client";
 
 const profileSchema = z.object({
   fName: z.string().min(1, "First name is required"),
@@ -35,13 +36,15 @@ export default function ProfileStep() {
       lName: result.data.lName || undefined,
     });
 
-    if (!profileResult.success) {
-      setIsSubmitting(false);
-      setError(profileResult.error ?? "Something went wrong. Please try again.");
+    if (handleOnboardingRecovery(profileResult, router)) return;
+
+    if (profileResult.status === "success") {
+      router.refresh();
       return;
     }
 
-    router.refresh();
+    setIsSubmitting(false);
+    setError(profileResult.error);
   }
 
   return (

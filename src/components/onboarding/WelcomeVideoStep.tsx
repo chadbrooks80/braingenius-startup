@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { completeWelcomeVideoStep } from "@/actions/onboarding";
+import { handleOnboardingRecovery } from "@/lib/onboarding-client";
 
 export default function WelcomeVideoStep() {
   const router = useRouter();
@@ -15,14 +16,15 @@ export default function WelcomeVideoStep() {
     setIsSubmitting(true);
 
     const result = await completeWelcomeVideoStep();
+    if (handleOnboardingRecovery(result, router)) return;
 
-    if (!result.success) {
-      setIsSubmitting(false);
-      setError(result.error ?? "Something went wrong. Please try again.");
+    if (result.status === "success") {
+      router.refresh();
       return;
     }
 
-    router.refresh();
+    setIsSubmitting(false);
+    setError(result.error);
   }
 
   return (

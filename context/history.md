@@ -1,3 +1,14 @@
+## 2026-07-27 00:00
+
+- Made onboarding funnel state database-authoritative on `fix/authoritative-onboarding-state`, fixing a class of bugs where a stale or forged client-supplied step/claim could desync the funnel or bypass the two-child limit
+- Replaced `advanceOnboardingStep` with `advanceParentOnboardingStep` in `src/lib/onboarding-funnel.ts`: a single conditional `prisma.user.updateMany` matches on `id` + `role: PARENT` + `onboardingStep: fromStep` + `onboardingCompleted: false`, so a stale, duplicated, or concurrent call always affects zero rows instead of corrupting state; added `requireParentAtStep` as a read-then-check gate for actions (username lookup/suggestion) that don't themselves advance the funnel; introduced the shared `OnboardingActionResult` discriminated union (`success` / `recovery` / `unauthenticated` / `error`) every onboarding Server Action and route now returns
+- Updated `src/actions/onboarding.ts`, `src/app/(auth)/(onboarding)/getting-started/page.tsx`, `src/app/api/auth/verify-email-code/route.ts`, and `src/auth.ts` to use the new authoritative gate/advance functions and result contract
+- Added `src/lib/onboarding-client.ts` with `handleOnboardingRecovery`, `checkUsernameAvailabilityAndSuggest`, and `completeChildrenStep`, extracting the recovery/navigation handling shared by every onboarding client component (`ChildrenStep`, `PlanStep`, `ProfileStep`, `WelcomeVideoStep`) so a `recovery` result always navigates to the server-computed destination and refreshes the session instead of retrying with client-held state
+- Added test doubles `tests/auth/testDoubles/fakeAuthProvider.ts` and `tests/auth/testDoubles/fakeNextAuth.ts`, and expanded `tests/auth/testDoubles/fakeDb.ts` to simulate the conditional `updateMany` match/no-op semantics
+- Added `tests/auth/gettingStartedPage.test.ts`, `tests/auth/onboardingActions.test.ts`, `tests/auth/onboardingClientRecovery.test.ts`, `tests/auth/onboardingFunnel.test.ts`, and `tests/auth/sessionRefresh.test.ts`
+- Updated docs: `docs/architecture/application-and-route-map.md`, `docs/components/onboarding/{ChildrenStep,PlanStep,ProfileStep,WelcomeVideoStep}.md`, `docs/reference/{api-routes,server-actions,testing}.md`, `docs/services/authentication-and-accounts.md`
+- Verified and approved by the user
+
 ## 2026-07-23 19:15
 
 - Completed batch 5 of the shared theme/recipe unification on `feature/shared-theme-recipes-batch-5`

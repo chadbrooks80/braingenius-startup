@@ -139,7 +139,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id as string;
 
@@ -153,12 +153,19 @@ export const authOptions: NextAuthOptions = {
         token.onboardingStep = dbUser?.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
       }
 
-      if (trigger === "update") {
-        if (session?.onboardingCompleted !== undefined) {
-          token.onboardingCompleted = session.onboardingCompleted;
-        }
-        if (session?.onboardingStep !== undefined) {
-          token.onboardingStep = session.onboardingStep;
+      // `session.update()` is a signal to refresh, not a source of truth:
+      // onboarding claims a caller places on the `session` payload here are
+      // browser-supplied and untrusted, so they are ignored. The token is
+      // always re-synced from the signed-in user's current database record.
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardingCompleted: true, onboardingStep: true },
+        });
+
+        if (dbUser) {
+          token.onboardingCompleted = dbUser.onboardingCompleted;
+          token.onboardingStep = dbUser.onboardingStep;
         }
       }
 

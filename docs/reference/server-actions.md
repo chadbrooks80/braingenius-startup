@@ -22,36 +22,36 @@
 
 ## `src/actions/onboarding.ts`
 
-All mutations derive user ID from `getServerSession`. Errors return safe `{ success: false, error }` results.
+All mutations derive user ID from `getServerSession`. Every action returns the shared `OnboardingActionResult<T>` contract from `src/lib/onboarding-funnel.ts`: `{ status: "success", data }`, `{ status: "recovery", redirectTo }` (stale/duplicate/out-of-order/completed — the account's actual current-state destination), `{ status: "unauthenticated" }`, or `{ status: "error", error }`.
 
 ### `completeWelcomeVideoStep()`
 
-Requires a session and advances `WELCOME_VIDEO` to the next funnel step. Consumed by `WelcomeVideoStep`.
+Requires a session, then calls `advanceParentOnboardingStep` to advance only when the database still says role `PARENT`, step `WELCOME_VIDEO`, and incomplete onboarding. Consumed by `WelcomeVideoStep`.
 
 ### `saveProfile(input)`
 
-Validates required `fName` and optional `lName`, updates first/last/composed name, then advances `PROFILE`. Consumed by `ProfileStep`. The update and step advance are separate database operations, not one transaction.
+Validates required `fName` and optional `lName`, then calls `advanceParentOnboardingStep` with the profile fields as `extraData` so the profile write and the `PROFILE → PLAN` transition happen in one conditional `updateMany` — they succeed or fail together. Consumed by `ProfileStep`.
 
 ### `continueWithFreeTrial()`
 
-Requires a session and advances `PLAN`. Consumed by `PlanStep`; the subscription was already created during account creation.
+Requires a session and advances `PLAN` only when the database still says `PLAN`. Consumed by `PlanStep`; the subscription was already created during account creation.
 
 ### `checkUsernameAvailability(username)`
 
-Validates at least three lowercase alphanumeric characters and checks the unique `User.username`. Returns `{ available: false }` for invalid input or database failure. Consumed by `ChildrenStep`.
+Requires the signed-in database `PARENT` to still be on `CHILDREN` with incomplete onboarding (`requireParentAtStep`), then validates at least three lowercase alphanumeric characters and checks the unique `User.username`. Returns `{ available: false }` for invalid input, an unauthorized caller, or a database failure. Consumed by `ChildrenStep`.
 
 ### `suggestUsernames(base, count = 3)`
 
-Validates a non-empty base and integer count from 1 to 5, normalizes to lowercase alphanumerics, then makes up to 20 database-checked random four-digit candidates. Returns availability plus suggestions. Consumed by `ChildrenStep`.
+Requires the same `CHILDREN`-step gate as `checkUsernameAvailability`, validates a non-empty base and integer count from 1 to 5, normalizes to lowercase alphanumerics, then makes up to 20 database-checked random four-digit candidates. Returns availability plus suggestions. Consumed by `ChildrenStep`.
 
 ### `createChildAccount(input)`
 
-Validates name, lowercase-alphanumeric username, eight-character password, and reset flag; requires a session; checks username and the two-child limit; bcrypt-hashes the password. A Prisma transaction creates a `CHILD` user and `ParentStudent` relation. Returns the new child summary. Consumed by `ChildrenStep`.
+Validates name, lowercase-alphanumeric username, eight-character password, and reset flag; requires a session; bcrypt-hashes the password before opening a transaction. Inside the transaction it takes a Postgres row lock on the parent (`lockUserRow`), re-checks role/step/completion and the two-child limit against that locked row, then creates the `CHILD` user and `ParentStudent` relation together. A unique-username race is caught and returned as a safe conflict. Returns the new child summary. Consumed by `ChildrenStep`.
 
 ### `finishChildrenStep()`
 
-Requires a session and advances `CHILDREN` to `COMPLETE`, which sets `onboardingCompleted`. Consumed by both Skip and Finish controls in `ChildrenStep`; the component then updates session claims and routes to `/dashboard`.
+Requires a session and advances `CHILDREN` to `COMPLETE` (which sets `onboardingCompleted`) only when the database still says `CHILDREN` with incomplete onboarding. Consumed by both Skip and Finish controls in `ChildrenStep`; the component then calls `session.update()` only to trigger a refresh (it sends no onboarding claims) and routes to `/dashboard`.
 
-## Validation and authorization limitations
+## Validation and authorization
 
-Actions perform their own server validation, but `advanceOnboardingStep` does not compare the database user's actual current step with the `currentStep` argument. Callers supply constant expected steps. Username suggestion/availability require a valid session only indirectly where they are used; those two exported actions themselves do not authenticate.
+Every action authorizes against the signed-in user's current database record at the moment of the write, not a caller-supplied or JWT-cached step. `advanceParentOnboardingStep` matches user ID, database role `PARENT`, the required stored step, and `onboardingCompleted = false` in one conditional `updateMany`; zero matched rows returns a `recovery` result instead of erroring blindly or silently succeeding. `createChildAccount` additionally re-verifies those conditions and the two-child limit inside a locked transaction so concurrent requests for the same parent cannot both pass.

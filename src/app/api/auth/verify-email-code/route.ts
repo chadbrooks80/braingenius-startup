@@ -62,9 +62,15 @@ export async function POST(request: NextRequest) {
     return genericFailure();
   }
 
+  // The code was correct and still active, so it is always consumed here.
+  // The user row only advances when the database still says VERIFY_EMAIL
+  // with incomplete onboarding -- a duplicate submission, a replayed
+  // request, or an account already advanced by another path (e.g. Google
+  // sign-in) must not move backward, overwrite a later step, or reveal that
+  // eligibility through a different response.
   await prisma.$transaction([
-    prisma.user.update({
-      where: { email },
+    prisma.user.updateMany({
+      where: { email, onboardingStep: OnboardingStep.VERIFY_EMAIL, onboardingCompleted: false },
       data: {
         emailVerified: new Date(),
         onboardingStep: getNextOnboardingStep(OnboardingStep.VERIFY_EMAIL),

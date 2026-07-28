@@ -122,10 +122,52 @@ test("verify-email-code: a correct active code verifies the user and consumes th
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { success: true });
   assert.ok(__getUsers()[0].emailVerified, "user must be marked verified");
+  assert.equal(__getUsers()[0].onboardingStep, "WELCOME_VIDEO");
   assert.ok(
     __getVerificationCodes().find((c) => c.id === code.id)?.usedAt,
     "the code must be marked used"
   );
+});
+
+test("verify-email-code: a correct code for an account already past VERIFY_EMAIL is consumed but does not move or reveal the user's step", async () => {
+  __seedUser({
+    email: "already-advanced@example.com",
+    onboardingStep: "PROFILE",
+    emailVerified: null,
+  });
+  const code = __seedVerificationCode({
+    email: "already-advanced@example.com",
+    codeHash: hashValue("1234"),
+  });
+
+  const response = await verifyEmailCode(
+    postJson(VERIFY_URL, { email: "already-advanced@example.com", code: "1234" })
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(
+    __getUsers()[0].onboardingStep,
+    "PROFILE",
+    "an already-advanced account must not be moved backward to WELCOME_VIDEO"
+  );
+  assert.ok(
+    __getVerificationCodes().find((c) => c.id === code.id)?.usedAt,
+    "a correct code is still single-use even when it does not advance the user"
+  );
+});
+
+test("verify-email-code: a duplicate submission of an already-used correct code returns the identical generic failure", async () => {
+  __seedUser({ email: "duplicate@example.com" });
+  __seedVerificationCode({ email: "duplicate@example.com", codeHash: hashValue("1234") });
+
+  await verifyEmailCode(postJson(VERIFY_URL, { email: "duplicate@example.com", code: "1234" }));
+  const secondResponse = await verifyEmailCode(
+    postJson(VERIFY_URL, { email: "duplicate@example.com", code: "1234" })
+  );
+
+  assert.equal(secondResponse.status, 400);
+  assert.equal(__getUsers()[0].onboardingStep, "WELCOME_VIDEO", "the first success already advanced the user");
 });
 
 test("resend-verification-code: malformed, unknown, verified, cooldown, and eligible requests all return the identical generic response", async () => {

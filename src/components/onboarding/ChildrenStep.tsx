@@ -15,7 +15,11 @@ import {
   finishChildrenStep,
   suggestUsernames,
 } from "@/actions/onboarding";
-import { OnboardingStep } from "@/generated/prisma";
+import {
+  checkUsernameAvailabilityAndSuggest,
+  completeChildrenStep,
+  handleOnboardingRecovery,
+} from "@/lib/onboarding-client";
 
 const MAX_CHILDREN = 2;
 
@@ -43,16 +47,12 @@ export default function ChildrenStep() {
     setFinishError(null);
     setIsFinishing(true);
 
-    const result = await finishChildrenStep();
+    const result = await completeChildrenStep(finishChildrenStep, { router, update });
 
-    if (!result.success) {
+    if (result.status === "error") {
       setIsFinishing(false);
-      setFinishError(result.error ?? "Something went wrong. Please try again.");
-      return;
+      setFinishError(result.error);
     }
-
-    await update({ onboardingCompleted: true, onboardingStep: OnboardingStep.COMPLETE });
-    router.push("/dashboard");
   }
 
   function handleChildCreated(child: ChildSummary) {
@@ -139,6 +139,7 @@ export default function ChildrenStep() {
             onCreated={handleChildCreated}
             childCount={children.length}
             maxChildren={MAX_CHILDREN}
+            router={router}
           />
         )}
       </Modal>
@@ -150,10 +151,12 @@ function AddChildForm({
   onCreated,
   childCount,
   maxChildren,
+  router,
 }: {
   onCreated: (child: ChildSummary) => void;
   childCount: number;
   maxChildren: number;
+  router: ReturnType<typeof useRouter>;
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -168,9 +171,15 @@ function AddChildForm({
   async function handleAutoGenerate() {
     const base = firstName || "student";
     const result = await suggestUsernames(base);
-    setSuggestions(result.suggestions);
-    if (result.suggestions.length > 0) {
-      setUsername(result.suggestions[0]);
+    if (handleOnboardingRecovery(result, router)) return;
+
+    if (result.status !== "success") {
+      return;
+    }
+
+    setSuggestions(result.data.suggestions);
+    if (result.data.suggestions.length > 0) {
+      setUsername(result.data.suggestions[0]);
       setUsernameStatus("available");
     }
   }
@@ -179,17 +188,27 @@ function AddChildForm({
     if (username.length < 3) return;
 
     setUsernameStatus("checking");
-    const result = await checkUsernameAvailability(username);
+    const result = await checkUsernameAvailabilityAndSuggest(
+      username,
+      { checkUsernameAvailability, suggestUsernames },
+      { router }
+    );
 
-    if (result.available) {
+    if (result.status === "recovery" || result.status === "unauthenticated") return;
+
+    if (result.status === "error") {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    if (result.status === "available") {
       setUsernameStatus("available");
       setSuggestions([]);
       return;
     }
 
     setUsernameStatus("taken");
-    const suggested = await suggestUsernames(username);
-    setSuggestions(suggested.suggestions);
+    setSuggestions(result.suggestions);
   }
 
   function handleSelectSuggestion(suggestion: string) {
@@ -223,15 +242,16 @@ function AddChildForm({
     setIsSubmitting(true);
 
     const creationResult = await createChildAccount(result.data);
+    if (handleOnboardingRecovery(creationResult, router)) return;
 
-    if (!creationResult.success || !creationResult.data) {
+    if (creationResult.status === "success") {
       setIsSubmitting(false);
-      setError(creationResult.error ?? "Something went wrong. Please try again.");
+      onCreated(creationResult.data);
       return;
     }
 
     setIsSubmitting(false);
-    onCreated(creationResult.data);
+    setError(creationResult.error);
   }
 
   return (

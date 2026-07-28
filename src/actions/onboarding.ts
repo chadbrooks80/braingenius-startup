@@ -4,31 +4,39 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-import prisma from "@/lib/db";
-import { OnboardingStep } from "@/generated/prisma";
-import { advanceOnboardingStep } from "@/lib/onboarding-funnel";
+import prisma, { lockUserRow } from "@/lib/db";
+import { OnboardingStep, Prisma, UserRole } from "@/generated/prisma";
+import {
+  advanceParentOnboardingStep,
+  getOnboardingRoute,
+  onboardingError,
+  onboardingSuccess,
+  ONBOARDING_UNAUTHENTICATED,
+  requireParentAtStep,
+  type OnboardingActionResult,
+} from "@/lib/onboarding-funnel";
 
 const MAX_CHILDREN = 2;
 const USERNAME_REGEX = /^[a-z0-9]+$/;
+const UNIQUE_CONSTRAINT_VIOLATION = "P2002";
 
-async function getCurrentUserId() {
+async function getCurrentUserId(): Promise<string | undefined> {
   const session = await getServerSession(authOptions);
   return (session?.user as { id?: string } | undefined)?.id;
 }
 
-export async function completeWelcomeVideoStep() {
+export async function completeWelcomeVideoStep(): Promise<OnboardingActionResult> {
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    return { success: false, error: "You must be signed in to continue onboarding." };
+    return ONBOARDING_UNAUTHENTICATED;
   }
 
   try {
-    await advanceOnboardingStep(userId, OnboardingStep.WELCOME_VIDEO);
-    return { success: true };
+    return await advanceParentOnboardingStep(userId, OnboardingStep.WELCOME_VIDEO);
   } catch (error) {
     console.error("completeWelcomeVideoStep failed:", error);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
@@ -39,72 +47,79 @@ const ProfileSchema = z.object({
 
 type ProfileInput = z.infer<typeof ProfileSchema>;
 
-export async function saveProfile(input: ProfileInput) {
+export async function saveProfile(input: ProfileInput): Promise<OnboardingActionResult> {
   const parsed = ProfileSchema.safeParse(input);
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+    return onboardingError(parsed.error.issues[0].message);
   }
 
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    return { success: false, error: "You must be signed in to continue onboarding." };
+    return ONBOARDING_UNAUTHENTICATED;
   }
 
   const { fName, lName } = parsed.data;
   const name = [fName, lName].filter(Boolean).join(" ");
 
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fName,
-        lName: lName || null,
-        name,
-      },
+    // Profile fields and the PROFILE -> PLAN transition are written by the
+    // same conditional `updateMany` call, so they succeed or fail together.
+    return await advanceParentOnboardingStep(userId, OnboardingStep.PROFILE, {
+      fName,
+      lName: lName || null,
+      name,
     });
-
-    await advanceOnboardingStep(userId, OnboardingStep.PROFILE);
-
-    return { success: true };
   } catch (error) {
     console.error("saveProfile failed:", error);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
-export async function continueWithFreeTrial() {
+export async function continueWithFreeTrial(): Promise<OnboardingActionResult> {
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    return { success: false, error: "You must be signed in to continue onboarding." };
+    return ONBOARDING_UNAUTHENTICATED;
   }
 
   try {
-    await advanceOnboardingStep(userId, OnboardingStep.PLAN);
-    return { success: true };
+    return await advanceParentOnboardingStep(userId, OnboardingStep.PLAN);
   } catch (error) {
     console.error("continueWithFreeTrial failed:", error);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
 const UsernameSchema = z.string().min(3).regex(USERNAME_REGEX);
 
-export async function checkUsernameAvailability(username: string) {
+export async function checkUsernameAvailability(
+  username: string
+): Promise<OnboardingActionResult<{ available: boolean }>> {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return ONBOARDING_UNAUTHENTICATED;
+  }
+
+  const authorization = await requireParentAtStep(userId, OnboardingStep.CHILDREN);
+  if (!("authorized" in authorization)) {
+    return authorization;
+  }
+
   const parsed = UsernameSchema.safeParse(username);
 
   if (!parsed.success) {
-    return { available: false };
+    return onboardingSuccess({ available: false });
   }
 
   try {
     const existing = await prisma.user.findUnique({ where: { username: parsed.data } });
-    return { available: !existing };
+    return onboardingSuccess({ available: !existing });
   } catch (error) {
     console.error("checkUsernameAvailability failed:", error);
-    return { available: false };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
@@ -119,18 +134,32 @@ function randomUsernameSuffix() {
 const SuggestUsernamesBaseSchema = z.string().min(1);
 const SuggestUsernamesCountSchema = z.number().int().min(1).max(5);
 
-export async function suggestUsernames(base: string, count = 3) {
+export async function suggestUsernames(
+  base: string,
+  count = 3
+): Promise<OnboardingActionResult<{ available: boolean; suggestions: string[] }>> {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return ONBOARDING_UNAUTHENTICATED;
+  }
+
+  const authorization = await requireParentAtStep(userId, OnboardingStep.CHILDREN);
+  if (!("authorized" in authorization)) {
+    return authorization;
+  }
+
   const baseParsed = SuggestUsernamesBaseSchema.safeParse(base);
   const countParsed = SuggestUsernamesCountSchema.safeParse(count);
 
   if (!baseParsed.success || !countParsed.success) {
-    return { available: false, suggestions: [] as string[] };
+    return onboardingSuccess({ available: false, suggestions: [] });
   }
 
   const normalized = normalizeUsernameBase(baseParsed.data);
 
   if (!normalized) {
-    return { available: false, suggestions: [] as string[] };
+    return onboardingSuccess({ available: false, suggestions: [] });
   }
 
   try {
@@ -148,10 +177,10 @@ export async function suggestUsernames(base: string, count = 3) {
       }
     }
 
-    return { available: suggestions.length > 0, suggestions };
+    return onboardingSuccess({ available: suggestions.length > 0, suggestions });
   } catch (error) {
     console.error("suggestUsernames failed:", error);
-    return { available: false, suggestions: [] as string[] };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
@@ -167,81 +196,110 @@ const CreateChildSchema = z.object({
 });
 
 type CreateChildInput = z.infer<typeof CreateChildSchema>;
+type ChildSummary = { id: string; name: string; username: string };
 
-export async function createChildAccount(input: CreateChildInput) {
+export async function createChildAccount(
+  input: CreateChildInput
+): Promise<OnboardingActionResult<ChildSummary>> {
   const parsed = CreateChildSchema.safeParse(input);
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+    return onboardingError(parsed.error.issues[0].message);
   }
 
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    return { success: false, error: "You must be signed in to continue onboarding." };
+    return ONBOARDING_UNAUTHENTICATED;
   }
 
   const { firstName, lastName, username, password, mustResetPassword } = parsed.data;
+  // Hash before opening the transaction so the row lock below is held only
+  // for the cheap validation + insert, not for bcrypt's CPU-bound work.
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const name = [firstName, lastName].filter(Boolean).join(" ");
 
   try {
-    const existingUsername = await prisma.user.findUnique({ where: { username } });
-    if (existingUsername) {
-      return { success: false, error: "That User ID is already taken." };
-    }
+    return await prisma.$transaction(async (tx) => {
+      // Locks this parent's row for the rest of the transaction, so a second
+      // concurrent request for the same parent cannot read the child count
+      // until this one has committed or rolled back.
+      await lockUserRow(tx, userId);
 
-    const childCount = await prisma.parentStudent.count({ where: { parentId: userId } });
-    if (childCount >= MAX_CHILDREN) {
-      return { success: false, error: "You can only add up to 2 children." };
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const name = [firstName, lastName].filter(Boolean).join(" ");
-
-    const child = await prisma.$transaction(async (tx) => {
-      const created = await tx.user.create({
-        data: {
-          fName: firstName,
-          lName: lastName || null,
-          name,
-          username,
-          password: hashedPassword,
-          role: "CHILD",
-          mustResetPassword,
-        },
+      const parent = await tx.user.findUnique({
+        where: { id: userId },
+        select: { role: true, onboardingStep: true, onboardingCompleted: true },
       });
 
-      await tx.parentStudent.create({
-        data: {
-          parentId: userId,
-          studentId: created.id,
-        },
-      });
+      if (!parent) {
+        return ONBOARDING_UNAUTHENTICATED;
+      }
 
-      return created;
+      if (
+        parent.role !== UserRole.PARENT ||
+        parent.onboardingStep !== OnboardingStep.CHILDREN ||
+        parent.onboardingCompleted
+      ) {
+        return { status: "recovery" as const, redirectTo: getOnboardingRoute(parent) };
+      }
+
+      const childCount = await tx.parentStudent.count({ where: { parentId: userId } });
+      if (childCount >= MAX_CHILDREN) {
+        return onboardingError("You can only add up to 2 children.");
+      }
+
+      try {
+        const created = await tx.user.create({
+          data: {
+            fName: firstName,
+            lName: lastName || null,
+            name,
+            username,
+            password: hashedPassword,
+            role: UserRole.CHILD,
+            mustResetPassword,
+          },
+        });
+
+        await tx.parentStudent.create({
+          data: {
+            parentId: userId,
+            studentId: created.id,
+          },
+        });
+
+        return onboardingSuccess({
+          id: created.id,
+          name: created.name ?? name,
+          username: created.username ?? username,
+        });
+      } catch (error) {
+        const isUsernameConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === UNIQUE_CONSTRAINT_VIOLATION;
+        if (isUsernameConflict) {
+          return onboardingError("That User ID is already taken.");
+        }
+        throw error;
+      }
     });
-
-    return {
-      success: true,
-      data: { id: child.id, name: child.name ?? name, username: child.username ?? username },
-    };
   } catch (error) {
     console.error("createChildAccount failed:", error);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }
 
-export async function finishChildrenStep() {
+export async function finishChildrenStep(): Promise<OnboardingActionResult> {
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    return { success: false, error: "You must be signed in to finish onboarding." };
+    return ONBOARDING_UNAUTHENTICATED;
   }
 
   try {
-    await advanceOnboardingStep(userId, OnboardingStep.CHILDREN);
-    return { success: true };
+    return await advanceParentOnboardingStep(userId, OnboardingStep.CHILDREN);
   } catch (error) {
     console.error("finishChildrenStep failed:", error);
-    return { success: false, error: "Something went wrong. Please try again." };
+    return onboardingError("Something went wrong. Please try again.");
   }
 }

@@ -7,6 +7,7 @@ import Eyebrow from "@/components/ui/Eyebrow";
 import CheckBadge from "@/components/ui/CheckBadge";
 import { continueWithFreeTrial } from "@/actions/onboarding";
 import { createCheckoutSession, type CheckoutPlan } from "@/actions/checkout";
+import { handleOnboardingRecovery } from "@/lib/onboarding-client";
 
 export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boolean }) {
   const router = useRouter();
@@ -38,14 +39,15 @@ export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boole
     setIsSubmitting(true);
 
     const result = await continueWithFreeTrial();
+    if (handleOnboardingRecovery(result, router)) return;
 
-    if (!result.success) {
-      setIsSubmitting(false);
-      setError(result.error ?? "Something went wrong. Please try again.");
+    if (result.status === "success") {
+      router.refresh();
       return;
     }
 
-    router.refresh();
+    setIsSubmitting(false);
+    setError(result.error);
   }
 
   return (

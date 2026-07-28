@@ -37,7 +37,7 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 - Source: `src/app/api/auth/verify-email-code/route.ts`; public endpoint.
 - Request: Zod `email` and exactly four-character `code`.
-- Success: atomically sets `emailVerified`, advances `VERIFY_EMAIL` to `WELCOME_VIDEO`, and marks the code used; returns `200 { success: true }` with `Cache-Control: no-store`.
+- Success: for a correct, active code, one transaction always marks the code used and conditionally advances `VERIFY_EMAIL` to `WELCOME_VIDEO` and sets `emailVerified` — only when the matching user's database row is still on `VERIFY_EMAIL` with incomplete onboarding. An account already advanced past `VERIFY_EMAIL` by another path (e.g. Google sign-in, or a duplicate submission after a prior success) still gets its code consumed but is never moved backward or overwritten. Returns the identical `200 { success: true }` with `Cache-Control: no-store` in both cases, so the response never reveals which one happened.
 - Errors: malformed input returns a distinct `400 { error: "Invalid request." }`. No active code, expiry, five prior failures, and a wrong code all return the identical `400` learner-safe response with `Cache-Control: no-store`; a mismatch still increments `attempts`.
 - Tests: `tests/auth/emailVerificationRoutes.test.ts`.
 

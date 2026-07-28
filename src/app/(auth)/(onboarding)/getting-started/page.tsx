@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/db";
 import { OnboardingStep } from "@/generated/prisma";
-import { advanceOnboardingStep, getOnboardingRoute } from "@/lib/onboarding-funnel";
+import { advanceParentOnboardingStep, getOnboardingRoute } from "@/lib/onboarding-funnel";
 import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import WelcomeVideoStep from "@/components/onboarding/WelcomeVideoStep";
 import ProfileStep from "@/components/onboarding/ProfileStep";
@@ -38,12 +38,23 @@ export default async function GettingStartedPage({ searchParams }: GettingStarte
   }
 
   const { checkout } = await searchParams;
-  let step: OnboardingStep = user.onboardingStep;
+  const step: OnboardingStep = user.onboardingStep;
 
   // The success_url from createCheckoutSession lands back here once Stripe
-  // confirms payment; treat that as completing the plan step automatically.
+  // confirms payment; treat that as completing the plan step automatically,
+  // but only when the database still says PLAN -- a stale reload of this
+  // URL or a manipulated query param must never advance the funnel again.
   if (step === OnboardingStep.PLAN && checkout === "success") {
-    step = await advanceOnboardingStep(userId, OnboardingStep.PLAN);
+    const result = await advanceParentOnboardingStep(userId, OnboardingStep.PLAN);
+
+    if (result.status === "unauthenticated") {
+      redirect("/sign-in");
+    }
+
+    if (result.status === "recovery") {
+      redirect(result.redirectTo);
+    }
+
     redirect("/getting-started");
   }
 
