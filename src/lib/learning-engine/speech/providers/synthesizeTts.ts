@@ -1,3 +1,4 @@
+import "server-only";
 import type { TtsSynthesisRequest } from "../validation/parseTtsSynthesisRequest";
 import { synthesizeWithGoogle } from "./google";
 import { synthesizeWithLemonfox } from "./lemonfox";

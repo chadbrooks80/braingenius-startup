@@ -6,8 +6,8 @@ This inventory lists names only. Never place real values in documentation, sourc
 | --- | --- | --- |
 | `DATABASE_URL` | `prisma.config.ts` and `src/lib/db.ts` when Prisma config/client initializes | Server secret; required for database-backed application work. |
 | `NEXTAUTH_SECRET` | `src/proxy.ts` per matched request; NextAuth also requires consistent signing config | Server secret; required for valid production JWT/session behavior. |
-| `NEXTAUTH_URL` | Checkout action when constructing return URLs | Server URL; optional in source with local `http://localhost:3000` fallback. |
-| `NEXT_PUBLIC_APP_URL` | Password-reset request when building emailed URL | Public base URL; conditionally required for usable reset links. |
+| `NEXTAUTH_URL` | Checkout action when constructing return URLs; first candidate read by `resolveAppBaseUrl()` in `src/lib/app-base-url.ts` | Server URL; optional in source with local `http://localhost:3000` fallback outside production. |
+| `NEXT_PUBLIC_APP_URL` | Second candidate read by `resolveAppBaseUrl()` in `src/lib/app-base-url.ts` when building the password-reset URL | Public base URL; conditionally required for usable reset links. |
 | `GOOGLE_CLIENT_ID` | `src/auth.ts` during auth configuration | Server-side provider setting; required for Google OAuth. |
 | `GOOGLE_CLIENT_SECRET` | `src/auth.ts` during auth configuration | Server secret; required for Google OAuth. |
 | `RESEND_API_KEY` | Lazy initialization in `src/lib/email.ts` | Server secret; required when sending verification/reset email. |

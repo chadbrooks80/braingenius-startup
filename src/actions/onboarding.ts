@@ -22,7 +22,7 @@ const UNIQUE_CONSTRAINT_VIOLATION = "P2002";
 
 async function getCurrentUserId(): Promise<string | undefined> {
   const session = await getServerSession(authOptions);
-  return (session?.user as { id?: string } | undefined)?.id;
+  return session?.user?.id;
 }
 
 export async function completeWelcomeVideoStep(): Promise<OnboardingActionResult> {

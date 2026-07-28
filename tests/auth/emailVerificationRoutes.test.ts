@@ -98,6 +98,18 @@ test("verify-email-code: no active code, wrong code, expired code, and exhausted
   assert.equal(first.body.success, false);
 });
 
+test("verify-email-code: an ordinary wrong-code rejection carries Cache-Control: no-store", async () => {
+  __seedUser({ email: "wrong-cache@example.com" });
+  __seedVerificationCode({ email: "wrong-cache@example.com", codeHash: hashValue("1234") });
+
+  const response = await verifyEmailCode(
+    postJson(VERIFY_URL, { email: "wrong-cache@example.com", code: "9999" })
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+});
+
 test("verify-email-code: an incorrect active code increments attempts but does not verify the user", async () => {
   __seedUser({ email: "wrong@example.com" });
   const code = __seedVerificationCode({ email: "wrong@example.com", codeHash: hashValue("1234") });
@@ -129,7 +141,7 @@ test("verify-email-code: a correct active code verifies the user and consumes th
   );
 });
 
-test("verify-email-code: a correct code for an account already past VERIFY_EMAIL is consumed but does not move or reveal the user's step", async () => {
+test("verify-email-code: a correct code for an account already past VERIFY_EMAIL rolls back and returns the generic failure", async () => {
   __seedUser({
     email: "already-advanced@example.com",
     onboardingStep: "PROFILE",
@@ -144,16 +156,18 @@ test("verify-email-code: a correct code for an account already past VERIFY_EMAIL
     postJson(VERIFY_URL, { email: "already-advanced@example.com", code: "1234" })
   );
 
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).success, false);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.equal(
     __getUsers()[0].onboardingStep,
     "PROFILE",
-    "an already-advanced account must not be moved backward to WELCOME_VIDEO"
+    "an already-advanced account must not be moved to WELCOME_VIDEO"
   );
-  assert.ok(
+  assert.equal(
     __getVerificationCodes().find((c) => c.id === code.id)?.usedAt,
-    "a correct code is still single-use even when it does not advance the user"
+    null,
+    "the rejected claim must roll back and leave the code unconsumed"
   );
 });
 

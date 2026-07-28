@@ -1,3 +1,4 @@
+import "server-only";
 import { Prisma, PrismaClient } from "@/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 

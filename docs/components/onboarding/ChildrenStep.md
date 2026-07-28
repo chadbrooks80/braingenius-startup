@@ -20,7 +20,7 @@ The username-blur check is the one flow that makes two server calls: `checkUsern
 
 ## Styling and accessibility
 
-Uses Button/Input/Modal/PasswordInput recipes and semantic status colors. Labels are associated with inputs. Availability/error text is visible; it is not an aria-live region. The checkbox has a visible label. Modal limitations are documented in [Modal](../ui/Modal.md).
+Uses Button/Input/Modal/PasswordInput recipes and semantic status colors. Labels are associated with inputs. Availability/error text is visible; it is not an aria-live region. The checkbox has a visible label. The Add Child dialog's accessibility contract (dialog semantics, focus containment, initial focus, and focus restoration to the trigger that opened it) is owned by `Modal` and documented in [Modal](../ui/Modal.md).
 
 ## Consumers and tests
 

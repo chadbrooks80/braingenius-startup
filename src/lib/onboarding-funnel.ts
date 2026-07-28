@@ -1,3 +1,4 @@
+import "server-only";
 import { OnboardingStep, Prisma, UserRole } from "@/generated/prisma";
 import prisma from "@/lib/db";
 

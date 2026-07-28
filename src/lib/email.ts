@@ -1,3 +1,4 @@
+import "server-only";
 import { Resend } from "resend";
 import { VERIFICATION_CODE_EXPIRY_MINUTES } from "@/lib/auth-tokens";
 

@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "crypto";
 
 export const VERIFICATION_CODE_EXPIRY_MINUTES = 10;

@@ -39,6 +39,25 @@ function collectServerOnlyMarkers(): string[] {
   return [...markers];
 }
 
+// Names (never values) of environment variables that gate credentialed
+// server modules protected by a `server-only` boundary (Stripe, Resend,
+// Google/Lemonfox TTS, the database connection, and the NextAuth secret). A
+// server module that reads one of these normally never reaches a client
+// chunk in source form, so the literal property-access name appearing in
+// browser output is a stable signal that the module's `server-only` guard
+// was bypassed and it was bundled for the client.
+function collectCredentialEnvVarMarkers(): string[] {
+  return [
+    "STRIPE_SECRET_KEY",
+    "RESEND_API_KEY",
+    "GOOGLE_TTS_CLIENT_EMAIL",
+    "GOOGLE_TTS_PRIVATE_KEY",
+    "LEMONFOX_API_KEY",
+    "DATABASE_URL",
+    "NEXTAUTH_SECRET",
+  ];
+}
+
 test("marker collection excludes ambiguous standalone learner words and keeps high-confidence server-only markers", () => {
   const markers = collectServerOnlyMarkers();
   const words = getWordList("word_list_id")!;
@@ -63,6 +82,17 @@ test("marker collection excludes ambiguous standalone learner words and keeps hi
   assert.ok(markers.includes(transformWord.definition));
 });
 
+test("credential env-var marker collection contains only variable names, never values", () => {
+  const markers = collectCredentialEnvVarMarkers();
+
+  assert.ok(markers.length > 0, "expected at least one credential env-var marker");
+  assert.equal(new Set(markers).size, markers.length, "markers must be deduplicated");
+
+  for (const marker of markers) {
+    assert.ok(/^[A-Z0-9_]+$/.test(marker), `"${marker}" must be a bare env-var name`);
+  }
+});
+
 test("production client bundles contain no canonical fixture answers or server-only resolution helpers", async (t) => {
   if (!existsSync(path.join(BUILD_DIR, "BUILD_ID"))) {
     t.skip("no production build output; run `npm run build` before this scan");
@@ -79,7 +109,7 @@ test("production client bundles contain no canonical fixture answers or server-o
 
   assert.ok(clientChunks.length > 0, "expected browser chunks in .next/static");
 
-  const markers = collectServerOnlyMarkers();
+  const markers = [...collectServerOnlyMarkers(), ...collectCredentialEnvVarMarkers()];
 
   for (const chunkPath of clientChunks) {
     const chunk = await readFile(chunkPath, "utf8");

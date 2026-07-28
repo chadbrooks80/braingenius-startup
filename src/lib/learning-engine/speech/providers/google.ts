@@ -1,3 +1,4 @@
+import "server-only";
 import type { GoogleTtsConfiguration } from "@/types/learning";
 import { TtsUpstreamError } from "../../errors/TtsSynthesisError";
 import { fetchUpstreamOrThrow } from "./fetchUpstreamOrThrow";

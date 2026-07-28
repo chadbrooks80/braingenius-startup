@@ -31,12 +31,25 @@ type FakeParentStudent = {
   createdAt: Date;
 };
 
+type FakePasswordResetToken = {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+  createdAt: Date;
+};
+
 let users: FakeUser[] = [];
 let codes: FakeVerificationCode[] = [];
 let parentStudents: FakeParentStudent[] = [];
+let passwordResetTokens: FakePasswordResetToken[] = [];
 let nextId = 1;
 let forceCreateConflict = false;
 let forceUnexpectedFailure = false;
+
+type VerificationLookupHook = () => void;
+let verificationLookupHook: VerificationLookupHook | null = null;
 
 // Per-user async locks that model Postgres `SELECT ... FOR UPDATE`: a
 // concurrent transaction that requests the same user's lock waits until the
@@ -60,9 +73,11 @@ export function __resetFakeDb(): void {
   users = [];
   codes = [];
   parentStudents = [];
+  passwordResetTokens = [];
   nextId = 1;
   forceCreateConflict = false;
   forceUnexpectedFailure = false;
+  verificationLookupHook = null;
   activeLocks.clear();
 }
 
@@ -119,6 +134,34 @@ export function __getParentStudents(): FakeParentStudent[] {
   return parentStudents;
 }
 
+export function __seedPasswordResetToken(
+  token: Partial<FakePasswordResetToken> & { userId: string; tokenHash: string }
+): FakePasswordResetToken {
+  const record: FakePasswordResetToken = {
+    id: newId("reset"),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    usedAt: null,
+    createdAt: new Date(),
+    ...token,
+  };
+  passwordResetTokens.push(record);
+  return record;
+}
+
+export function __getPasswordResetTokens(): FakePasswordResetToken[] {
+  return passwordResetTokens;
+}
+
+// Fires once, immediately after the next `emailVerificationCode.findFirst`
+// call resolves its match but before that match is returned to the caller.
+// Lets a test deterministically supersede/invalidate the exact row
+// `attemptEmailVerification` is about to act on in the real gap between its
+// lookup and its conditional claim, instead of relying on Promise.all
+// timing that can't reliably land inside a single request's own await chain.
+export function __runAfterNextVerificationCodeLookup(hook: VerificationLookupHook): void {
+  verificationLookupHook = hook;
+}
+
 // Simulates a second concurrent request winning the insert race for the
 // same email: the next user.create call rejects with the same
 // PrismaClientKnownRequestError shape a real unique-constraint violation
@@ -144,6 +187,26 @@ type UserWhere = Partial<{
 
 function matchesUserWhere(user: FakeUser, where: UserWhere): boolean {
   return (Object.keys(where) as (keyof UserWhere)[]).every((key) => user[key] === where[key]);
+}
+
+type VerificationCodeWhere = {
+  id?: string;
+  email?: string;
+  usedAt?: null;
+  expiresAt?: { gt: Date };
+  attempts?: { lt: number };
+};
+
+function matchesVerificationCodeWhere(
+  code: FakeVerificationCode,
+  where: VerificationCodeWhere
+): boolean {
+  if (where.id !== undefined && code.id !== where.id) return false;
+  if (where.email !== undefined && code.email !== where.email) return false;
+  if (where.usedAt !== undefined && code.usedAt !== where.usedAt) return false;
+  if (where.expiresAt !== undefined && !(code.expiresAt > where.expiresAt.gt)) return false;
+  if (where.attempts !== undefined && !(code.attempts < where.attempts.lt)) return false;
+  return true;
 }
 
 function findUserByWhere(where: UserWhere): FakeUser | undefined {
@@ -255,7 +318,13 @@ const emailVerificationCodeMethods = {
         ? a.createdAt.getTime() - b.createdAt.getTime()
         : b.createdAt.getTime() - a.createdAt.getTime()
     );
-    return matches[0] ?? null;
+    const result = matches[0] ?? null;
+    if (verificationLookupHook) {
+      const hook = verificationLookupHook;
+      verificationLookupHook = null;
+      hook();
+    }
+    return result;
   },
   async create({
     data,
@@ -274,40 +343,68 @@ const emailVerificationCodeMethods = {
     codes.push(record);
     return record;
   },
-  async update({
-    where,
-    data,
-  }: {
-    where: { id: string };
-    data: { attempts?: { increment: number }; usedAt?: Date };
-  }): Promise<FakeVerificationCode> {
-    const record = codes.find((code) => code.id === where.id);
-    if (!record) {
-      throw new Error("fakeDb: verification code not found for update");
-    }
-    if (data.attempts?.increment !== undefined) {
-      record.attempts += data.attempts.increment;
-    }
-    if (data.usedAt !== undefined) {
-      record.usedAt = data.usedAt;
-    }
-    return record;
-  },
   async updateMany({
     where,
     data,
   }: {
-    where: { email: string; usedAt?: null };
-    data: { usedAt: Date };
+    where: {
+      id?: string;
+      email?: string;
+      usedAt?: null;
+      expiresAt?: { gt: Date };
+      attempts?: { lt: number };
+    };
+    data: { usedAt?: Date; attempts?: { increment: number } };
   }): Promise<{ count: number }> {
-    let targets = codes.filter((code) => code.email === where.email);
-    if (where.usedAt === null) {
-      targets = targets.filter((code) => code.usedAt === null);
-    }
+    // Mirrors the real conditional-`updateMany` contract: every provided
+    // filter (including `expiresAt`/`attempts` comparisons) is re-evaluated
+    // against each row's *current* state, so a row a previous call already
+    // consumed, expired past, or exhausted no longer matches.
+    const targets = codes.filter((code) => matchesVerificationCodeWhere(code, where));
     for (const target of targets) {
-      target.usedAt = data.usedAt;
+      if (data.usedAt !== undefined) {
+        target.usedAt = data.usedAt;
+      }
+      if (data.attempts?.increment !== undefined) {
+        target.attempts += data.attempts.increment;
+      }
     }
     return { count: targets.length };
+  },
+};
+
+const passwordResetTokenMethods = {
+  async findFirst({
+    where,
+    orderBy,
+  }: {
+    where: { userId: string };
+    orderBy?: { createdAt: "asc" | "desc" };
+  }): Promise<FakePasswordResetToken | null> {
+    const matches = [...passwordResetTokens]
+      .filter((token) => token.userId === where.userId)
+      .sort((a, b) =>
+        orderBy?.createdAt === "asc"
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : b.createdAt.getTime() - a.createdAt.getTime()
+      );
+    return matches[0] ?? null;
+  },
+  async create({
+    data,
+  }: {
+    data: { userId: string; tokenHash: string; expiresAt: Date };
+  }): Promise<FakePasswordResetToken> {
+    const record: FakePasswordResetToken = {
+      id: newId("reset"),
+      userId: data.userId,
+      tokenHash: data.tokenHash,
+      expiresAt: data.expiresAt,
+      usedAt: null,
+      createdAt: new Date(),
+    };
+    passwordResetTokens.push(record);
+    return record;
   },
 };
 
@@ -318,26 +415,95 @@ type FakeTransactionClient = {
   __releaseLocks: (() => void)[];
 };
 
+// Each transaction gets its own undo log instead of a whole-array
+// snapshot/restore: every tx-scoped write records how to revert only the
+// exact rows it touched, captured at the moment it touches them. A rollback
+// therefore only ever undoes this transaction's own writes -- it can never
+// stomp on rows a different, already-committed concurrent transaction wrote
+// in the interim, which a start-of-transaction full-array restore would.
+// Each underlying write (`create`/`updateMany`) still runs synchronously
+// against the one live array, so a losing transaction's re-evaluated `WHERE`
+// always sees the winner's already-committed state, the same way a real
+// Postgres `UPDATE` re-evaluates its predicate against the current row.
+function wrapTxWrites(undoLog: (() => void)[]) {
+  const txUser = {
+    ...userMethods,
+    async create(
+      args: Parameters<typeof userMethods.create>[0]
+    ): ReturnType<typeof userMethods.create> {
+      const record = await userMethods.create(args);
+      undoLog.push(() => {
+        const index = users.indexOf(record);
+        if (index !== -1) users.splice(index, 1);
+      });
+      return record;
+    },
+    async updateMany(
+      args: Parameters<typeof userMethods.updateMany>[0]
+    ): ReturnType<typeof userMethods.updateMany> {
+      const targets = users.filter((user) => matchesUserWhere(user, args.where));
+      const before = targets.map((user) => ({ ...user }));
+      const result = await userMethods.updateMany(args);
+      targets.forEach((record, index) => {
+        const snapshot = before[index];
+        undoLog.push(() => Object.assign(record, snapshot));
+      });
+      return result;
+    },
+  };
+
+  const txParentStudent = {
+    ...parentStudentMethods,
+    async create(
+      args: Parameters<typeof parentStudentMethods.create>[0]
+    ): ReturnType<typeof parentStudentMethods.create> {
+      const record = await parentStudentMethods.create(args);
+      undoLog.push(() => {
+        const index = parentStudents.indexOf(record);
+        if (index !== -1) parentStudents.splice(index, 1);
+      });
+      return record;
+    },
+  };
+
+  const txEmailVerificationCode = {
+    ...emailVerificationCodeMethods,
+    async updateMany(
+      args: Parameters<typeof emailVerificationCodeMethods.updateMany>[0]
+    ): ReturnType<typeof emailVerificationCodeMethods.updateMany> {
+      const targets = codes.filter((code) => matchesVerificationCodeWhere(code, args.where));
+      const before = targets.map((code) => ({ ...code }));
+      const result = await emailVerificationCodeMethods.updateMany(args);
+      targets.forEach((record, index) => {
+        const snapshot = before[index];
+        undoLog.push(() => Object.assign(record, snapshot));
+      });
+      return result;
+    },
+  };
+
+  return { txUser, txParentStudent, txEmailVerificationCode };
+}
+
 async function runInteractiveTransaction<T>(
   callback: (tx: FakeTransactionClient) => Promise<T>
 ): Promise<T> {
-  const usersSnapshot = users.map((user) => ({ ...user }));
-  const parentStudentsSnapshot = parentStudents.map((row) => ({ ...row }));
-  const nextIdSnapshot = nextId;
+  const undoLog: (() => void)[] = [];
+  const { txUser, txParentStudent, txEmailVerificationCode } = wrapTxWrites(undoLog);
 
   const tx: FakeTransactionClient = {
-    user: userMethods,
-    parentStudent: parentStudentMethods,
-    emailVerificationCode: emailVerificationCodeMethods,
+    user: txUser,
+    parentStudent: txParentStudent,
+    emailVerificationCode: txEmailVerificationCode,
     __releaseLocks: [],
   };
 
   try {
     return await callback(tx);
   } catch (error) {
-    users = usersSnapshot;
-    parentStudents = parentStudentsSnapshot;
-    nextId = nextIdSnapshot;
+    for (let index = undoLog.length - 1; index >= 0; index -= 1) {
+      undoLog[index]();
+    }
     throw error;
   } finally {
     for (const release of tx.__releaseLocks) {
@@ -350,6 +516,7 @@ const fakePrisma = {
   user: userMethods,
   parentStudent: parentStudentMethods,
   emailVerificationCode: emailVerificationCodeMethods,
+  passwordResetToken: passwordResetTokenMethods,
   async $transaction<T>(
     arg: readonly unknown[] | ((tx: FakeTransactionClient) => Promise<T>)
   ): Promise<T> {

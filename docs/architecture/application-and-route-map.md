@@ -7,6 +7,7 @@
 | All routes | `src/app/layout.tsx` | Server layout; fonts, `globals.css`, metadata, and client `src/app/auth/Provider.tsx` (`SessionProvider`). |
 | Website group | `src/app/(website)/layout.tsx` | Server layout; adds `Header` and a flexible content wrapper. |
 | Learning group | `src/app/(app)/(learning)/layout.tsx` | Server layout; adds Learning Engine metadata and `.learning-shell`. |
+| Dashboard group | `src/app/(app)/dashboard/layout.tsx` | Server layout; redirects to `/sign-in` when `getServerSession(authOptions)` has no session user, independently of the proxy, and applies to every current and future nested `/dashboard/...` page. |
 
 Route-group names do not create URLs and do not themselves prove authentication.
 
@@ -22,7 +23,7 @@ Route-group names do not create URLs and do not themselves prove authentication.
 | `/forgot-password` | `src/app/(auth)/forgot-password/page.tsx` | Client | Requests a reset through a generic-response API. |
 | `/reset-password` | `src/app/(auth)/reset-password/page.tsx` | Client | Reads `token` and `email`, validates matching passwords, then calls reset confirmation. |
 | `/getting-started` | `src/app/(auth)/(onboarding)/getting-started/page.tsx` | Server | Requires a server session and existing user, computes the authoritative onboarding route, and renders one onboarding step in `OnboardingShell`. The `?checkout=success` return from Stripe Checkout advances `PLAN → CHILDREN` only through the same conditional `advanceParentOnboardingStep` write used by onboarding actions, so a stale reload or manipulated query param cannot move the funnel again. Proxy also redirects signed-in users whose funnel target differs. |
-| `/dashboard` | `src/app/(app)/dashboard/page.tsx` | Server | Placeholder. Proxy redirects only authenticated users whose onboarding target is not dashboard; requests with no token continue, and the page has no session check. |
+| `/dashboard` | `src/app/(app)/dashboard/page.tsx` | Server | Placeholder. Protected by two independent boundaries: the proxy redirects an anonymous request to `/sign-in` (carrying the requested path as `callbackUrl`) and redirects an authenticated user whose onboarding target is not `/dashboard`; `src/app/(app)/dashboard/layout.tsx` separately redirects a missing/invalid server session to `/sign-in`, covering this page and any future nested `/dashboard/...` page. |
 | `/learning/:module/:variables*` | `src/app/(app)/(learning)/learning/[...learning]/page.tsx` | Client | Creates a route-keyed `LearningEngine`, renders optional learning layout plus `ScreenRenderer`, aborts stale initialization, and cancels speech on teardown. No source-level auth check or proxy matcher covers this URL. The working fixture is `/learning/vocabulary/word_list_id`. |
 
 ## Playground routes
@@ -37,7 +38,7 @@ Route-group names do not create URLs and do not themselves prove authentication.
 
 ## Proxy-controlled paths
 
-`src/proxy.ts` matches `/dashboard/:path*` and `/getting-started`. It reads the NextAuth JWT with `NEXTAUTH_SECRET`. With a token, it redirects according to `getOnboardingRoute`; without a token it returns `NextResponse.next()`. The `/getting-started` page separately enforces a server session, but `/dashboard` does not.
+`src/proxy.ts` matches `/dashboard/:path*` and `/getting-started`. It reads the NextAuth JWT with `NEXTAUTH_SECRET` after resolving the request pathname. Without a token, a `/dashboard` or `/dashboard/...` path redirects to `/sign-in?callbackUrl=<sanitized-requested-path>`; every other unmatched-token path continues. With a token, it redirects according to `getOnboardingRoute`. The `/getting-started` page and the `/dashboard` route group layout both separately enforce a server session.
 
 ## API routes
 

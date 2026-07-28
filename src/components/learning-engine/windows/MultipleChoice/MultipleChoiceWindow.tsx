@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Check, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import {
@@ -206,7 +207,7 @@ function MultipleChoiceAttempt({
 
 /* ---------- ChoiceRow ---------- */
 
-type ChoiceRowProps = {
+export type ChoiceRowProps = {
   text: string;
   answered: boolean;
   disabled: boolean;
@@ -215,7 +216,7 @@ type ChoiceRowProps = {
   onClick: () => void;
 };
 
-function ChoiceRow({
+export function ChoiceRow({
   text,
   answered,
   disabled,
@@ -231,14 +232,33 @@ function ChoiceRow({
         ? "bg-danger/(--alpha-subtle) border-danger text-heading"
         : "bg-surface/(--alpha-surface-soft) border-heading/(--alpha-hairline) text-muted";
 
+  // Only ever computed from already-graded `feedback`/local-selection props
+  // the parent passes down after the server responds -- never from choice
+  // text -- and rendered only once `answered` is true, so nothing here can
+  // leak the answer before grading.
+  const showCorrectIndicator = answered && isCorrect;
+  const showIncorrectIndicator = answered && isSelected && !isCorrect;
+
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-2xl border text-sm font-medium cursor-pointer disabled:cursor-default ${choiceClass}`}
+      className={`w-full flex items-center justify-between gap-3 text-left px-4 py-3 rounded-2xl border text-sm font-medium cursor-pointer disabled:cursor-default ${choiceClass}`}
     >
-      {text}
+      <span>{text}</span>
+      {showCorrectIndicator && (
+        <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-(--tracking-label) text-secondary-strong">
+          <Check aria-hidden="true" size={16} />
+          Correct
+        </span>
+      )}
+      {showIncorrectIndicator && (
+        <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-(--tracking-label) text-danger">
+          <X aria-hidden="true" size={16} />
+          Your answer — incorrect
+        </span>
+      )}
     </button>
   );
 }

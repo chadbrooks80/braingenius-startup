@@ -16,7 +16,7 @@ type GettingStartedPageProps = {
 
 export default async function GettingStartedPage({ searchParams }: GettingStartedPageProps) {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const userId = session?.user?.id;
 
   if (!userId) {
     redirect("/sign-in");

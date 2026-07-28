@@ -1,3 +1,4 @@
+import "server-only";
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
 import GoogleProvider from "next-auth/providers/google";
@@ -141,12 +142,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id = user.id as string;
+        token.id = user.id;
 
         // Re-read from the DB rather than trusting `user` directly, so this
         // always reflects the latest onboardingStep regardless of provider.
         const dbUser = await prisma.user.findUnique({
-          where: { id: user.id as string },
+          where: { id: user.id },
           select: { onboardingCompleted: true, onboardingStep: true },
         });
         token.onboardingCompleted = Boolean(dbUser?.onboardingCompleted);
@@ -159,7 +160,7 @@ export const authOptions: NextAuthOptions = {
       // always re-synced from the signed-in user's current database record.
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
+          where: { id: token.id },
           select: { onboardingCompleted: true, onboardingStep: true },
         });
 
@@ -173,16 +174,10 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        (
-          session.user as { id: string; onboardingCompleted: boolean; onboardingStep: OnboardingStep }
-        ).id = token.id as string;
-        (
-          session.user as { id: string; onboardingCompleted: boolean; onboardingStep: OnboardingStep }
-        ).onboardingCompleted = Boolean(token.onboardingCompleted);
-        (
-          session.user as { id: string; onboardingCompleted: boolean; onboardingStep: OnboardingStep }
-        ).onboardingStep = (token.onboardingStep as OnboardingStep) ?? OnboardingStep.VERIFY_EMAIL;
+      if (session.user && token.id) {
+        session.user.id = token.id;
+        session.user.onboardingCompleted = Boolean(token.onboardingCompleted);
+        session.user.onboardingStep = token.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
       }
       return session;
     },

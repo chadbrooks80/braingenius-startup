@@ -13,10 +13,10 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 ### `POST /api/auth/password-reset/request`
 
-- Source: `src/app/api/auth/password-reset/request/route.ts`; public endpoint.
+- Source: `src/app/api/auth/password-reset/request/route.ts`; public endpoint that delegates URL construction to `buildPasswordResetUrl()` in `src/lib/app-base-url.ts`.
 - Request: exactness is not enforced; Zod reads an `email` string. Invalid JSON/input, unknown accounts, OAuth-only accounts, rate-limited requests, and eligible requests all return `200 { success: true }`.
-- Side effects: for an existing password account outside the 60-second interval, creates a SHA-256 token hash expiring in one hour and attempts Resend delivery using a reset URL built from `NEXT_PUBLIC_APP_URL`.
-- Security/cache/tests: generic response reduces enumeration; raw token exists only in the email URL. No focused automated test.
+- Side effects: for an existing password account outside the 60-second interval, creates a SHA-256 token hash expiring in one hour and attempts Resend delivery using a reset URL built from the trusted origin resolved by `resolveAppBaseUrl()` (`NEXTAUTH_URL`, then `NEXT_PUBLIC_APP_URL`, then a non-production `localhost:3000` fallback).
+- Security/cache/tests: generic response reduces enumeration; raw token exists only in the email URL. If no trusted origin resolves (only possible in production), no token is created and no email is sent, the response stays the identical generic success, and a safe configuration error is logged without the email, token, or environment value. `tests/auth/appBaseUrl.test.ts` and `tests/auth/passwordResetRequest.test.ts`.
 
 ### `POST /api/auth/password-reset/confirm`
 
@@ -35,11 +35,12 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 ### `POST /api/auth/verify-email-code`
 
-- Source: `src/app/api/auth/verify-email-code/route.ts`; public endpoint.
+- Source: `src/app/api/auth/verify-email-code/route.ts`; public endpoint that delegates to `attemptEmailVerification()` in `src/lib/email-verification.ts`.
 - Request: Zod `email` and exactly four-character `code`.
-- Success: for a correct, active code, one transaction always marks the code used and conditionally advances `VERIFY_EMAIL` to `WELCOME_VIDEO` and sets `emailVerified` — only when the matching user's database row is still on `VERIFY_EMAIL` with incomplete onboarding. An account already advanced past `VERIFY_EMAIL` by another path (e.g. Google sign-in, or a duplicate submission after a prior success) still gets its code consumed but is never moved backward or overwritten. Returns the identical `200 { success: true }` with `Cache-Control: no-store` in both cases, so the response never reveals which one happened.
-- Errors: malformed input returns a distinct `400 { error: "Invalid request." }`. No active code, expiry, five prior failures, and a wrong code all return the identical `400` learner-safe response with `Cache-Control: no-store`; a mismatch still increments `attempts`.
-- Tests: `tests/auth/emailVerificationRoutes.test.ts`.
+- Success: for a correct, active code, one interactive transaction conditionally claims the code (`usedAt`) and, only on a successful claim, conditionally updates the user (matching email, database role `PARENT`, `onboardingStep` still `VERIFY_EMAIL`, incomplete onboarding) to set `emailVerified` and advance `VERIFY_EMAIL` to `WELCOME_VIDEO`. Both conditional writes must each match exactly one row or the whole transaction rolls back. Returns `200 { success: true }` with `Cache-Control: no-store` only when both writes committed.
+- Errors: malformed input returns a distinct `400 { error: "Invalid request." }`. No active code, expiry, five prior failures, a wrong code, and a correct code that rolls back (missing user, database `CHILD` account, an account already past `VERIFY_EMAIL` or completed, a superseded code, or a duplicate submission after a prior success) all return the identical `400` learner-safe response with `Cache-Control: no-store`, so the response never reveals which one happened.
+- Atomicity: every write (wrong-attempt increment, correct-code claim, user verification/advancement) is a conditional database operation that re-validates the exact code record, email, unused/unexpired state, attempt limit, and (for the user write) role/step/completion state against the row's state at write time. Concurrent requests against the same code can never push `attempts` past the maximum or let two correct submissions both succeed; an unexpected failure or a zero-row user match rolls back the code claim in the same transaction.
+- Tests: `tests/auth/emailVerification.test.ts` (atomic contract, concurrency, rollback) and `tests/auth/emailVerificationRoutes.test.ts` (HTTP boundary).
 
 ## Vocabulary
 

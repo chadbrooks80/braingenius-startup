@@ -31,9 +31,11 @@ The exported wrapper keys `MultipleChoiceAttempt` by `attemptId`, so a new attem
 
 Pending/success/feedback lock all choices; a ref closes the duplicate-click race before React state renders. Failure keeps the chosen ID and exposes explicit Retry. Feedback identifies the correct public choice and styles both the correct row and an incorrect selected row.
 
+The exported `ChoiceRow` (used internally, also exported for direct pure-render testing the way `WordSearchWindowView` is) renders visible, non-color feedback once `answered` is true: every correct-choice row shows a decorative check icon plus visible "Correct" text, and the selected incorrect row shows a decorative X icon plus visible "Your answer — incorrect" text; every other row shows neither. `isCorrect`/`isSelected` come only from the already-graded `feedback` prop and local selection, never from choice text, and the indicators render only when `answered` is true, so nothing here can leak correctness before grading.
+
 ## Accessibility and interaction
 
-Choices, replay, Retry, and Next are native buttons with keyboard/pointer support. Replay has `replayLabel`; choices use visible text. Error container has `role="alert"`. Pending/feedback text is visible. No number-key shortcuts are implemented.
+Choices, replay, Retry, and Next are native buttons with keyboard/pointer support. Replay has `replayLabel`; choices use visible text. Error container has `role="alert"`. Pending/feedback text is visible. Post-grade feedback icons are `aria-hidden="true"`; the adjacent visible text ("Correct" / "Your answer — incorrect") carries the accessible and non-color meaning, with the existing success/danger colors kept as supplemental reinforcement. No number-key shortcuts are implemented.
 
 ## Security boundary
 
@@ -41,7 +43,7 @@ Pre-grade props must contain only public choice IDs/text and an opaque attempt. 
 
 ## Consumers, playground, and tests
 
-Created by Vocabulary `multipleChoiceScreen.ts`, registered centrally, and shown with Vocabulary/math examples in `/le-playground`. Tests cover action payloads/TTS disablement, choice shuffling, pending duplicate lock, failure/retry, cross-subject rendering, and server result validation.
+Created by Vocabulary `multipleChoiceScreen.ts`, registered centrally, and shown with Vocabulary/math examples in `/le-playground`. Tests cover action payloads/TTS disablement, choice shuffling, pending duplicate lock, failure/retry, cross-subject rendering, and server result validation. `tests/multiple-choice/choiceRowFeedback.test.tsx` covers the non-color feedback contract directly against the exported `ChoiceRow`: no indicator before grading (even when the row happens to be the eventual correct/selected one), the correct row identified after a wrong submission, the selected-incorrect row's icon/text, no indicator on unrelated rows, and that feedback is carried by visible text rather than color alone.
 
 ## Usage
 

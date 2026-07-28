@@ -1,3 +1,4 @@
+import "server-only";
 import { TtsUpstreamError } from "../../errors/TtsSynthesisError";
 import type { TtsProviderName } from "../../errors/TtsSynthesisError";
 import { fetchWithTimeout } from "./fetchWithTimeout";

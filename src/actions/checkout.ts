@@ -11,7 +11,7 @@ type CheckoutResult = { success: true; url: string } | { success: false; error: 
 
 export async function createCheckoutSession(plan: CheckoutPlan): Promise<CheckoutResult> {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const userId = session?.user?.id;
 
   if (!userId) {
     return { success: false, error: "You must be signed in to upgrade." };

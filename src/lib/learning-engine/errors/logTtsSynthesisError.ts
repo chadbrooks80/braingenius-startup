@@ -1,3 +1,4 @@
+import "server-only";
 import { TtsConfigurationError, TtsUpstreamError } from "./TtsSynthesisError";
 
 export function logTtsSynthesisError(error: unknown): void {

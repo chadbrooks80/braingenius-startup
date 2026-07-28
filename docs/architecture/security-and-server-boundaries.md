@@ -4,7 +4,7 @@
 
 NextAuth configuration, Prisma adapter wrapping, Credentials and Google providers, JWT callbacks, and session projection live in `src/auth.ts`. Passwords are bcrypt hashes. Non-child credentials users must have `emailVerified`; Google-created/linked users advance beyond email verification. Server Actions derive the active user ID from `getServerSession`.
 
-The proxy is funnel routing, not a complete authorization layer. Every protected page or mutation still needs its own server check. Current exceptions and weak boundaries are listed in [Application and Route Map](application-and-route-map.md).
+The proxy is funnel routing, not a complete authorization layer by itself. Every protected page or mutation still needs its own server check: `/dashboard` is protected both by the proxy (anonymous redirect to `/sign-in`, authenticated onboarding-target redirect) and by `src/app/(app)/dashboard/layout.tsx` (independent `getServerSession` check covering every nested page). Remaining exceptions and weak boundaries are listed in [Application and Route Map](application-and-route-map.md).
 
 ## Vocabulary answer security
 
@@ -31,7 +31,7 @@ The generic `/api/tts` route accepts only public text already available to the s
 
 ## Account token boundaries
 
-Email verification codes are four random digits stored as SHA-256 hashes, expire after 10 minutes, allow at most five recorded mismatches, and become single-use. Resend uses a 60-second interval and invalidates prior unused codes.
+Email verification codes are four random digits stored as SHA-256 hashes, expire after 10 minutes, allow at most five recorded mismatches, and become single-use. `src/lib/email-verification.ts` enforces all of this atomically: every wrong-attempt increment is a conditional `updateMany` that re-validates the code record, email, unused/unexpired state, and attempt count against the row's committed state at write time, so concurrent requests against the same code cannot exceed the attempt limit. A correct code is claimed inside one interactive transaction that conditionally sets `usedAt` and, only on that successful claim, conditionally updates the user (matching email, database role `PARENT`, `onboardingStep` still `VERIFY_EMAIL`, incomplete onboarding) to set `emailVerified` and advance to `WELCOME_VIDEO`. Both conditional writes must each match exactly one row; a zero-row match on either one (a missing user, a database `CHILD` account, an account already past `VERIFY_EMAIL` or completed, a superseded code, or a losing concurrent submission) rolls the whole transaction back and reports the same generic failure, so two correct submissions can never both succeed and a stale request can never silently consume a code. Resend uses a 60-second interval and invalidates prior unused codes.
 
 Password-reset tokens are 32 random bytes rendered as hex, stored hashed, expire after one hour, and all outstanding unused tokens for the user are marked used after a successful reset. Reset-request responses remain generic to reduce account enumeration.
 

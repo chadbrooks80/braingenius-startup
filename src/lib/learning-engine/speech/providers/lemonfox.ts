@@ -1,3 +1,4 @@
+import "server-only";
 import type { LemonfoxTtsConfiguration } from "@/types/learning";
 import {
   TtsConfigurationError,
