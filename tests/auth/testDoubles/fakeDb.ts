@@ -4,7 +4,7 @@ type FakeUser = {
   id: string;
   email: string | null;
   password: string | null;
-  role: string;
+  role: string | null;
   emailVerified: Date | null;
   onboardingStep: string;
   onboardingCompleted: boolean;
@@ -13,6 +13,29 @@ type FakeUser = {
   lName: string | null;
   name: string | null;
   mustResetPassword: boolean;
+};
+
+type FakeSubscription = {
+  id: string;
+  userId: string;
+  tier: string | null;
+  trialStartedAt: Date | null;
+  trialEndsAt: Date | null;
+};
+
+type FakeAccount = {
+  id: string;
+  userId: string;
+  type: string;
+  provider: string;
+  providerAccountId: string;
+  refresh_token: string | null;
+  access_token: string | null;
+  expires_at: number | null;
+  token_type: string | null;
+  scope: string | null;
+  id_token: string | null;
+  session_state: string | null;
 };
 
 type FakeVerificationCode = {
@@ -44,9 +67,22 @@ let users: FakeUser[] = [];
 let codes: FakeVerificationCode[] = [];
 let parentStudents: FakeParentStudent[] = [];
 let passwordResetTokens: FakePasswordResetToken[] = [];
+let subscriptions: FakeSubscription[] = [];
+let accounts: FakeAccount[] = [];
 let nextId = 1;
 let forceCreateConflict = false;
 let forceUnexpectedFailure = false;
+export type FakeDbFailurePoint =
+  | "oauth-subscription-create"
+  | "oauth-onboarding-write"
+  | "account-create"
+  | "user-update"
+  | "user-update-many"
+  | "verification-code-create"
+  | "password-reset-token-create"
+  | "password-reset-token-claim"
+  | "password-reset-token-sibling-update";
+let nextFailurePoint: FakeDbFailurePoint | null = null;
 
 type VerificationLookupHook = () => void;
 let verificationLookupHook: VerificationLookupHook | null = null;
@@ -74,9 +110,12 @@ export function __resetFakeDb(): void {
   codes = [];
   parentStudents = [];
   passwordResetTokens = [];
+  subscriptions = [];
+  accounts = [];
   nextId = 1;
   forceCreateConflict = false;
   forceUnexpectedFailure = false;
+  nextFailurePoint = null;
   verificationLookupHook = null;
   activeLocks.clear();
 }
@@ -134,6 +173,14 @@ export function __getParentStudents(): FakeParentStudent[] {
   return parentStudents;
 }
 
+export function __getSubscriptions(): FakeSubscription[] {
+  return subscriptions;
+}
+
+export function __getAccounts(): FakeAccount[] {
+  return accounts;
+}
+
 export function __seedPasswordResetToken(
   token: Partial<FakePasswordResetToken> & { userId: string; tokenHash: string }
 ): FakePasswordResetToken {
@@ -176,13 +223,26 @@ export function __simulateUnexpectedFailure(): void {
   forceUnexpectedFailure = true;
 }
 
+export function __failNextDbOperation(point: FakeDbFailurePoint): void {
+  nextFailurePoint = point;
+}
+
+function failAt(point: FakeDbFailurePoint): void {
+  if (nextFailurePoint === point) {
+    nextFailurePoint = null;
+    throw new Error(`fakeDb: simulated ${point} failure`);
+  }
+}
+
 type UserWhere = Partial<{
   id: string;
   email: string;
+  emailVerified: null;
   username: string;
-  role: string;
+  role: string | null;
   onboardingStep: string;
   onboardingCompleted: boolean;
+  mustResetPassword: boolean;
 }>;
 
 function matchesUserWhere(user: FakeUser, where: UserWhere): boolean {
@@ -224,7 +284,17 @@ const userMethods = {
   async create({
     data,
   }: {
-    data: Partial<FakeUser> & { email?: string; username?: string };
+    data: Partial<FakeUser> & {
+      email?: string;
+      username?: string;
+      subscription?: {
+        create: {
+          tier: string;
+          trialStartedAt: Date;
+          trialEndsAt: Date;
+        };
+      };
+    };
   }): Promise<FakeUser> {
     if (forceCreateConflict) {
       forceCreateConflict = false;
@@ -236,11 +306,20 @@ const userMethods = {
     if (data.username !== undefined && users.some((user) => user.username === data.username)) {
       throw uniqueConstraintError("username");
     }
+    if (data.subscription) {
+      failAt("oauth-subscription-create");
+    }
+    if (data.onboardingStep === "WELCOME_VIDEO" && data.subscription) {
+      failAt("oauth-onboarding-write");
+    }
     const record: FakeUser = {
       id: newId("user"),
       email: data.email ?? null,
       password: data.password ?? null,
-      role: data.role ?? "PARENT",
+      // prisma/schema.prisma declares `role` as `UserRole?` with no @default,
+      // so an omitted role must mirror production's `null` -- defaulting it
+      // to PARENT here previously masked src/auth.ts omitting the field.
+      role: data.role ?? null,
       emailVerified: data.emailVerified ?? null,
       onboardingStep: data.onboardingStep ?? "VERIFY_EMAIL",
       onboardingCompleted: data.onboardingCompleted ?? false,
@@ -251,6 +330,15 @@ const userMethods = {
       mustResetPassword: data.mustResetPassword ?? false,
     };
     users.push(record);
+    if (data.subscription) {
+      subscriptions.push({
+        id: newId("subscription"),
+        userId: record.id,
+        tier: data.subscription.create.tier,
+        trialStartedAt: data.subscription.create.trialStartedAt,
+        trialEndsAt: data.subscription.create.trialEndsAt,
+      });
+    }
     return record;
   },
   async update({
@@ -260,6 +348,7 @@ const userMethods = {
     where: UserWhere;
     data: Partial<FakeUser>;
   }): Promise<FakeUser> {
+    failAt("user-update");
     const record = findUserByWhere(where);
     if (!record) {
       throw new Error("fakeDb: user not found for update");
@@ -274,6 +363,7 @@ const userMethods = {
     where: UserWhere;
     data: Partial<FakeUser>;
   }): Promise<{ count: number }> {
+    failAt("user-update-many");
     if (forceUnexpectedFailure) {
       forceUnexpectedFailure = false;
       throw new Error("fakeDb: simulated unexpected database failure");
@@ -331,6 +421,7 @@ const emailVerificationCodeMethods = {
   }: {
     data: { email: string; codeHash: string; expiresAt: Date };
   }): Promise<FakeVerificationCode> {
+    failAt("verification-code-create");
     const record: FakeVerificationCode = {
       id: newId("code"),
       email: data.email,
@@ -373,6 +464,48 @@ const emailVerificationCodeMethods = {
   },
 };
 
+const accountMethods = {
+  async create({
+    data,
+  }: {
+    data: Omit<FakeAccount, "id">;
+  }): Promise<FakeAccount> {
+    failAt("account-create");
+    if (
+      accounts.some(
+        (account) =>
+          account.provider === data.provider &&
+          account.providerAccountId === data.providerAccountId
+      )
+    ) {
+      throw uniqueConstraintError("provider_providerAccountId");
+    }
+    const record: FakeAccount = { id: newId("account"), ...data };
+    accounts.push(record);
+    return record;
+  },
+};
+
+type PasswordResetTokenWhere = {
+  id?: string;
+  userId?: string;
+  tokenHash?: string;
+  usedAt?: null;
+  expiresAt?: { gt: Date };
+};
+
+function matchesPasswordResetTokenWhere(
+  token: FakePasswordResetToken,
+  where: PasswordResetTokenWhere
+): boolean {
+  if (where.id !== undefined && token.id !== where.id) return false;
+  if (where.userId !== undefined && token.userId !== where.userId) return false;
+  if (where.tokenHash !== undefined && token.tokenHash !== where.tokenHash) return false;
+  if (where.usedAt !== undefined && token.usedAt !== where.usedAt) return false;
+  if (where.expiresAt !== undefined && !(token.expiresAt > where.expiresAt.gt)) return false;
+  return true;
+}
+
 const passwordResetTokenMethods = {
   async findFirst({
     where,
@@ -409,6 +542,10 @@ const passwordResetTokenMethods = {
   }: {
     data: { userId: string; tokenHash: string; expiresAt: Date };
   }): Promise<FakePasswordResetToken> {
+    failAt("password-reset-token-create");
+    if (passwordResetTokens.some((token) => token.tokenHash === data.tokenHash)) {
+      throw uniqueConstraintError("tokenHash");
+    }
     const record: FakePasswordResetToken = {
       id: newId("reset"),
       userId: data.userId,
@@ -424,11 +561,16 @@ const passwordResetTokenMethods = {
     where,
     data,
   }: {
-    where: { userId: string; usedAt: null };
+    where: PasswordResetTokenWhere;
     data: { usedAt: Date };
   }): Promise<{ count: number }> {
-    const targets = passwordResetTokens.filter(
-      (token) => token.userId === where.userId && token.usedAt === where.usedAt
+    failAt(
+      where.tokenHash === undefined
+        ? "password-reset-token-sibling-update"
+        : "password-reset-token-claim"
+    );
+    const targets = passwordResetTokens.filter((token) =>
+      matchesPasswordResetTokenWhere(token, where)
     );
     for (const target of targets) {
       target.usedAt = data.usedAt;
@@ -439,8 +581,10 @@ const passwordResetTokenMethods = {
 
 type FakeTransactionClient = {
   user: typeof userMethods;
+  account: typeof accountMethods;
   parentStudent: typeof parentStudentMethods;
   emailVerificationCode: typeof emailVerificationCodeMethods;
+  passwordResetToken: typeof passwordResetTokenMethods;
   __releaseLocks: (() => void)[];
 };
 
@@ -462,10 +606,24 @@ function wrapTxWrites(undoLog: (() => void)[]) {
     ): ReturnType<typeof userMethods.create> {
       const record = await userMethods.create(args);
       undoLog.push(() => {
+        subscriptions = subscriptions.filter(
+          (subscription) => subscription.userId !== record.id
+        );
         const index = users.indexOf(record);
         if (index !== -1) users.splice(index, 1);
       });
       return record;
+    },
+    async update(
+      args: Parameters<typeof userMethods.update>[0]
+    ): ReturnType<typeof userMethods.update> {
+      const record = findUserByWhere(args.where);
+      const before = record ? { ...record } : null;
+      const result = await userMethods.update(args);
+      if (record && before) {
+        undoLog.push(() => Object.assign(record, before));
+      }
+      return result;
     },
     async updateMany(
       args: Parameters<typeof userMethods.updateMany>[0]
@@ -478,6 +636,20 @@ function wrapTxWrites(undoLog: (() => void)[]) {
         undoLog.push(() => Object.assign(record, snapshot));
       });
       return result;
+    },
+  };
+
+  const txAccount = {
+    ...accountMethods,
+    async create(
+      args: Parameters<typeof accountMethods.create>[0]
+    ): ReturnType<typeof accountMethods.create> {
+      const record = await accountMethods.create(args);
+      undoLog.push(() => {
+        const index = accounts.indexOf(record);
+        if (index !== -1) accounts.splice(index, 1);
+      });
+      return record;
     },
   };
 
@@ -497,6 +669,16 @@ function wrapTxWrites(undoLog: (() => void)[]) {
 
   const txEmailVerificationCode = {
     ...emailVerificationCodeMethods,
+    async create(
+      args: Parameters<typeof emailVerificationCodeMethods.create>[0]
+    ): ReturnType<typeof emailVerificationCodeMethods.create> {
+      const record = await emailVerificationCodeMethods.create(args);
+      undoLog.push(() => {
+        const index = codes.indexOf(record);
+        if (index !== -1) codes.splice(index, 1);
+      });
+      return record;
+    },
     async updateMany(
       args: Parameters<typeof emailVerificationCodeMethods.updateMany>[0]
     ): ReturnType<typeof emailVerificationCodeMethods.updateMany> {
@@ -511,19 +693,61 @@ function wrapTxWrites(undoLog: (() => void)[]) {
     },
   };
 
-  return { txUser, txParentStudent, txEmailVerificationCode };
+  const txPasswordResetToken = {
+    ...passwordResetTokenMethods,
+    async create(
+      args: Parameters<typeof passwordResetTokenMethods.create>[0]
+    ): ReturnType<typeof passwordResetTokenMethods.create> {
+      const record = await passwordResetTokenMethods.create(args);
+      undoLog.push(() => {
+        const index = passwordResetTokens.indexOf(record);
+        if (index !== -1) passwordResetTokens.splice(index, 1);
+      });
+      return record;
+    },
+    async updateMany(
+      args: Parameters<typeof passwordResetTokenMethods.updateMany>[0]
+    ): ReturnType<typeof passwordResetTokenMethods.updateMany> {
+      const targets = passwordResetTokens.filter((token) =>
+        matchesPasswordResetTokenWhere(token, args.where)
+      );
+      const before = targets.map((token) => ({ ...token }));
+      const result = await passwordResetTokenMethods.updateMany(args);
+      targets.forEach((record, index) => {
+        const snapshot = before[index];
+        undoLog.push(() => Object.assign(record, snapshot));
+      });
+      return result;
+    },
+  };
+
+  return {
+    txUser,
+    txAccount,
+    txParentStudent,
+    txEmailVerificationCode,
+    txPasswordResetToken,
+  };
 }
 
 async function runInteractiveTransaction<T>(
   callback: (tx: FakeTransactionClient) => Promise<T>
 ): Promise<T> {
   const undoLog: (() => void)[] = [];
-  const { txUser, txParentStudent, txEmailVerificationCode } = wrapTxWrites(undoLog);
+  const {
+    txUser,
+    txAccount,
+    txParentStudent,
+    txEmailVerificationCode,
+    txPasswordResetToken,
+  } = wrapTxWrites(undoLog);
 
   const tx: FakeTransactionClient = {
     user: txUser,
+    account: txAccount,
     parentStudent: txParentStudent,
     emailVerificationCode: txEmailVerificationCode,
+    passwordResetToken: txPasswordResetToken,
     __releaseLocks: [],
   };
 
@@ -543,6 +767,7 @@ async function runInteractiveTransaction<T>(
 
 const fakePrisma = {
   user: userMethods,
+  account: accountMethods,
   parentStudent: parentStudentMethods,
   emailVerificationCode: emailVerificationCodeMethods,
   passwordResetToken: passwordResetTokenMethods,

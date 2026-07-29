@@ -13,25 +13,25 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 ### `POST /api/auth/password-reset/request`
 
-- Source: `src/app/api/auth/password-reset/request/route.ts`; public endpoint that delegates URL construction to `buildPasswordResetUrl()` in `src/lib/app-base-url.ts`.
+- Source: `src/app/api/auth/password-reset/request/route.ts`; delegates URL construction to `buildPasswordResetUrl()` and serialized grant creation to `issuePasswordResetToken()`.
 - Request: exactness is not enforced; Zod reads a canonicalized (`CanonicalEmailSchema`) `email` string. Invalid JSON/input, unknown accounts, OAuth-only accounts, rate-limited requests, and eligible requests all return `200 { success: true }`.
-- Side effects: for an existing password account outside the 60-second interval, creates a SHA-256 token hash expiring in one hour and attempts Resend delivery using a reset URL built from the trusted origin resolved by `resolveAppBaseUrl()` (`NEXTAUTH_URL`, then `NEXT_PUBLIC_APP_URL`, then a non-production `localhost:3000` fallback).
-- Security/cache/tests: generic response reduces enumeration; raw token exists only in the email URL. If no trusted origin resolves (only possible in production), no token is created and no email is sent, the response stays the identical generic success, and a safe configuration error is logged without the email, token, or environment value. `tests/auth/appBaseUrl.test.ts` and `tests/auth/passwordResetRequest.test.ts`.
+- Side effects: after validating the trusted origin, generates token material; for an existing password account outside the 60-second interval, a same-user locked transaction re-reads eligibility/cooldown and creates at most one SHA-256 token hash expiring in one hour. Only its winner attempts post-commit Resend delivery.
+- Security/cache/tests: generic response reduces enumeration; raw token exists only in the email URL. Missing origin and transaction/provider failures create no fake success grant or sensitive log and retain the same response. `tests/auth/appBaseUrl.test.ts`, `tests/auth/passwordResetRequest.test.ts`, and the guarded real-database harness.
 
 ### `POST /api/auth/password-reset/confirm`
 
 - Source: `src/app/api/auth/password-reset/confirm/route.ts`; public endpoint.
 - Request: Zod object with a canonicalized (`CanonicalEmailSchema`) `email`, non-empty `token`, and password of at least eight characters. Extra fields are accepted by default Zod object behavior.
-- Success: `200 { success: true }`; one transaction bcrypt-hashes the new password, clears `mustResetPassword`, and marks every unused reset token for the user used.
-- Errors: malformed/invalid input or a missing, used, expired, or email-mismatched token returns `400` with a safe error. A casing/whitespace-variant `email` still matches the token owner; a genuinely different email is still rejected.
+- Success: `200 { success: true }`; bcrypt runs before one same-user locked transaction conditionally claims the exact submitted unused/unexpired token, changes the password, clears `mustResetPassword`, and marks sibling unused tokens used.
+- Errors: malformed/invalid input or a missing, used, expired, email-mismatched, duplicate, or losing concurrent token returns `400` with a safe error. Failures after claim roll the whole transaction back.
 - Tests: `tests/auth/passwordResetConfirm.test.ts`.
 
 ### `POST /api/auth/resend-verification-code`
 
 - Source: `src/app/api/auth/resend-verification-code/route.ts`; public endpoint.
 - Request: canonicalized (`CanonicalEmailSchema`) Zod `email`; invalid input, unknown email, already-verified account, cooldown-active request, and eligible-unverified-account request all return the identical generic `200 { success: true }` with `Cache-Control: no-store`.
-- Success/side effects: for an existing unverified user outside the silent 60-second cooldown, invalidates unused codes, creates a hashed four-digit code with 10-minute expiry, and attempts email delivery. The cooldown is enforced only by skipping that work; it is never revealed through status, body, or client copy.
-- Security/tests: `tests/auth/emailVerificationRoutes.test.ts`.
+- Success/side effects: for an eligible unverified parent outside the silent cooldown, one same-user locked transaction re-checks state/cooldown, invalidates unused codes, and creates a hashed four-digit replacement. Only its winner attempts post-commit email delivery; replacement failure rolls invalidation back.
+- Security/tests: transaction/provider failures preserve the generic response and fixed non-sensitive logs. `tests/auth/emailVerificationRoutes.test.ts` and the guarded real-database harness.
 
 ### `POST /api/auth/verify-email-code`
 

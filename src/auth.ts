@@ -7,16 +7,25 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { getTrialDates } from "@/lib/subscription";
-import { OnboardingStep } from "@/generated/prisma";
+import { OnboardingStep, UserRole } from "@/generated/prisma";
 import { normalizeEmail } from "@/lib/auth/email-normalization";
 
 const prismaAdapter = PrismaAdapter(prisma);
-const createPrismaUser = prismaAdapter.createUser as (
-  user: Omit<AdapterUser, "id">
-) => Promise<AdapterUser>;
-const linkPrismaAccount = prismaAdapter.linkAccount as (
-  account: AdapterAccount
-) => Promise<AdapterAccount | null | undefined>;
+
+function adapterUser(created: {
+  id: string;
+  name: string | null;
+  emailVerified: Date | null;
+  image: string | null;
+}, email: string): AdapterUser {
+  return {
+    id: created.id,
+    name: created.name,
+    email,
+    emailVerified: created.emailVerified,
+    image: created.image,
+  };
+}
 
 // Accounts created through the adapter only come from OAuth providers
 // (credentials sign-up creates the User row directly in registerUser).
@@ -27,26 +36,32 @@ const linkPrismaAccount = prismaAdapter.linkAccount as (
 const adapter: Adapter = {
   ...prismaAdapter,
   async createUser(data: Omit<AdapterUser, "id">) {
-    const user = await createPrismaUser(data);
-
     const { trialStartedAt, trialEndsAt } = getTrialDates();
-    await prisma.subscription.create({
+    const user = await prisma.user.create({
       data: {
-        userId: user.id,
-        tier: "FREE_TRIAL",
-        trialStartedAt,
-        trialEndsAt,
+        name: data.name,
+        email: data.email,
+        emailVerified: data.emailVerified,
+        image: data.image,
+        role: UserRole.PARENT,
+        onboardingStep: OnboardingStep.WELCOME_VIDEO,
+        subscription: {
+          create: {
+            tier: "FREE_TRIAL",
+            trialStartedAt,
+            trialEndsAt,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        emailVerified: true,
+        image: true,
       },
     });
 
-    // Google verifies email ownership up front, so these users skip
-    // straight to the welcome video step of the funnel.
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: { onboardingStep: OnboardingStep.WELCOME_VIDEO },
-    });
-
-    return { ...user, onboardingStep: updatedUser.onboardingStep };
+    return adapterUser(user, data.email);
   },
 
   // `linkAccount` runs for every OAuth sign-in, including when Google is
@@ -55,23 +70,41 @@ const adapter: Adapter = {
   // verified their email/password account would stay stuck at VERIFY_EMAIL
   // even though Google just verified the same email address.
   async linkAccount(account: AdapterAccount) {
-    const linkedAccount = await linkPrismaAccount(account);
+    return prisma.$transaction(async (tx) => {
+      await tx.account.create({
+        data: {
+          userId: account.userId,
+          type: account.type,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          refresh_token: account.refresh_token,
+          access_token: account.access_token,
+          expires_at: account.expires_at,
+          token_type: account.token_type,
+          scope: account.scope,
+          id_token: account.id_token,
+          session_state: account.session_state,
+        },
+      });
 
-    if (account.provider === "google") {
-      const user = await prisma.user.findUnique({ where: { id: account.userId } });
-
-      if (user?.onboardingStep === OnboardingStep.VERIFY_EMAIL) {
-        await prisma.user.update({
-          where: { id: account.userId },
+      if (account.provider === "google") {
+        await tx.user.updateMany({
+          where: {
+            id: account.userId,
+            role: UserRole.PARENT,
+            emailVerified: null,
+            onboardingStep: OnboardingStep.VERIFY_EMAIL,
+            onboardingCompleted: false,
+          },
           data: {
-            emailVerified: user.emailVerified ?? new Date(),
+            emailVerified: new Date(),
             onboardingStep: OnboardingStep.WELCOME_VIDEO,
           },
         });
       }
-    }
 
-    return linkedAccount;
+      return account;
+    });
   },
 };
 

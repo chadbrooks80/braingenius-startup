@@ -11,11 +11,16 @@ registerAuthTestHooks();
 import {
   __getUsers,
   __getVerificationCodes,
+  __failNextDbOperation,
   __resetFakeDb,
   __seedUser,
   __seedVerificationCode,
 } from "./testDoubles/fakeDb";
-import { __getSentEmails, __resetFakeEmail } from "./testDoubles/fakeEmail";
+import {
+  __failNextSend,
+  __getSentEmails,
+  __resetFakeEmail,
+} from "./testDoubles/fakeEmail";
 
 let verifyEmailCode: typeof import("../../src/app/api/auth/verify-email-code/route").POST;
 let resendVerificationCode: typeof import("../../src/app/api/auth/resend-verification-code/route").POST;
@@ -244,4 +249,63 @@ test("resend-verification-code: an eligible unverified account invalidates old c
 
   assert.equal(__getSentEmails().length, 1);
   assert.equal(__getSentEmails()[0].email, "eligible@example.com");
+});
+
+test("resend-verification-code: replacement failure rolls back invalidation and attempts no delivery", async () => {
+  __seedUser({ email: "rollback@example.com" });
+  const existingCode = __seedVerificationCode({
+    email: "rollback@example.com",
+    codeHash: hashValue("0000"),
+    createdAt: new Date(Date.now() - 10 * 60 * 1000),
+  });
+  __failNextDbOperation("verification-code-create");
+
+  const response = await resendVerificationCode(
+    postJson(RESEND_URL, { email: "rollback@example.com" })
+  );
+
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(__getVerificationCodes().length, 1);
+  assert.equal(existingCode.usedAt, null, "the previous usable code must survive rollback");
+  assert.equal(__getSentEmails().length, 0);
+});
+
+test("resend-verification-code: two concurrent eligible requests create one replacement and one delivery", async () => {
+  __seedUser({ email: "concurrent@example.com" });
+  const existingCode = __seedVerificationCode({
+    email: "concurrent@example.com",
+    codeHash: hashValue("0000"),
+    createdAt: new Date(Date.now() - 10 * 60 * 1000),
+  });
+
+  const responses = await Promise.all([
+    resendVerificationCode(postJson(RESEND_URL, { email: "concurrent@example.com" })),
+    resendVerificationCode(postJson(RESEND_URL, { email: "concurrent@example.com" })),
+  ]);
+
+  assert.deepEqual(
+    await Promise.all(responses.map((response) => response.json())),
+    [{ success: true }, { success: true }]
+  );
+  assert.ok(existingCode.usedAt);
+  assert.equal(__getVerificationCodes().filter((code) => code.usedAt === null).length, 1);
+  assert.equal(__getSentEmails().length, 1);
+});
+
+test("resend-verification-code: delivery failure keeps the generic response and committed replacement", async () => {
+  __seedUser({ email: "delivery-failure@example.com" });
+  __seedVerificationCode({
+    email: "delivery-failure@example.com",
+    codeHash: hashValue("0000"),
+    createdAt: new Date(Date.now() - 10 * 60 * 1000),
+  });
+  __failNextSend();
+
+  const response = await resendVerificationCode(
+    postJson(RESEND_URL, { email: "delivery-failure@example.com" })
+  );
+
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(__getVerificationCodes().filter((code) => code.usedAt === null).length, 1);
+  assert.equal(__getSentEmails().length, 0);
 });

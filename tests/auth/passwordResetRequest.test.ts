@@ -6,13 +6,18 @@ import { registerAuthTestHooks } from "./testDoubles/registerAuthTestHooks";
 registerAuthTestHooks();
 
 import {
+  __failNextDbOperation,
   __getPasswordResetTokens,
   __getUsers,
   __resetFakeDb,
   __seedPasswordResetToken,
   __seedUser,
 } from "./testDoubles/fakeDb";
-import { __getSentEmails, __resetFakeEmail } from "./testDoubles/fakeEmail";
+import {
+  __failNextSend,
+  __getSentEmails,
+  __resetFakeEmail,
+} from "./testDoubles/fakeEmail";
 
 let passwordResetRequest: typeof import("../../src/app/api/auth/password-reset/request/route").POST;
 
@@ -121,4 +126,46 @@ test("in production with no trusted origin configured, no token is created and t
   );
   assert.equal(__getSentEmails().length, 0);
   assert.equal(__getUsers()[0].password, "hashed", "the account is otherwise untouched");
+});
+
+test("two concurrent eligible requests create one reset token and one delivery", async () => {
+  __seedUser({ email: "concurrent@example.com", password: "hashed" });
+
+  const responses = await Promise.all([
+    passwordResetRequest(postJson({ email: "concurrent@example.com" })),
+    passwordResetRequest(postJson({ email: "concurrent@example.com" })),
+  ]);
+
+  assert.deepEqual(
+    await Promise.all(responses.map((response) => response.json())),
+    [{ success: true }, { success: true }]
+  );
+  assert.equal(__getPasswordResetTokens().length, 1);
+  assert.equal(__getSentEmails().length, 1);
+});
+
+test("a token-create failure commits nothing, sends nothing, and keeps the generic response", async () => {
+  __seedUser({ email: "transaction-failure@example.com", password: "hashed" });
+  __failNextDbOperation("password-reset-token-create");
+
+  const response = await passwordResetRequest(
+    postJson({ email: "transaction-failure@example.com" })
+  );
+
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(__getPasswordResetTokens().length, 0);
+  assert.equal(__getSentEmails().length, 0);
+});
+
+test("email delivery failure leaves the committed reset token recoverable after cooldown", async () => {
+  __seedUser({ email: "delivery-failure@example.com", password: "hashed" });
+  __failNextSend();
+
+  const response = await passwordResetRequest(
+    postJson({ email: "delivery-failure@example.com" })
+  );
+
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(__getPasswordResetTokens().length, 1);
+  assert.equal(__getSentEmails().length, 0);
 });

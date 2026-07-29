@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/db";
 import { hashValue } from "@/lib/auth-tokens";
 import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
+import { confirmPasswordReset } from "@/lib/auth/password-reset";
 
 const ConfirmSchema = z.object({
   email: CanonicalEmailSchema,
@@ -23,40 +23,20 @@ export async function POST(request: NextRequest) {
   }
 
   const { email, token, password } = parsed.data;
-
-  const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { tokenHash: hashValue(token) },
-    include: { user: true },
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const result = await confirmPasswordReset({
+    rawEmail: email,
+    tokenHash: hashValue(token),
+    hashedPassword,
+    now: new Date(),
   });
 
-  if (
-    !resetToken ||
-    resetToken.usedAt ||
-    resetToken.expiresAt < new Date() ||
-    resetToken.user.email !== email
-  ) {
+  if (result.status === "invalid") {
     return NextResponse.json(
       { success: false, error: "This reset link is invalid or has expired." },
       { status: 400 }
     );
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await prisma.$transaction([
-    // A valid email-token reset proves possession of the reset link, which is
-    // sufficient to also clear a pending required-reset flag -- otherwise a
-    // mustResetPassword child who recovers through this ordinary flow would
-    // stay permanently routed to /required-password-reset.
-    prisma.user.update({
-      where: { id: resetToken.userId },
-      data: { password: hashedPassword, mustResetPassword: false },
-    }),
-    prisma.passwordResetToken.updateMany({
-      where: { userId: resetToken.userId, usedAt: null },
-      data: { usedAt: new Date() },
-    }),
-  ]);
 
   return NextResponse.json({ success: true });
 }

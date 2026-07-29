@@ -62,8 +62,12 @@ export function resolveAppBaseUrl(): string | null {
  * when no trusted origin is configured -- callers must not create or send
  * an unusable link in that case.
  */
-export function buildPasswordResetUrl(token: string, email: string): URL | null {
-  const origin = resolveAppBaseUrl();
+export function buildPasswordResetUrl(
+  token: string,
+  email: string,
+  configuredOrigin: string | null = resolveAppBaseUrl()
+): URL | null {
+  const origin = parseTrustedOrigin(configuredOrigin ?? undefined);
   if (!origin) {
     return null;
   }

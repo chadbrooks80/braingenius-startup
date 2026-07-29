@@ -107,3 +107,17 @@ test("buildPasswordResetUrl returns null when no trusted origin is configured", 
 
   assert.equal(buildPasswordResetUrl("token", "user@example.com"), null);
 });
+
+test("buildPasswordResetUrl revalidates an explicitly resolved origin", () => {
+  const valid = buildPasswordResetUrl(
+    "token",
+    "user@example.com",
+    "https://app.example.com/configured/path"
+  );
+
+  assert.equal(valid?.origin, "https://app.example.com");
+  assert.equal(
+    buildPasswordResetUrl("token", "user@example.com", "javascript:alert(1)"),
+    null
+  );
+});

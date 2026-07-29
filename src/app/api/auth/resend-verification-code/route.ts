@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/lib/db";
-import {
-  generateVerificationCode,
-  hashValue,
-  minutesFromNow,
-  RESEND_COOLDOWN_SECONDS,
-  VERIFICATION_CODE_EXPIRY_MINUTES,
-} from "@/lib/auth-tokens";
 import { sendVerificationCodeEmail } from "@/lib/email";
 import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
+import { replaceVerificationCode } from "@/lib/auth/verification-code-resend";
 
 const ResendSchema = z.object({
   email: CanonicalEmailSchema,
@@ -22,44 +15,17 @@ export async function POST(request: NextRequest) {
   const parsed = ResendSchema.safeParse(body);
 
   if (parsed.success) {
-    const { email } = parsed.data;
-
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (user && !user.emailVerified) {
-      const lastCode = await prisma.emailVerificationCode.findFirst({
-        where: { email },
-        orderBy: { createdAt: "desc" },
-      });
-
-      const isCoolingDown =
-        lastCode && Date.now() - lastCode.createdAt.getTime() < RESEND_COOLDOWN_SECONDS * 1000;
-
-      // The cooldown is enforced by silently skipping code creation and
-      // delivery -- never by a distinct status, body, or client copy -- so
-      // it can't be used to infer whether an account exists or is verified.
-      if (!isCoolingDown) {
-        await prisma.emailVerificationCode.updateMany({
-          where: { email, usedAt: null },
-          data: { usedAt: new Date() },
-        });
-
-        const code = generateVerificationCode();
-
-        await prisma.emailVerificationCode.create({
-          data: {
-            email,
-            codeHash: hashValue(code),
-            expiresAt: minutesFromNow(VERIFICATION_CODE_EXPIRY_MINUTES),
-          },
-        });
-
+    try {
+      const replacement = await replaceVerificationCode(parsed.data.email);
+      if (replacement.status === "send") {
         try {
-          await sendVerificationCodeEmail(email, code);
-        } catch (error) {
-          console.error("sendVerificationCodeEmail failed:", error);
+          await sendVerificationCodeEmail(replacement.email, replacement.code);
+        } catch {
+          console.error("Verification-code delivery failed after replacement commit.");
         }
       }
+    } catch {
+      console.error("Verification-code replacement transaction failed.");
     }
   }
 

@@ -7,6 +7,7 @@ import { registerAuthTestHooks } from "./testDoubles/registerAuthTestHooks";
 registerAuthTestHooks();
 
 import {
+  __failNextDbOperation,
   __getPasswordResetTokens,
   __getUsers,
   __resetFakeDb,
@@ -140,4 +141,156 @@ test("rejects a short new password before touching the database", async () => {
   assert.equal(response.status, 400);
   const stored = __getUsers().find((u) => u.id === user.id)!;
   assert.ok(await bcrypt.compare("old-password-1", stored.password ?? ""));
+});
+
+test("successful confirmation claims the submitted token and invalidates sibling grants", async () => {
+  const user = await seedUserWithToken();
+  const sibling = __seedPasswordResetToken({
+    userId: user.id,
+    tokenHash: hashValue("sibling-token"),
+  });
+
+  const response = await passwordResetConfirm(
+    postJson({
+      email: "reset@example.com",
+      token: RAW_TOKEN,
+      password: "brand-new-password-1",
+    })
+  );
+
+  assert.equal(response.status, 200);
+  assert.ok(__getPasswordResetTokens().every((token) => token.usedAt !== null));
+  assert.ok(sibling.usedAt);
+});
+
+test("a forced password update failure rolls back the submitted-token claim", async () => {
+  const user = await seedUserWithToken();
+  __failNextDbOperation("user-update");
+
+  await assert.rejects(
+    passwordResetConfirm(
+      postJson({
+        email: "reset@example.com",
+        token: RAW_TOKEN,
+        password: "brand-new-password-1",
+      })
+    )
+  );
+
+  assert.equal(__getPasswordResetTokens()[0].usedAt, null);
+  assert.ok(await bcrypt.compare("old-password-1", user.password ?? ""));
+});
+
+test("a forced sibling invalidation failure rolls back the claim and password update", async () => {
+  const user = await seedUserWithToken({ mustResetPassword: true });
+  __seedPasswordResetToken({
+    userId: user.id,
+    tokenHash: hashValue("sibling-token"),
+  });
+  __failNextDbOperation("password-reset-token-sibling-update");
+
+  await assert.rejects(
+    passwordResetConfirm(
+      postJson({
+        email: "reset@example.com",
+        token: RAW_TOKEN,
+        password: "brand-new-password-1",
+      })
+    )
+  );
+
+  assert.ok(__getPasswordResetTokens().every((token) => token.usedAt === null));
+  assert.ok(await bcrypt.compare("old-password-1", user.password ?? ""));
+  assert.equal(user.mustResetPassword, true);
+});
+
+test("a duplicate confirmation reports exactly one success and cannot mutate twice", async () => {
+  const user = await seedUserWithToken();
+  const first = await passwordResetConfirm(
+    postJson({
+      email: "reset@example.com",
+      token: RAW_TOKEN,
+      password: "first-winning-password",
+    })
+  );
+  const second = await passwordResetConfirm(
+    postJson({
+      email: "reset@example.com",
+      token: RAW_TOKEN,
+      password: "second-losing-password",
+    })
+  );
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 400);
+  assert.ok(await bcrypt.compare("first-winning-password", user.password ?? ""));
+  assert.equal(await bcrypt.compare("second-losing-password", user.password ?? ""), false);
+});
+
+test("two concurrent submissions of one token produce exactly one successful password", async () => {
+  const user = await seedUserWithToken();
+  const requests = [
+    {
+      password: "concurrent-password-one",
+      request: postJson({
+        email: "reset@example.com",
+        token: RAW_TOKEN,
+        password: "concurrent-password-one",
+      }),
+    },
+    {
+      password: "concurrent-password-two",
+      request: postJson({
+        email: "reset@example.com",
+        token: RAW_TOKEN,
+        password: "concurrent-password-two",
+      }),
+    },
+  ];
+
+  const responses = await Promise.all(
+    requests.map(({ request }) => passwordResetConfirm(request))
+  );
+  const winnerIndex = responses.findIndex((response) => response.status === 200);
+
+  assert.equal(responses.filter((response) => response.status === 200).length, 1);
+  assert.equal(responses.filter((response) => response.status === 400).length, 1);
+  assert.ok(await bcrypt.compare(requests[winnerIndex].password, user.password ?? ""));
+});
+
+test("different active tokens racing for one user still produce one winner", async () => {
+  const user = await seedUserWithToken();
+  const secondRawToken = "another-valid-reset-token";
+  __seedPasswordResetToken({
+    userId: user.id,
+    tokenHash: hashValue(secondRawToken),
+  });
+  const requests = [
+    {
+      password: "first-token-password",
+      request: postJson({
+        email: "reset@example.com",
+        token: RAW_TOKEN,
+        password: "first-token-password",
+      }),
+    },
+    {
+      password: "second-token-password",
+      request: postJson({
+        email: "reset@example.com",
+        token: secondRawToken,
+        password: "second-token-password",
+      }),
+    },
+  ];
+
+  const responses = await Promise.all(
+    requests.map(({ request }) => passwordResetConfirm(request))
+  );
+  const winnerIndex = responses.findIndex((response) => response.status === 200);
+
+  assert.equal(responses.filter((response) => response.status === 200).length, 1);
+  assert.equal(responses.filter((response) => response.status === 400).length, 1);
+  assert.ok(await bcrypt.compare(requests[winnerIndex].password, user.password ?? ""));
+  assert.ok(__getPasswordResetTokens().every((token) => token.usedAt !== null));
 });

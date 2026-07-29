@@ -28,7 +28,7 @@ Composite primary key `(parentId, studentId)`, `createdAt`, and two named relati
 
 ### `Account`
 
-NextAuth provider account with cuid `id`, required `userId`, provider/type identifiers, and optional OAuth token metadata. `(provider, providerAccountId)` is unique. User deletion cascades.
+NextAuth provider account with cuid `id`, required `userId`, provider/type identifiers, and optional OAuth token metadata. `(provider, providerAccountId)` is unique. User deletion cascades. Google account insertion and the required transition for an eligible existing credentials parent share one adapter-owned transaction.
 
 ### `Session`
 
@@ -48,7 +48,7 @@ Cuid `id`, `citext` email (same canonical-storage check constraint as `User.emai
 
 ### `PasswordResetToken`
 
-Cuid `id`, `userId`, unique `tokenHash`, expiry, optional used time, and created time. `userId` is indexed and cascades on user deletion. Successful reset marks all unused tokens for that user used.
+Cuid `id`, `userId`, unique `tokenHash`, expiry, optional used time, and created time. `userId` is indexed and cascades on user deletion. Issuance serializes cooldown on the owning user row. Confirmation locks that owner, conditionally claims the exact submitted unused/unexpired token, changes the password/required-reset flag, and marks sibling unused tokens used in one transaction.
 
 ### `TtsUsageBucket`
 

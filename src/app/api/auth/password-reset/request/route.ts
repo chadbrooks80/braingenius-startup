@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/lib/db";
 import {
   generateResetToken,
   hashValue,
-  hoursFromNow,
   PASSWORD_RESET_EXPIRY_HOURS,
-  RESEND_COOLDOWN_SECONDS,
 } from "@/lib/auth-tokens";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { buildPasswordResetUrl } from "@/lib/app-base-url";
+import { buildPasswordResetUrl, resolveAppBaseUrl } from "@/lib/app-base-url";
 import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
+import { issuePasswordResetToken } from "@/lib/auth/password-reset";
 
 const RequestSchema = z.object({
   email: CanonicalEmailSchema,
@@ -25,45 +23,39 @@ export async function POST(request: NextRequest) {
   }
 
   const { email } = parsed.data;
+  const resetOrigin = resolveAppBaseUrl();
 
-  const user = await prisma.user.findUnique({ where: { email } });
-
-  if (user && user.password) {
-    const lastToken = await prisma.passwordResetToken.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const isRateLimited =
-      lastToken && Date.now() - lastToken.createdAt.getTime() < RESEND_COOLDOWN_SECONDS * 1000;
-
-    if (!isRateLimited) {
+  if (!resetOrigin) {
+    console.error(
+      "Password reset request skipped: no trusted application origin is configured."
+    );
+  } else {
+    try {
       const token = generateResetToken();
-      const resetUrl = buildPasswordResetUrl(token, email);
-
+      const resetUrl = buildPasswordResetUrl(token, email, resetOrigin);
       if (!resetUrl) {
-        // No trusted application origin is configured (only possible in
-        // production; a non-production environment always has the
-        // localhost fallback). Never create or send an unusable reset
-        // link, and never log the email, token, or environment value.
-        console.error(
-          "Password reset request skipped: no trusted application origin is configured."
-        );
+        console.error("Password reset request skipped: trusted origin validation failed.");
       } else {
-        await prisma.passwordResetToken.create({
-          data: {
-            userId: user.id,
-            tokenHash: hashValue(token),
-            expiresAt: hoursFromNow(PASSWORD_RESET_EXPIRY_HOURS),
-          },
+        const now = new Date();
+        const issuance = await issuePasswordResetToken({
+          rawEmail: email,
+          tokenHash: hashValue(token),
+          expiresAt: new Date(
+            now.getTime() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000
+          ),
+          now,
         });
 
-        try {
-          await sendPasswordResetEmail(email, resetUrl.toString());
-        } catch (error) {
-          console.error("sendPasswordResetEmail failed:", error);
+        if (issuance.status === "created") {
+          try {
+            await sendPasswordResetEmail(email, resetUrl.toString());
+          } catch {
+            console.error("Password-reset delivery failed after token commit.");
+          }
         }
       }
+    } catch {
+      console.error("Password-reset issuance transaction failed.");
     }
   }
 
