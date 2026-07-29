@@ -12,6 +12,7 @@ import { createDefinitionFunFactScreenRequest } from "./screens/definitionFunFac
 import { createSpellingScreenRequest } from "./screens/spellingScreen";
 import { createAnswerRecapScreenRequest } from "./screens/answerRecapScreen";
 import { createLessonCompleteScreenRequest } from "./screens/lessonCompleteScreen";
+import { createWordSearchCheckpointScreenRequest } from "./screens/wordSearchCheckpointScreen";
 import {
   loadVocabularyContent,
   type VocabularyContentLoader,
@@ -208,6 +209,14 @@ class Vocabulary implements ActiveModule {
         });
         this.rotateCapability(content);
         return createAnswerRecapScreenRequest(content);
+      }
+      case "word-search-checkpoint": {
+        const content = await this.requireContent({
+          contentType: "word-search-checkpoint",
+          ...this.requireCapability(),
+        });
+        this.rotateCapability(content);
+        return createWordSearchCheckpointScreenRequest(content);
       }
       case "lesson-complete":
         return createLessonCompleteScreenRequest(step);

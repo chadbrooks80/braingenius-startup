@@ -52,7 +52,27 @@ test(
             `Browser errors: ${browserErrors.join("\n")}`
         );
       }
-      await clickAndWaitForScreenChange(page, startButton);
+      const initialManifest = await traffic.waitForContent("manifest");
+      const initialLessonId = requiredString(
+        initialManifest.lessonId,
+        "initial lesson ID"
+      );
+
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+      const refreshedStartButton = page.getByRole("button", {
+        name: "Start Lesson",
+      });
+      await refreshedStartButton.waitFor({ state: "visible", timeout: 15_000 });
+      const refreshedManifest = await traffic.waitForContent(
+        "manifest",
+        (candidate) => candidate.lessonId !== initialLessonId
+      );
+      const refreshedLessonId = requiredString(
+        refreshedManifest.lessonId,
+        "refreshed lesson ID"
+      );
+      assert.notEqual(refreshedLessonId, initialLessonId);
+      await clickAndWaitForScreenChange(page, refreshedStartButton);
 
       const introducedWords = new Set<string>();
       const learnedSpellingAnswers = new Map<string, string>();
@@ -62,6 +82,8 @@ test(
       let definitionReviews = 0;
       let spellingReviews = 0;
       let sawWordReplacement = false;
+      let checkpointsCompleted = 0;
+      const checkpointWords = new Set<string>();
 
       for (let guard = 0; guard < 2_000; guard += 1) {
         if (await isVisible(page, "heading", "Lesson complete")) {
@@ -172,6 +194,35 @@ test(
           continue;
         }
 
+        if (
+          await page
+            .getByRole("heading", { name: "Word Search Checkpoint" })
+            .isVisible()
+        ) {
+          visitedWindows.add("word-search");
+          const content = await traffic.waitForContent("word-search-checkpoint");
+          const words = requiredWordSearchWords(content.words);
+          for (const word of words) {
+            assert.ok(
+              !checkpointWords.has(word),
+              `Checkpoint word "${word}" was already served in an earlier checkpoint.`
+            );
+            checkpointWords.add(word);
+          }
+
+          await page.locator('[role="grid"]').waitFor({ state: "visible" });
+          const grid = await readWordSearchGrid(page);
+          for (const word of words) {
+            await selectWordSearchWord(page, grid, word);
+          }
+
+          const checkpointNext = page.getByRole("button", { name: "Next →" });
+          await assertEventually(async () => !(await checkpointNext.isDisabled()));
+          checkpointsCompleted += 1;
+          await clickAndWaitForScreenChange(page, checkpointNext);
+          continue;
+        }
+
         if (await page.getByText("Answer recap", { exact: true }).isVisible()) {
           visitedWindows.add("answer-recap");
           answerRecaps += 1;
@@ -204,8 +255,11 @@ test(
         "multiple-choice",
         "spelling",
         "answer-recap",
+        "word-search",
         "lesson-complete",
       ]));
+      assert.equal(checkpointsCompleted, 4);
+      assert.equal(checkpointWords.size, 20);
       assert.ok(traffic.count(CONTENT_PATH) > 20);
       assert.ok(traffic.count(ANSWER_PATH) > 20);
       assert.ok(traffic.count(SPEECH_PATH) > 0);
@@ -270,6 +324,101 @@ async function isVisible(
   name: string
 ): Promise<boolean> {
   return page.getByRole(role, { name }).isVisible();
+}
+
+function requiredWordSearchWords(value: unknown): string[] {
+  assert.ok(Array.isArray(value));
+  return value.map((word, index) => requiredString(word, `checkpoint word ${index}`));
+}
+
+// Reads the rendered puzzle straight from the DOM: each cell button carries
+// a `data-ws-cell="row:col"` attribute and its visible letter as text.
+async function readWordSearchGrid(page: Page): Promise<string[][]> {
+  return page.evaluate(() => {
+    const cells = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-ws-cell]")
+    );
+    const entries = cells.map((cell) => {
+      const [row, col] = cell
+        .getAttribute("data-ws-cell")!
+        .split(":")
+        .map(Number);
+      return { row, col, letter: (cell.textContent ?? "").trim().toUpperCase() };
+    });
+    const size = Math.max(...entries.flatMap((entry) => [entry.row, entry.col])) + 1;
+    const grid: string[][] = Array.from({ length: size }, () =>
+      Array<string>(size).fill("")
+    );
+    for (const entry of entries) {
+      grid[entry.row][entry.col] = entry.letter;
+    }
+    return grid;
+  });
+}
+
+const WORD_SEARCH_DIRECTIONS: Array<{ dRow: number; dCol: number }> = [
+  { dRow: 0, dCol: 1 },
+  { dRow: 0, dCol: -1 },
+  { dRow: 1, dCol: 0 },
+  { dRow: -1, dCol: 0 },
+  { dRow: 1, dCol: 1 },
+  { dRow: 1, dCol: -1 },
+  { dRow: -1, dCol: 1 },
+  { dRow: -1, dCol: -1 },
+];
+
+function findWordInGrid(
+  grid: string[][],
+  word: string
+): { row: number; col: number; dRow: number; dCol: number } | null {
+  const size = grid.length;
+  const target = word.trim().toUpperCase();
+
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      for (const { dRow, dCol } of WORD_SEARCH_DIRECTIONS) {
+        let matches = true;
+        for (let step = 0; step < target.length; step += 1) {
+          const r = row + dRow * step;
+          const c = col + dCol * step;
+          if (r < 0 || r >= size || c < 0 || c >= size || grid[r][c] !== target[step]) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) {
+          return { row, col, dRow, dCol };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+// Selects a word using only click-to-anchor plus arrow-key navigation, which
+// avoids depending on pixel-accurate pointer drag geometry in a headless
+// browser. Only the final cursor position relative to the anchor matters for
+// the commit check, so any per-axis step order reaches a valid selection.
+async function selectWordSearchWord(
+  page: Page,
+  grid: string[][],
+  word: string
+): Promise<void> {
+  const location = findWordInGrid(grid, word);
+  assert.ok(location, `Could not locate "${word}" in the rendered puzzle grid.`);
+  const { row, col, dRow, dCol } = location;
+
+  await page.locator(`[data-ws-cell="${row}:${col}"]`).click();
+
+  const steps = word.trim().length - 1;
+  const rowKey = dRow === -1 ? "ArrowUp" : dRow === 1 ? "ArrowDown" : null;
+  const colKey = dCol === -1 ? "ArrowLeft" : dCol === 1 ? "ArrowRight" : null;
+  for (let step = 0; step < steps; step += 1) {
+    if (rowKey) await page.keyboard.press(rowKey);
+    if (colKey) await page.keyboard.press(colKey);
+  }
+  await page.keyboard.press("Enter");
 }
 
 async function clickNext(page: Page): Promise<void> {

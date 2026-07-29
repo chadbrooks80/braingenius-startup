@@ -9,7 +9,13 @@ export const VOCABULARY_SCREEN_CONTENT_TYPES = [
   "definition-practice",
   "spelling-practice",
   "answer-recap",
+  "word-search-checkpoint",
 ] as const;
+
+// The number of unique first-mastered words grouped into each ungraded Word
+// Search checkpoint. Shared by lesson progression (state) and the checkpoint
+// content projection (data) so both stay anchored to one source of truth.
+export const WORD_SEARCH_CHECKPOINT_GROUP_SIZE = 5;
 
 export type VocabularyScreenContentType =
   (typeof VOCABULARY_SCREEN_CONTENT_TYPES)[number];
@@ -45,13 +51,18 @@ export type VocabularyAnswerRecapRequest = VocabularyScreenContentRequest & {
   exampleIndex: number;
 };
 
+export type VocabularyWordSearchCheckpointRequest = VocabularyScreenContentRequest & {
+  contentType: "word-search-checkpoint";
+};
+
 export type VocabularyContentRequest =
   | VocabularyLessonManifestRequest
   | VocabularyDefinitionDisplayRequest
   | VocabularyDefinitionFunFactRequest
   | VocabularyDefinitionPracticeRequest
   | VocabularySpellingPracticeRequest
-  | VocabularyAnswerRecapRequest;
+  | VocabularyAnswerRecapRequest
+  | VocabularyWordSearchCheckpointRequest;
 
 export type VocabularyLessonManifest = {
   contentType: "manifest";
@@ -110,13 +121,26 @@ export type VocabularyAnswerRecapContent = {
   exampleSentence: string;
 };
 
+/**
+ * Exactly WORD_SEARCH_CHECKPOINT_GROUP_SIZE plain display words for the
+ * ungraded Word Search checkpoint. These words already reached full initial
+ * mastery, so displaying them plainly follows the same established pattern
+ * as the recap projection's `word` field, not a new answer-security exception.
+ */
+export type VocabularyWordSearchCheckpointContent = {
+  contentType: "word-search-checkpoint";
+  nextCapability: string;
+  words: string[];
+};
+
 export type VocabularyContentResponse =
   | VocabularyLessonManifest
   | VocabularyDefinitionDisplayContent
   | VocabularyDefinitionFunFactContent
   | VocabularyDefinitionPracticeContent
   | VocabularySpellingPracticeContent
-  | VocabularyAnswerRecapContent;
+  | VocabularyAnswerRecapContent
+  | VocabularyWordSearchCheckpointContent;
 
 export type VocabularyContentResponseFor<
   Request extends VocabularyContentRequest,

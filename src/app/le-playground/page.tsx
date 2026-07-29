@@ -61,6 +61,13 @@ const DEFINITION_DISPLAY_EXAMPLE_SENTENCES = [
 
 const WORD_SEARCH_SMALL_WORDS = ["cat", "dog", "sun", "map"];
 
+const WORD_SEARCH_DUPLICATE_WORDS = [
+  "Fraction",
+  "FRACTION",
+  " decimal ",
+  "DECIMAL",
+];
+
 const WORD_SEARCH_LARGE_WORDS = [
   "fraction",
   "decimal",
@@ -85,16 +92,10 @@ const WORD_SEARCH_LONG_WORDS = [
 const NEVER_RESOLVING_PUZZLE: GenerateWordSearchPuzzle = () =>
   new Promise(() => {});
 
-// Fails the first two generations so the temporary-failure state stays
-// visible even when development strict mode discards the first attempt,
-// then Retry recovers with the real temporary generator.
-let playgroundGenerationFailuresRemaining = 2;
-
 const FAILING_THEN_RECOVERING_PUZZLE: GenerateWordSearchPuzzle = async (
   request
 ) => {
-  if (playgroundGenerationFailuresRemaining > 0) {
-    playgroundGenerationFailuresRemaining -= 1;
+  if ((request.attempt ?? 0) === 0) {
     throw new Error("Playground: simulated puzzle generation failure");
   }
 
@@ -233,6 +234,12 @@ export default function PlaygroundPage() {
         gridSize={30}
         words={WORD_SEARCH_LARGE_WORDS}
         title="Word search: large puzzle"
+        onAction={() => {}}
+      />
+      <WordSearchWindow
+        gridSize={10}
+        words={WORD_SEARCH_DUPLICATE_WORDS}
+        title="Word search: duplicate input"
         onAction={() => {}}
       />
       <WordSearchWindow

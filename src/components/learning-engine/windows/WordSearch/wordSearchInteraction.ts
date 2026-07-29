@@ -244,36 +244,63 @@ function commitSelection(
   puzzle: WordSearchPuzzleResponse
 ): WordSearchInteractionState {
   const cells = getActiveWordSearchSelectionCells(state);
-  const selectedText = cells
-    .map(({ row, col }) => puzzle.rows[row][col])
-    .join("");
-  const reversedText = [...selectedText].reverse().join("");
-
-  // Only words that are still missing can match, and an exact forward match
-  // wins before the reversed reading, so reversed pairs such as STAR and
-  // RATS can both be found regardless of which one is found first.
   const foundWordSet = new Set(state.foundWords.map((found) => found.word));
-  const remainingWords = puzzle.words.filter(
-    (word) => !foundWordSet.has(word)
+  const matchedPlacement = puzzle.placements.find(
+    (placement) =>
+      !foundWordSet.has(placement.word) &&
+      areSameCellPaths(
+        cells,
+        getWordSearchPlacementCells(placement)
+      )
   );
-  const matchedWord =
-    remainingWords.find((word) => word === selectedText) ??
-    remainingWords.find((word) => word === reversedText);
 
-  if (!matchedWord) {
-    const spellsFoundWord =
-      foundWordSet.has(selectedText) || foundWordSet.has(reversedText);
+  if (!matchedPlacement) {
+    const matchesFoundPlacement = puzzle.placements.some(
+      (placement) =>
+        foundWordSet.has(placement.word) &&
+        areSameCellPaths(
+          cells,
+          getWordSearchPlacementCells(placement)
+        )
+    );
 
-    return clearSelection(state, spellsFoundWord ? "already-found" : "no-match");
+    return clearSelection(
+      state,
+      matchesFoundPlacement ? "already-found" : "no-match"
+    );
   }
 
-  const foundWords = [...state.foundWords, { word: matchedWord, cells }];
+  const foundWords = [
+    ...state.foundWords,
+    { word: matchedPlacement.word, cells },
+  ];
 
   return {
     ...clearSelection(state, "found"),
     foundWords,
     complete: foundWords.length === puzzle.words.length,
   };
+}
+
+function areSameCellPaths(
+  selectedCells: WordSearchCell[],
+  officialCells: WordSearchCell[]
+): boolean {
+  if (selectedCells.length !== officialCells.length) {
+    return false;
+  }
+
+  const matchesForward = selectedCells.every((cell, index) =>
+    areSameWordSearchCells(cell, officialCells[index])
+  );
+  const matchesReverse = selectedCells.every((cell, index) =>
+    areSameWordSearchCells(
+      cell,
+      officialCells[officialCells.length - 1 - index]
+    )
+  );
+
+  return matchesForward || matchesReverse;
 }
 
 function clearSelection(

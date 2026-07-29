@@ -8,6 +8,11 @@ import WordSearchWindow, {
 import { resolveLearningWindow } from "../../src/lib/learning-engine/LearningWindowRegistry"
 import { generateWordList } from "../../src/components/learning-engine/windows/WordSearch/generateWordList";
 import { createWordSearchInteractionState } from "../../src/components/learning-engine/windows/WordSearch/wordSearchInteraction";
+import {
+  getWordSearchPuzzleKey,
+  parseWordSearchWindowProps,
+  reportDuplicateWordSearchInputOnce,
+} from "../../src/components/learning-engine/windows/WordSearch/parseWordSearchWindowProps";
 import type { WordSearchPuzzleResponse } from "../../src/components/learning-engine/windows/WordSearch/wordSearchTypes";
 
 const WORDS = [
@@ -109,14 +114,120 @@ test("invalid module props throw as programmer errors before rendering", () => {
       <WordSearchWindow gridSize={10} words={[]} onAction={() => {}} />
     )
   );
-  assert.throws(() =>
-    renderToStaticMarkup(
+});
+
+test("duplicate module props remain recoverable without a render-phase diagnostic", () => {
+  const originalConsoleError = console.error;
+  const messages: unknown[][] = [];
+  console.error = (...args: unknown[]) => messages.push(args);
+
+  try {
+    const markup = renderToStaticMarkup(
       <WordSearchWindow
         gridSize={10}
-        words={["cat", "CAT"]}
+        words={["Fraction", "FRACTION", " decimal "]}
         onAction={() => {}}
       />
-    )
+    );
+
+    assert.match(markup, /Building your word search…/);
+    assert.equal(messages.length, 0);
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
+test("the duplicate diagnostic lifecycle gate reports one mounted puzzle event once", () => {
+  const reports: string[][] = [];
+  const mountedPuzzleRef = { current: null };
+  const parsed = parseWordSearchWindowProps({
+    gridSize: 10,
+    words: ["Fraction", "FRACTION", " decimal ", "DECIMAL"],
+  });
+
+  assert.equal(
+    reportDuplicateWordSearchInputOnce(
+      parsed.duplicateNormalizedWords,
+      mountedPuzzleRef,
+      (duplicates) => reports.push(duplicates)
+    ),
+    true
+  );
+  assert.equal(
+    reportDuplicateWordSearchInputOnce(
+      parsed.duplicateNormalizedWords,
+      mountedPuzzleRef,
+      (duplicates) => reports.push(duplicates)
+    ),
+    false
+  );
+  assert.deepEqual(reports, [["FRACTION", "DECIMAL"]]);
+});
+
+test("separate puzzle instances and a new duplicate event each report once", () => {
+  const reports: string[][] = [];
+  const firstInstanceRef = { current: null };
+  const secondInstanceRef = { current: null };
+  const firstEvent = ["FRACTION"];
+  const nextEvent = ["DECIMAL"];
+  const report = (duplicates: string[]) => reports.push(duplicates);
+
+  reportDuplicateWordSearchInputOnce(firstEvent, firstInstanceRef, report);
+  reportDuplicateWordSearchInputOnce(firstEvent, secondInstanceRef, report);
+  reportDuplicateWordSearchInputOnce(nextEvent, firstInstanceRef, report);
+
+  assert.deepEqual(reports, [["FRACTION"], ["FRACTION"], ["DECIMAL"]]);
+});
+
+test("nonduplicate input emits no duplicate diagnostic", () => {
+  const reports: string[][] = [];
+
+  assert.equal(
+    reportDuplicateWordSearchInputOnce(
+      [],
+      { current: null },
+      (duplicates) => reports.push(duplicates)
+    ),
+    false
+  );
+  assert.deepEqual(reports, []);
+});
+
+test("incompatible substring props fail before a retryable session renders", () => {
+  assert.throws(
+    () =>
+      renderToStaticMarkup(
+        <WordSearchWindow
+          gridSize={8}
+          words={["MATH", "HAT", "AT"]}
+          onAction={() => {}}
+        />
+      ),
+    /target set is incompatible/
+  );
+});
+
+test("the session key changes for every meaningful puzzle prop change", () => {
+  const initial = parseWordSearchWindowProps({
+    gridSize: 8,
+    words: ["Cat", "dog"],
+  });
+  const displayChanged = parseWordSearchWindowProps({
+    gridSize: 8,
+    words: ["CAT", "dog"],
+  });
+  const orderChanged = parseWordSearchWindowProps({
+    gridSize: 8,
+    words: ["dog", "Cat"],
+  });
+
+  assert.notEqual(
+    getWordSearchPuzzleKey(initial),
+    getWordSearchPuzzleKey(displayChanged)
+  );
+  assert.notEqual(
+    getWordSearchPuzzleKey(initial),
+    getWordSearchPuzzleKey(orderChanged)
   );
 });
 
@@ -150,6 +261,11 @@ test("the ready puzzle renders an accessible grid and the full word list", () =>
   assert.match(markup, /disabled=""/);
   assert.match(markup, /overflow-auto/);
   assert.match(markup, /max-h-\[60vh\]/);
+  assert.match(markup, /touch-none/);
+  assert.doesNotMatch(markup, /touch-action:/);
+  assert.match(markup, /role="status"/);
+  assert.match(markup, /aria-live="polite"/);
+  assert.match(markup, /aria-atomic="true"/);
 });
 
 test("an active selection is highlighted and drawn as a line", () => {

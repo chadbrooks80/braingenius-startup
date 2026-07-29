@@ -174,6 +174,28 @@ test("an incorrect selection clears with neutral feedback and no progress", () =
   assert.equal(state.complete, false);
 });
 
+test("a line that spells a target outside its official placement is rejected", () => {
+  const puzzle: WordSearchPuzzleResponse = {
+    ...PUZZLE,
+    rows: PUZZLE.rows.map((row) => [...row]),
+  };
+  puzzle.rows[1][0] = "C";
+  puzzle.rows[1][1] = "A";
+  puzzle.rows[1][2] = "T";
+
+  const state = dragAcrossPuzzle(
+    createWordSearchInteractionState(puzzle),
+    puzzle,
+    [
+      { row: 1, col: 0 },
+      { row: 1, col: 2 },
+    ]
+  );
+
+  assert.equal(state.lastOutcome, "no-match");
+  assert.deepEqual(state.foundWords, []);
+});
+
 test("a found word cannot be counted twice", () => {
   let state = dragAcross(startState(), [
     { row: 0, col: 0 },
@@ -418,26 +440,26 @@ test("reversed pairs can both be found when the forward word is found first", ()
   assert.equal(state.complete, true);
 });
 
-test("reversed pairs can both be found when the reversed word is found first", () => {
+test("official placement identity wins over text that spells a different reversed target", () => {
   let state = createWordSearchInteractionState(REVERSED_PAIR_PUZZLE);
 
-  // Selecting the STAR cells backwards spells the still-missing word RATS,
-  // and the exact forward reading must win over the reversed one.
+  // Selecting STAR's official cells backwards still finds STAR. RATS can
+  // only be found from its own separate official placement.
   state = dragAcrossPuzzle(state, REVERSED_PAIR_PUZZLE, [
     { row: 0, col: 3 },
     { row: 0, col: 0 },
   ]);
   assert.equal(state.lastOutcome, "found");
-  assert.equal(state.foundWords[0].word, "RATS");
+  assert.equal(state.foundWords[0].word, "STAR");
 
   state = dragAcrossPuzzle(state, REVERSED_PAIR_PUZZLE, [
-    { row: 0, col: 0 },
-    { row: 0, col: 3 },
+    { row: 2, col: 3 },
+    { row: 2, col: 0 },
   ]);
   assert.equal(state.lastOutcome, "found");
   assert.deepEqual(
     state.foundWords.map((found) => found.word),
-    ["RATS", "STAR"]
+    ["STAR", "RATS"]
   );
   assert.equal(state.complete, true);
 });

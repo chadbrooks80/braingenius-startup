@@ -39,7 +39,8 @@ export function parseVocabularyContentRequest(
     (raw.contentType === "definition-display" ||
       raw.contentType === "definition-fun-fact" ||
       raw.contentType === "definition-practice" ||
-      raw.contentType === "spelling-practice") &&
+      raw.contentType === "spelling-practice" ||
+      raw.contentType === "word-search-checkpoint") &&
     hasExactFields(raw, SCREEN_CONTENT_FIELDS)
   ) {
     return {

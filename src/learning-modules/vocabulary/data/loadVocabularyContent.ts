@@ -3,6 +3,7 @@ import type {
   VocabularyContentRequest,
   VocabularyContentResponseFor,
 } from "./vocabularyContentTypes";
+import { WORD_SEARCH_CHECKPOINT_GROUP_SIZE } from "./vocabularyContentTypes";
 
 const CONTENT_ENDPOINT = "/api/learning/vocabulary/content";
 const CONTENT_TIMEOUT_MS = 10_000;
@@ -158,7 +159,26 @@ function isValidContentResponse<Request extends VocabularyContentRequest>(
         isNonBlankString(raw.definition) &&
         isNonBlankString(raw.exampleSentence)
       );
+    case "word-search-checkpoint":
+      return (
+        hasExactFields(raw, ["contentType", "nextCapability", "words"]) &&
+        isOpaqueIdentifier(raw.nextCapability) &&
+        isWordSearchCheckpointWordList(raw.words)
+      );
   }
+}
+
+function isWordSearchCheckpointWordList(value: unknown): value is string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length !== WORD_SEARCH_CHECKPOINT_GROUP_SIZE ||
+    !value.every(isNonBlankString)
+  ) {
+    return false;
+  }
+
+  const normalized = value.map((word) => word.trim().toUpperCase());
+  return new Set(normalized).size === normalized.length;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

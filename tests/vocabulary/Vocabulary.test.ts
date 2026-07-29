@@ -148,6 +148,128 @@ test("routes the first five words through both introduction windows before pract
   );
 });
 
+test("reaches an ungraded five-word Word Search checkpoint after five words first master, exposing only display words", async () => {
+  const requests: VocabularyContentRequest[] = [];
+  const baseApi = createInProcessVocabularyApi();
+  const api: VocabularyModuleApi = {
+    ...baseApi,
+    async loadContent<Request extends VocabularyContentRequest>(request: Request) {
+      requests.push(structuredClone(request));
+      return baseApi.loadContent(request);
+    },
+  };
+  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  await vocabulary.initialize();
+
+  let checkpoint: ScreenRequest | null = null;
+
+  for (let guard = 0; guard < 2_000 && !checkpoint; guard += 1) {
+    const screen = await requireScreen(vocabulary.next());
+    if (screen.windowName === "word-search") {
+      checkpoint = screen;
+      break;
+    }
+
+    if (screen.windowName === "multiple-choice") {
+      const choices = screen.props.choices as Array<{ id: string; text: string }>;
+      const attemptId = String(screen.props.attemptId);
+      await vocabulary.submitAnswer({
+        attemptId,
+        selectedChoiceId: getServerCorrectChoiceId({
+          contentType: "definition-practice",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          attemptId,
+          question: String(screen.props.question),
+          choices: choices as [
+            { id: string; text: string },
+            { id: string; text: string },
+            { id: string; text: string },
+            { id: string; text: string },
+          ],
+        }),
+      });
+    } else if (screen.windowName === "spelling") {
+      const attemptId = String(screen.props.attemptId);
+      await vocabulary.submitAnswer({
+        attemptId,
+        answer: getServerSpellingAnswer({
+          contentType: "spelling-practice",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          attemptId,
+          definition: String(screen.props.promptText),
+        }),
+      });
+    }
+  }
+
+  assert.ok(checkpoint, "Expected a Word Search checkpoint screen to appear.");
+  assert.equal(checkpoint.props.emitCompletionAction, false);
+  const gridSize = checkpoint.props.gridSize as number;
+  assert.ok(Number.isInteger(gridSize) && gridSize >= 8 && gridSize <= 30);
+
+  const words = checkpoint.props.words as string[];
+  assert.equal(words.length, 5);
+  assert.equal(new Set(words.map((word) => word.toLocaleUpperCase("en-US"))).size, 5);
+
+  const fixtureWords = new Set(
+    getWordList("word_list_id")!.map((word) => word.word)
+  );
+  for (const word of words) {
+    assert.ok(fixtureWords.has(word));
+  }
+
+  const checkpointRequests = requests.filter(
+    (request): request is Extract<VocabularyContentRequest, { contentType: "word-search-checkpoint" }> =>
+      request.contentType === "word-search-checkpoint"
+  );
+  assert.ok(checkpointRequests.length > 0);
+  for (const request of checkpointRequests) {
+    assert.deepEqual(
+      Object.keys(request).sort(),
+      ["capability", "contentType", "lessonId"]
+    );
+  }
+});
+
+test("repeated checkpoint capability reads and duplicate next handling cannot replay a served group within one attempt", async () => {
+  const requests: VocabularyContentRequest[] = [];
+  const baseApi = createInProcessVocabularyApi();
+  const api: VocabularyModuleApi = {
+    ...baseApi,
+    async loadContent<Request extends VocabularyContentRequest>(request: Request) {
+      requests.push(structuredClone(request));
+      return baseApi.loadContent(request);
+    },
+  };
+  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  await vocabulary.initialize();
+
+  const checkpoint = await advanceVocabularyToWordSearchCheckpoint(vocabulary);
+  const checkpointRequest = requests.findLast(
+    (
+      request
+    ): request is Extract<
+      VocabularyContentRequest,
+      { contentType: "word-search-checkpoint" }
+    > => request.contentType === "word-search-checkpoint"
+  );
+  assert.ok(checkpointRequest);
+
+  const repeatedRead1 = await api.loadContent(checkpointRequest);
+  const repeatedRead2 = await api.loadContent(checkpointRequest);
+  assert.deepEqual(repeatedRead2, repeatedRead1);
+  assert.deepEqual(repeatedRead1?.words, checkpoint.props.words);
+
+  const [nextScreen, duplicateNext] = await Promise.all([
+    vocabulary.next(),
+    vocabulary.next(),
+  ]);
+
+  assert.ok(nextScreen);
+  assert.notEqual(nextScreen.windowName, "word-search");
+  assert.equal(duplicateNext, undefined);
+});
+
 test("network failure preserves the active attempt for a safe retry", async () => {
   let offline = true;
   const baseApi = createInProcessVocabularyApi();
@@ -268,4 +390,51 @@ async function requireScreen(
     throw new Error("Expected a screen request.");
   }
   return screen;
+}
+
+async function advanceVocabularyToWordSearchCheckpoint(
+  vocabulary: Vocabulary
+): Promise<ScreenRequest> {
+  for (let guard = 0; guard < 2_000; guard += 1) {
+    const screen = await requireScreen(vocabulary.next());
+    if (screen.windowName === "word-search") {
+      return screen;
+    }
+
+    if (screen.windowName === "multiple-choice") {
+      const choices = screen.props.choices as Array<{ id: string; text: string }>;
+      const attemptId = String(screen.props.attemptId);
+      await vocabulary.submitAnswer({
+        attemptId,
+        selectedChoiceId: getServerCorrectChoiceId({
+          contentType: "definition-practice",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          attemptId,
+          question: String(screen.props.question),
+          choices: choices as [
+            { id: string; text: string },
+            { id: string; text: string },
+            { id: string; text: string },
+            { id: string; text: string },
+          ],
+        }),
+      });
+      continue;
+    }
+
+    if (screen.windowName === "spelling") {
+      const attemptId = String(screen.props.attemptId);
+      await vocabulary.submitAnswer({
+        attemptId,
+        answer: getServerSpellingAnswer({
+          contentType: "spelling-practice",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          attemptId,
+          definition: String(screen.props.promptText),
+        }),
+      });
+    }
+  }
+
+  throw new Error("Vocabulary checkpoint did not appear within the guard.");
 }

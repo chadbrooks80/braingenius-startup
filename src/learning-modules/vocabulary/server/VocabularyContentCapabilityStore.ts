@@ -54,7 +54,9 @@ export type AuthorizedVocabularyContent = {
   capability: string;
   contentType: VocabularyScreenContentType;
   wordListId: string;
+  // Empty for word-search-checkpoint, which projects wordIds instead.
   wordId: string;
+  wordIds?: string[];
   nextCapability: string;
   attemptId: string | null;
 };
@@ -205,6 +207,20 @@ export class VocabularyContentCapabilityStore {
           capability
         );
       }
+    }
+
+    if (record.step.kind === "word-search-checkpoint") {
+      return {
+        capability,
+        contentType,
+        wordListId: record.wordListId,
+        wordId: "",
+        wordIds: record.step.wordIds.map((lessonWordId) =>
+          this.requireCanonicalWordId(lesson, lessonWordId)
+        ),
+        nextCapability: record.nextCapability,
+        attemptId: record.attemptId,
+      };
     }
 
     return {

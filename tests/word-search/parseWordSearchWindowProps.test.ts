@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  parseWordSearchWindowProps,
+} from "../../src/components/learning-engine/windows/WordSearch/parseWordSearchWindowProps";
+import {
   MAX_WORD_SEARCH_GRID_SIZE,
   MAX_WORD_SEARCH_WORD_COUNT,
   MIN_WORD_SEARCH_GRID_SIZE,
-  parseWordSearchWindowProps,
-} from "../../src/components/learning-engine/windows/WordSearch/parseWordSearchWindowProps";
+  parseWordSearchInput,
+} from "../../src/lib/learning-engine/word-search/wordSearchInputContract";
 
 const VALID_WORDS = ["cat", "dog", "bird"];
 
@@ -129,12 +132,45 @@ test("rejects words that are empty after trimming", () => {
   }
 });
 
-test("rejects duplicate normalized words", () => {
-  assert.throws(
-    () =>
-      parseWordSearchWindowProps({ gridSize: 10, words: ["cat", " CAT "] }),
-    /unique/i
+test("deduplicates case and whitespace variants and keeps the diagnostic data pure", () => {
+  const originalConsoleError = console.error;
+  const messages: unknown[][] = [];
+  console.error = (...args: unknown[]) => messages.push(args);
+
+  try {
+    const parsed = parseWordSearchWindowProps({
+      gridSize: 10,
+      words: ["Fraction", "FRACTION", " decimal ", "DECIMAL", "sum"],
+    });
+
+    assert.deepEqual(parsed.words, [
+      { display: "Fraction", normalized: "FRACTION" },
+      { display: "decimal", normalized: "DECIMAL" },
+      { display: "sum", normalized: "SUM" },
+    ]);
+    assert.deepEqual(parsed.duplicateNormalizedWords, [
+      "FRACTION",
+      "DECIMAL",
+    ]);
+    assert.deepEqual(messages, []);
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
+test("applies the word-count bound after duplicate removal", () => {
+  const maxWords = Array.from(
+    { length: MAX_WORD_SEARCH_WORD_COUNT },
+    (unused, index) => `word${"abcdefghijklmnopqrst"[index]}`
   );
+
+  const parsed = parseWordSearchWindowProps({
+    gridSize: 10,
+    words: [...maxWords, " WORDA "],
+  });
+
+  assert.equal(parsed.words.length, MAX_WORD_SEARCH_WORD_COUNT);
+  assert.equal(parsed.words[0].display, "worda");
 });
 
 test("rejects words longer than the grid and accepts an exact fit", () => {
@@ -158,4 +194,67 @@ test("rejects unsupported characters instead of silently removing words", () => 
       /letters only/
     );
   }
+});
+
+test("rejects structurally incompatible substring target sets before generation", () => {
+  for (const words of [
+    ["MATH", "HAT", "AT"],
+    ["CATER", "LATER", "ATE"],
+    ["TEACH", "BEACH", "EACH"],
+  ]) {
+    assert.throws(
+      () => parseWordSearchWindowProps({ gridSize: 8, words }),
+      /target set is incompatible/
+    );
+  }
+});
+
+test("preserves compatible substring, reverse-pair, and palindrome target sets", () => {
+  for (const words of [
+    ["FRACTION", "ACTION"],
+    ["CAT", "AT"],
+    ["STAR", "RATS"],
+    ["XABA", "ABAY", "ABA"],
+  ]) {
+    assert.doesNotThrow(() =>
+      parseWordSearchWindowProps({ gridSize: 8, words })
+    );
+  }
+});
+
+test("the Window parser delegates the supported bounds and compatibility rules to the public contract", () => {
+  const accepted = [
+    { gridSize: 8, words: ["ox", "cat"] },
+    { gridSize: 30, words: ["q".repeat(30), "cat"] },
+    { gridSize: 8, words: ["FRACTION", "ACTION"] },
+  ];
+
+  for (const input of accepted) {
+    assert.deepEqual(
+      parseWordSearchWindowProps(input),
+      parseWordSearchInput(input)
+    );
+  }
+
+  const rejected = [
+    { gridSize: 7, words: ["cat", "dog"] },
+    { gridSize: 30, words: ["q".repeat(31), "cat"] },
+    { gridSize: 8, words: ["MATH", "HAT", "AT"] },
+  ];
+
+  for (const input of rejected) {
+    assert.throws(() => parseWordSearchInput(input));
+    assert.throws(() => parseWordSearchWindowProps(input));
+  }
+});
+
+test("rejects a parent that would force multiple occurrences of a shorter target", () => {
+  assert.throws(
+    () =>
+      parseWordSearchWindowProps({
+        gridSize: 8,
+        words: ["BANANA", "ANA"],
+      }),
+    /"ANA" occurs more than once inside "BANANA"/
+  );
 });

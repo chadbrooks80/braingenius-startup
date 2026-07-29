@@ -18,6 +18,7 @@ import {
   DEFINITION_MASTERY_STREAK,
   DELAYED_REVIEW_ANSWER_COUNT,
   SPELLING_MASTERY_STREAK,
+  WORD_SEARCH_CHECKPOINT_GROUP_SIZE,
   createInitialVocabularyWordProgress,
   type VocabularyLessonStats,
   type VocabularyLessonStep,
@@ -32,6 +33,7 @@ export {
   DEFINITION_MASTERY_STREAK,
   DELAYED_REVIEW_ANSWER_COUNT,
   SPELLING_MASTERY_STREAK,
+  WORD_SEARCH_CHECKPOINT_GROUP_SIZE,
 } from "./VocabularyLessonTypes";
 export type {
   ReviewStage,
@@ -62,6 +64,13 @@ export class VocabularyLessonState {
   private incorrectCount = 0;
   private lastPracticedWordId: string | null = null;
   private completionReviewWordIds: Set<string> | null = null;
+  // Unique words in the order they first reach full initial mastery. A later
+  // review failure and re-mastery never re-adds or reorders an entry, so a
+  // word can belong to at most one checkpoint group for this lesson attempt.
+  private readonly checkpointEligibleOrder: string[] = [];
+  private readonly checkpointEligibleWordIds = new Set<string>();
+  private servedCheckpointGroupCount = 0;
+  private pendingCheckpointWordIds: string[] | null = null;
 
   constructor(
     words: readonly VocabularyLessonWord[],
@@ -88,6 +97,13 @@ export class VocabularyLessonState {
     if (this.recapVisible) {
       this.recapVisible = false;
       this.pendingRecap = null;
+    }
+
+    if (this.pendingCheckpointWordIds) {
+      const wordIds = this.pendingCheckpointWordIds;
+      this.pendingCheckpointWordIds = null;
+      this.servedCheckpointGroupCount += 1;
+      return { kind: "word-search-checkpoint", wordIds };
     }
 
     if (this.introductionPhase) {
@@ -274,6 +290,32 @@ export class VocabularyLessonState {
       progress.nextReviewQuestionNumber =
         this.gradedAnswerCount + DELAYED_REVIEW_ANSWER_COUNT;
       this.completionReviewWordIds?.add(wordId);
+      this.registerCheckpointEligibility(wordId);
+    }
+  }
+
+  // Called the first time a word ever reaches full initial mastery. Later
+  // review failure and re-mastery must not re-enter it into a new group.
+  private registerCheckpointEligibility(wordId: string): void {
+    if (this.checkpointEligibleWordIds.has(wordId)) {
+      return;
+    }
+
+    this.checkpointEligibleWordIds.add(wordId);
+    this.checkpointEligibleOrder.push(wordId);
+
+    const completedGroups = Math.floor(
+      this.checkpointEligibleOrder.length / WORD_SEARCH_CHECKPOINT_GROUP_SIZE
+    );
+    if (
+      completedGroups > this.servedCheckpointGroupCount &&
+      !this.pendingCheckpointWordIds
+    ) {
+      const start = this.servedCheckpointGroupCount * WORD_SEARCH_CHECKPOINT_GROUP_SIZE;
+      this.pendingCheckpointWordIds = this.checkpointEligibleOrder.slice(
+        start,
+        start + WORD_SEARCH_CHECKPOINT_GROUP_SIZE
+      );
     }
   }
 

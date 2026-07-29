@@ -1,13 +1,14 @@
 import "server-only";
 
 import { randomInt as secureRandomInt, randomUUID } from "node:crypto";
-import { getWordList } from "../data/getWordList";
+import { getWordList, type VocabularyWord } from "../data/getWordList";
 import { getVocabularyPublicChoiceId } from "../data/getVocabularyPublicChoiceId";
 import type {
   VocabularyChoice,
   VocabularyContentResponse,
   VocabularyScreenContentType,
 } from "../data/vocabularyContentTypes";
+import { WORD_SEARCH_CHECKPOINT_GROUP_SIZE } from "../data/vocabularyContentTypes";
 import type { AuthorizedVocabularyContent } from "./VocabularyContentCapabilityStore";
 
 export type AuthorizedVocabularyContentRequest = AuthorizedVocabularyContent & {
@@ -17,7 +18,10 @@ export type AuthorizedVocabularyContentRequest = AuthorizedVocabularyContent & {
 export type CanonicalVocabularyContentRequest = {
   contentType: VocabularyScreenContentType;
   wordListId: string;
-  wordId: string;
+  // Required for every content type except word-search-checkpoint, which
+  // projects a group of words through wordIds instead of a single wordId.
+  wordId?: string;
+  wordIds?: string[];
   exampleIndex?: number;
 };
 
@@ -35,6 +39,13 @@ export function getVocabularyContent<
   const words = getWordList(request.wordListId);
   if (!words) {
     return null;
+  }
+
+  if (request.contentType === "word-search-checkpoint") {
+    return getVocabularyWordSearchCheckpointContent(request, words) as Extract<
+      VocabularyContentResponse,
+      { contentType: Request["contentType"] }
+    >;
   }
 
   const word = words.find((candidate) => candidate.id === request.wordId);
@@ -125,6 +136,36 @@ export function getVocabularyContent<
         { contentType: Request["contentType"] }
       >;
   }
+}
+
+function getVocabularyWordSearchCheckpointContent(
+  request:
+    | AuthorizedVocabularyContentRequest
+    | CanonicalVocabularyContentRequest,
+  words: VocabularyWord[]
+): VocabularyContentResponse | null {
+  const wordIds = "wordIds" in request ? request.wordIds : undefined;
+  if (!wordIds || wordIds.length !== WORD_SEARCH_CHECKPOINT_GROUP_SIZE) {
+    return null;
+  }
+
+  const checkpointWords: string[] = [];
+  for (const wordId of wordIds) {
+    const word = words.find((candidate) => candidate.id === wordId);
+    if (!word) {
+      return null;
+    }
+    checkpointWords.push(word.word);
+  }
+
+  const nextCapability =
+    "nextCapability" in request ? request.nextCapability : randomUUID();
+
+  return {
+    contentType: "word-search-checkpoint",
+    nextCapability,
+    words: checkpointWords,
+  };
 }
 
 function shuffledPublicChoices(

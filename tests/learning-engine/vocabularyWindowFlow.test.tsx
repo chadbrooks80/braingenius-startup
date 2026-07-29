@@ -14,6 +14,7 @@ import { createDefinitionDisplayScreenRequest } from "../../src/learning-modules
 import { createDefinitionFunFactScreenRequest } from "../../src/learning-modules/vocabulary/screens/definitionFunFactScreen";
 import { createSpellingScreenRequest } from "../../src/learning-modules/vocabulary/screens/spellingScreen";
 import { createAnswerRecapScreenRequest } from "../../src/learning-modules/vocabulary/screens/answerRecapScreen";
+import { createWordSearchCheckpointScreenRequest } from "../../src/learning-modules/vocabulary/screens/wordSearchCheckpointScreen";
 import type { ActiveScreen, AnswerFeedback } from "../../src/types/learning";
 
 const DISPLAY = getVocabularyContent({
@@ -90,6 +91,88 @@ test("vocabulary screen builders preserve props and declarative speech queues", 
     text: [RECAP.word, RECAP.definition, RECAP.exampleSentence],
     tts: vocabularyTts,
   });
+});
+
+test("the Word Search checkpoint screen builder projects an ungraded, bounds-validated puzzle", () => {
+  const screen = createWordSearchCheckpointScreenRequest({
+    contentType: "word-search-checkpoint",
+    nextCapability: "00000000-0000-4000-8000-000000000001",
+    words: ["brilliant", "cautious", "observe", "reluctant", "fortunate"],
+  });
+
+  assert.equal(screen.windowName, "word-search");
+  assert.deepEqual(screen.props.words, [
+    "brilliant",
+    "cautious",
+    "observe",
+    "reluctant",
+    "fortunate",
+  ]);
+  assert.equal(screen.props.emitCompletionAction, false);
+  assert.equal(typeof screen.props.gridSize, "number");
+  const gridSize = screen.props.gridSize as number;
+  assert.ok(gridSize >= 8 && gridSize <= 30);
+  assert.ok(gridSize >= "reluctant".length);
+  assert.equal(screen.speak, undefined);
+});
+
+test("the Word Search checkpoint screen builder accepts every 27-30 letter target at grid size 30", () => {
+  for (const length of [27, 28, 29, 30]) {
+    const longTarget = "q".repeat(length);
+    const screen = createWordSearchCheckpointScreenRequest({
+      contentType: "word-search-checkpoint",
+      nextCapability: "00000000-0000-4000-8000-000000000001",
+      words: [longTarget, "brilliant", "cautious", "observe", "fortunate"],
+    });
+
+    assert.equal(screen.props.gridSize, 30);
+    assert.deepEqual(screen.props.words, [
+      longTarget,
+      "brilliant",
+      "cautious",
+      "observe",
+      "fortunate",
+    ]);
+  }
+});
+
+test("the Word Search checkpoint screen builder rejects structurally incompatible groups before rendering", () => {
+  for (const core of [
+    ["MATH", "HAT", "AT"],
+    ["CATER", "LATER", "ATE"],
+    ["TEACH", "BEACH", "EACH"],
+  ]) {
+    assert.throws(
+      () =>
+        createWordSearchCheckpointScreenRequest({
+          contentType: "word-search-checkpoint",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          words: [...core, "observe", "fortunate"],
+        }),
+      /failed Word Search input validation/
+    );
+  }
+});
+
+test("the Word Search checkpoint screen builder rejects malformed checkpoint content", () => {
+  for (const words of [
+    ["brilliant", "cautious", "observe", "reluctant"],
+    ["brilliant", "BRILLIANT", "observe", "reluctant", "fortunate"],
+    ["brilliant", "cautious", "observe", "reluctant", ""],
+    ["brilliant", "cautious", "observe", "reluctant", "fort123"],
+    ["brilliant", "cautious", "observe", "reluctant", "x"],
+    ["brilliant", "cautious", "observe", "reluctant", "q".repeat(31)],
+  ]) {
+    assert.throws(
+      () =>
+        createWordSearchCheckpointScreenRequest({
+          contentType: "word-search-checkpoint",
+          nextCapability: "00000000-0000-4000-8000-000000000001",
+          words,
+        }),
+      /failed Word Search input validation/
+    );
+  }
 });
 
 test("screen changes reset feedback and ScreenRenderer injects live feedback after module props", () => {

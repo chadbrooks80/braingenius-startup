@@ -20,11 +20,11 @@ export type WordSearchPlacement = {
 export type WordSearchPuzzleRequest = {
   gridSize: number;
   words: string[];
+  attempt?: number;
 };
 
-// The response shape expected from the future AI puzzle action: a complete
-// square array of letter rows, the requested words, and the placement data
-// needed to verify learner selections.
+// A complete square array of locally generated letter rows, the requested
+// words, and the official placement data used to verify learner selections.
 export type WordSearchPuzzleResponse = {
   gridSize: number;
   rows: string[][];

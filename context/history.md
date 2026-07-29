@@ -472,3 +472,9 @@
 - Centralized Stripe checkout, subscription synchronization, and entitlement decisions in server-only billing modules; onboarding now advances from paid checkout only after Stripe verifies the session, payment, price, customer, and owning user
 - Added focused checkout-confirmation, webhook, entitlement, and onboarding regression coverage; updated billing, security, route, action, component, testing, and Stripe operations documentation
 - Verification and user approval passed
+
+## 2026-07-29 02:17
+
+- Completed word-search checkpoints on `feature/word-search-checkpoints`, adding an ungraded five-word reinforcement checkpoint after each Vocabulary mastery group
+- Added the shared subject-neutral input contract, deterministic exact-occurrence puzzle generation, official-placement matching, duplicate recovery, retry reseeding, touch/keyboard accessibility, narrow-screen support, and secure checkpoint content/state integration
+- Verified the Vocabulary progression and real route, Word Search playground interactions, focused unit/integration coverage, lint, and production build; audit and user approval passed

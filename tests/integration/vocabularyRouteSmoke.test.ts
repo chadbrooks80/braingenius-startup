@@ -48,6 +48,8 @@ test("real Vocabulary route/module flow reaches completion through real content 
   let recoveredFailedWord = false;
   let failedWord: string | null = null;
   let sawReplacementAfterInitialPool = false;
+  let checkpointCount = 0;
+  const checkpointWords = new Set<string>();
   let current = await engine.next();
 
   for (let guard = 0; guard < 10_000; guard += 1) {
@@ -63,6 +65,8 @@ test("real Vocabulary route/module flow reaches completion through real content 
       assert.equal(failedReview, true);
       assert.equal(recoveredFailedWord, true);
       assert.equal(sawReplacementAfterInitialPool, true);
+      assert.equal(checkpointCount, 4);
+      assert.equal(checkpointWords.size, 20);
       assert.equal(current.props.totalWords, undefined);
       const stats = current.props.stats as Array<{
         label: string;
@@ -140,6 +144,22 @@ test("real Vocabulary route/module flow reaches completion through real content 
       current = await engine.next();
       assert.equal(current.windowName, "answer-recap");
       assert.equal(engine.answerFeedback, null);
+      continue;
+    }
+
+    if (current.windowName === "word-search") {
+      checkpointCount += 1;
+      assert.equal(current.props.emitCompletionAction, false);
+      const words = current.props.words as string[];
+      assert.equal(words.length, 5);
+      for (const word of words) {
+        assert.ok(
+          !checkpointWords.has(word),
+          `Checkpoint word "${word}" was already served in an earlier checkpoint.`
+        );
+        checkpointWords.add(word);
+      }
+      current = await engine.next();
       continue;
     }
 

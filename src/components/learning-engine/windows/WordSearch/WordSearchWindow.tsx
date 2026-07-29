@@ -9,13 +9,16 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   type Ref,
+  type TouchEvent,
 } from "react";
 import Button from "@/components/ui/Button";
 import { LearningWindowShell } from "@/components/learning-engine/LearningWindowShell";
 import type { OnAction } from "@/types/learning";
 import { generateWordList } from "./generateWordList";
 import {
+  getWordSearchPuzzleKey,
   parseWordSearchWindowProps,
+  reportDuplicateWordSearchInputOnce,
   type ParsedWordSearchWindowProps,
   type ParsedWordSearchWord,
 } from "./parseWordSearchWindowProps";
@@ -62,6 +65,11 @@ export type WordSearchWindowProps = {
   instructions?: string;
   actionLabel?: string;
   onAction: OnAction;
+  // Ungraded reinforcement consumers (e.g. Vocabulary's mastery checkpoint)
+  // set this to false so puzzle completion never reaches a graded
+  // submitAnswer handler. Advancing still happens only through the Next
+  // button's separate "next" action once every word is found.
+  emitCompletionAction?: boolean;
   // Optional seams for the playground and tests only. Learning modules never
   // supply these: generatePuzzle defaults to the temporary generateWordList
   // boundary, and the initial* seeds preset presentation states.
@@ -77,9 +85,7 @@ export function WordSearchWindow(props: WordSearchWindowProps) {
     gridSize: props.gridSize,
     words: props.words,
   });
-  const puzzleKey = `${parsedProps.gridSize}:${parsedProps.words
-    .map((word) => word.normalized)
-    .join(",")}`;
+  const puzzleKey = getWordSearchPuzzleKey(parsedProps);
 
   // Remounting per puzzle drops in-flight generations and interaction state
   // whenever the requested puzzle changes.
@@ -101,6 +107,7 @@ function WordSearchPuzzleSession({
   instructions = DEFAULT_INSTRUCTIONS,
   actionLabel = DEFAULT_ACTION_LABEL,
   onAction,
+  emitCompletionAction = true,
   generatePuzzle,
   initialFoundWords,
   initialSelection,
@@ -115,6 +122,7 @@ function WordSearchPuzzleSession({
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
   const completionEmittedRef = useRef(false);
+  const lastReportedDuplicateEventRef = useRef<string | null>(null);
 
   const generate = generatePuzzle ?? generateWordList;
   const puzzle = loadState.status === "ready" ? loadState.puzzle : null;
@@ -140,6 +148,13 @@ function WordSearchPuzzleSession({
   const activeInteraction = interaction ?? initialInteraction;
 
   useEffect(() => {
+    reportDuplicateWordSearchInputOnce(
+      parsedProps.duplicateNormalizedWords,
+      lastReportedDuplicateEventRef
+    );
+  }, [parsedProps.duplicateNormalizedWords]);
+
+  useEffect(() => {
     if (loadState.status !== "loading") {
       return;
     }
@@ -153,6 +168,7 @@ function WordSearchPuzzleSession({
     generate({
       gridSize: parsedProps.gridSize,
       words: parsedProps.words.map((word) => word.normalized),
+      attempt,
     }).then(
       (generated) => {
         if (!stale) {
@@ -177,6 +193,7 @@ function WordSearchPuzzleSession({
 
   useEffect(() => {
     if (
+      !emitCompletionAction ||
       !activeInteraction ||
       !shouldEmitWordSearchCompletion({
         activeComplete: activeInteraction.complete,
@@ -192,7 +209,13 @@ function WordSearchPuzzleSession({
       "submitAnswer",
       buildWordSearchCompletionPayload(parsedProps.words, activeInteraction)
     );
-  }, [activeInteraction, initialInteraction, onAction, parsedProps]);
+  }, [
+    activeInteraction,
+    initialInteraction,
+    onAction,
+    parsedProps,
+    emitCompletionAction,
+  ]);
 
   function updateInteraction(
     transition: (state: WordSearchInteractionState) => WordSearchInteractionState
@@ -211,6 +234,10 @@ function WordSearchPuzzleSession({
   }
 
   function handleGridPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
     const cell = cellFromEventTarget(event.target);
 
     if (!cell || !puzzle) {
@@ -223,11 +250,13 @@ function WordSearchPuzzleSession({
   }
 
   function handleGridPointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (activeInteraction?.phase !== "dragging") {
+    if (event.pointerType === "touch") {
       return;
     }
 
-    autoScrollPuzzleArea(scrollAreaRef.current, event.clientX, event.clientY);
+    if (activeInteraction?.phase !== "dragging") {
+      return;
+    }
 
     const cell = cellFromEventTarget(
       document.elementFromPoint(event.clientX, event.clientY)
@@ -236,15 +265,68 @@ function WordSearchPuzzleSession({
     if (cell) {
       updateInteraction((state) => dragWordSearchToCell(state, cell));
     }
+
+    autoScrollPuzzleArea(scrollAreaRef.current, event.clientX, event.clientY);
   }
 
-  function handleGridPointerUp() {
+  function handleGridPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
     if (puzzle) {
       updateInteraction((state) => releaseWordSearchPress(state, puzzle));
     }
   }
 
-  function handleGridPointerCancel() {
+  function handleGridPointerCancel(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
+    updateInteraction(cancelWordSearchSelection);
+  }
+
+  function handleGridTouchStart(event: TouchEvent<HTMLDivElement>) {
+    const cell = cellFromEventTarget(event.target);
+
+    if (!cell || !puzzle) {
+      return;
+    }
+
+    setCursor(cell);
+    updateInteraction((state) => pressWordSearchCell(state, cell));
+  }
+
+  function handleGridTouchMove(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+
+    if (!touch || activeInteraction?.phase !== "dragging") {
+      return;
+    }
+
+    const cell = cellFromEventTarget(
+      document.elementFromPoint(touch.clientX, touch.clientY)
+    );
+
+    if (cell) {
+      updateInteraction((state) => dragWordSearchToCell(state, cell));
+    }
+
+    autoScrollPuzzleArea(
+      scrollAreaRef.current,
+      touch.clientX,
+      touch.clientY
+    );
+  }
+
+  function handleGridTouchEnd() {
+    if (puzzle) {
+      updateInteraction((state) => releaseWordSearchPress(state, puzzle));
+    }
+  }
+
+  function handleGridTouchCancel() {
     updateInteraction(cancelWordSearchSelection);
   }
 
@@ -315,6 +397,10 @@ function WordSearchPuzzleSession({
       onGridPointerMove={handleGridPointerMove}
       onGridPointerUp={handleGridPointerUp}
       onGridPointerCancel={handleGridPointerCancel}
+      onGridTouchStart={handleGridTouchStart}
+      onGridTouchMove={handleGridTouchMove}
+      onGridTouchEnd={handleGridTouchEnd}
+      onGridTouchCancel={handleGridTouchCancel}
       onGridKeyDown={handleGridKeyDown}
       onGridFocus={handleGridFocus}
       onRetry={() => {
@@ -342,6 +428,10 @@ export type WordSearchWindowViewProps = {
   onGridPointerMove?: (event: PointerEvent<HTMLDivElement>) => void;
   onGridPointerUp?: (event: PointerEvent<HTMLDivElement>) => void;
   onGridPointerCancel?: (event: PointerEvent<HTMLDivElement>) => void;
+  onGridTouchStart?: (event: TouchEvent<HTMLDivElement>) => void;
+  onGridTouchMove?: (event: TouchEvent<HTMLDivElement>) => void;
+  onGridTouchEnd?: (event: TouchEvent<HTMLDivElement>) => void;
+  onGridTouchCancel?: (event: TouchEvent<HTMLDivElement>) => void;
   onGridKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   onGridFocus?: (event: FocusEvent<HTMLDivElement>) => void;
   onRetry: () => void;
@@ -363,6 +453,10 @@ export function WordSearchWindowView({
   onGridPointerMove,
   onGridPointerUp,
   onGridPointerCancel,
+  onGridTouchStart,
+  onGridTouchMove,
+  onGridTouchEnd,
+  onGridTouchCancel,
   onGridKeyDown,
   onGridFocus,
   onRetry,
@@ -415,15 +509,18 @@ export function WordSearchWindowView({
         <>
           <div
             ref={scrollAreaRef}
-            className="overflow-auto max-h-[60vh] rounded-2xl p-3 border bg-primary/(--alpha-subtle) border-primary/(--alpha-medium)"
+            className="max-h-[60vh] overflow-auto overscroll-contain rounded-2xl border border-primary/(--alpha-medium) bg-primary/(--alpha-subtle) p-3"
           >
             <div
-              className="relative w-fit mx-auto select-none"
-              style={{ touchAction: "none" }}
+              className="relative mx-auto w-fit touch-none select-none"
               onPointerDown={onGridPointerDown}
               onPointerMove={onGridPointerMove}
               onPointerUp={onGridPointerUp}
               onPointerCancel={onGridPointerCancel}
+              onTouchStart={onGridTouchStart}
+              onTouchMove={onGridTouchMove}
+              onTouchEnd={onGridTouchEnd}
+              onTouchCancel={onGridTouchCancel}
               onKeyDown={onGridKeyDown}
               onFocus={onGridFocus}
             >
@@ -450,7 +547,7 @@ export function WordSearchWindowView({
                           }
                           tabIndex={isCursor ? 0 : -1}
                           aria-selected={isSelected}
-                          aria-label={`Row ${row + 1}, column ${col + 1}, letter ${letter}${isFound ? ", found word" : ""}`}
+                          aria-label={`Row ${row + 1}, column ${col + 1}, letter ${letter}${isSelected ? ", selected" : ""}${isFound ? ", found word" : ""}`}
                           className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center border text-sm font-bold uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-strong motion-safe:transition-colors sm:h-10 sm:w-10 sm:text-base ${getCellClass(isSelected, isFound)}`}
                         >
                           {letter}
@@ -483,7 +580,9 @@ export function WordSearchWindowView({
 
           <div className="mt-4 flex items-center justify-between gap-4">
             <p
+              role="status"
               aria-live="polite"
+              aria-atomic="true"
               className={`text-sm font-semibold ${complete ? "text-secondary-strong" : "text-muted"}`}
             >
               {getStatusMessage(interaction, words)}

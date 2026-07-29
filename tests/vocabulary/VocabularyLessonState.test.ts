@@ -32,34 +32,26 @@ test("introduces the first five active words in fixture order before practice", 
   assert.equal(step.kind, "definition-practice");
 });
 
-test("definition and spelling streaks master independently and reset only their own stage", () => {
+test("one correct definition and one correct spelling master independently", () => {
   const word = HANDLES[0];
   const state = new VocabularyLessonState([word], () => 0);
   let step = finishIntroductions(state, 1);
 
   step = answerAndAdvance(state, step, true);
-  step = answerAndAdvance(state, step, true);
-  assert.equal(state.getWordProgress(word.id).definitionConsecutiveCorrect, 2);
-
-  step = answerAndAdvance(state, step, false);
-  assert.equal(state.getWordProgress(word.id).definitionConsecutiveCorrect, 0);
-
-  for (let count = 0; count < 3; count += 1) {
-    step = answerAndAdvance(state, step, true);
-  }
-  assert.equal(state.getWordProgress(word.id).definitionMastered, true);
+  let progress = state.getWordProgress(word.id);
+  assert.equal(progress.definitionConsecutiveCorrect, 1);
+  assert.equal(progress.definitionMastered, true);
   assert.equal(step.kind, "spelling-practice");
 
-  step = answerAndAdvance(state, step, true);
-  step = answerAndAdvance(state, step, true);
   step = answerAndAdvance(state, step, false);
-  assert.equal(state.getWordProgress(word.id).definitionMastered, true);
-  assert.equal(state.getWordProgress(word.id).spellingConsecutiveCorrect, 0);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.definitionMastered, true);
+  assert.equal(progress.spellingConsecutiveCorrect, 0);
+  assert.equal(progress.spellingMastered, false);
 
-  for (let count = 0; count < 3; count += 1) {
-    step = answerAndAdvance(state, step, true);
-  }
-  const progress = state.getWordProgress(word.id);
+  step = answerAndAdvance(state, step, true);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.spellingConsecutiveCorrect, 1);
   assert.equal(progress.spellingMastered, true);
   assert.equal(
     progress.nextReviewQuestionNumber,
@@ -267,6 +259,7 @@ test("always-correct 20-word flow inserts a recap after every answer, replaces m
   let answerCount = 0;
   let recapCount = 0;
   let reviewCount = 0;
+  let checkpointCount = 0;
   const introduced = new Set<string>();
 
   for (let guard = 0; guard < 5_000; guard += 1) {
@@ -276,6 +269,7 @@ test("always-correct 20-word flow inserts a recap after every answer, replaces m
       assert.equal(recapCount, answerCount);
       assert.equal(introduced.size, 20);
       assert.ok(reviewCount > 0);
+      assert.equal(checkpointCount, 4);
       return;
     }
 
@@ -293,6 +287,12 @@ test("always-correct 20-word flow inserts a recap after every answer, replaces m
       step = state.next();
       continue;
     }
+    if (step.kind === "word-search-checkpoint") {
+      checkpointCount += 1;
+      assert.equal(step.wordIds.length, 5);
+      step = state.next();
+      continue;
+    }
 
     if (step.review) {
       reviewCount += 1;
@@ -304,6 +304,264 @@ test("always-correct 20-word flow inserts a recap after every answer, replaces m
 
   assert.fail("The always-correct lesson did not complete within the guard.");
 });
+
+test("checkpoints appear for unique mastered words 1-5, 6-10, 11-15, and 16-20, each served once directly after its mastering recap", () => {
+  const state = new VocabularyLessonState(HANDLES, deterministicRandom());
+  const { checkpoints, precedingKinds, finalStep } = driveVocabularyLesson(
+    state
+  );
+  const firstMasteryOrder = getCheckpointEligibleOrder(state);
+  const expectedGroups = Array.from({ length: 4 }, (unused, index) =>
+    firstMasteryOrder.slice(index * 5, index * 5 + 5)
+  );
+
+  assert.equal(checkpoints.length, 4);
+  for (const kind of precedingKinds) {
+    assert.equal(kind, "answer-recap");
+  }
+  assert.deepEqual(
+    checkpoints.map((checkpoint) => checkpoint.wordIds),
+    expectedGroups
+  );
+  assert.deepEqual(firstMasteryOrder, checkpoints.flatMap(({ wordIds }) => wordIds));
+  assert.equal(new Set(firstMasteryOrder).size, 20);
+  assert.equal(finalStep.kind, "lesson-complete");
+});
+
+test("the checkpoint after the fifth mastered word appears immediately after that word's answer recap and gates progress", () => {
+  const words = HANDLES.slice(0, 5);
+  const state = new VocabularyLessonState(words, deterministicRandom());
+  const { checkpoints, precedingKinds, finalStep } = driveVocabularyLesson(
+    state
+  );
+
+  assert.equal(checkpoints.length, 1);
+  assert.equal(precedingKinds[0], "answer-recap");
+  assert.equal(checkpoints[0].wordIds.length, 5);
+  assert.deepEqual(
+    new Set(checkpoints[0].wordIds),
+    new Set(words.map((word) => word.id))
+  );
+  assert.equal(finalStep.kind, "lesson-complete");
+});
+
+test("no checkpoint appears when fewer than five unique words can reach full mastery", () => {
+  const state = new VocabularyLessonState(HANDLES.slice(0, 4), () => 0);
+  const { checkpoints, finalStep } = driveVocabularyLesson(state);
+
+  assert.equal(checkpoints.length, 0);
+  assert.equal(finalStep.kind, "lesson-complete");
+});
+
+test("a failed review resets mastery but the word keeps its assigned group and cannot enter a later checkpoint", () => {
+  const words = HANDLES.slice(0, 10);
+  const state = new VocabularyLessonState(words, deterministicRandom());
+
+  const phase1 = driveVocabularyLesson(state, { stopAfterCheckpoints: 1 });
+  assert.equal(phase1.checkpoints.length, 1);
+  const group1WordIds = phase1.checkpoints[0].wordIds;
+  assert.equal(group1WordIds.length, 5);
+
+  const resetWordId = group1WordIds[0];
+  assert.equal(state.getWordProgress(resetWordId).spellingMastered, true);
+
+  // Force the delayed review due immediately instead of waiting for the
+  // normal 30-answer delay, then fail it exactly once during phase two.
+  setProgress(state, resetWordId, {
+    reviewStage: "definition-pending",
+    nextReviewQuestionNumber: null,
+  });
+
+  let reviewFailed = false;
+  const phase2 = driveVocabularyLesson(state, {
+    initialStep: phase1.finalStep,
+    decideCorrect: (step) => {
+      if (!reviewFailed && step.review && step.wordId === resetWordId) {
+        reviewFailed = true;
+        return false;
+      }
+      return true;
+    },
+  });
+
+  assert.equal(reviewFailed, true, "expected the forced review to occur");
+  assert.equal(state.getWordProgress(resetWordId).spellingMastered, true);
+  assert.equal(phase2.checkpoints.length, 1);
+
+  const group2WordIds = phase2.checkpoints[0].wordIds;
+  assert.equal(group2WordIds.length, 5);
+  assert.ok(!group2WordIds.includes(resetWordId));
+
+  const allWordIds = [...group1WordIds, ...group2WordIds];
+  assert.equal(new Set(allWordIds).size, 10);
+  assert.deepEqual(new Set(allWordIds), new Set(words.map((word) => word.id)));
+  assert.equal(phase2.finalStep.kind, "lesson-complete");
+});
+
+test("a served checkpoint cannot be queued again by repeated eligibility recomputation within one attempt", () => {
+  const state = new VocabularyLessonState(
+    HANDLES.slice(0, 10),
+    deterministicRandom()
+  );
+  const checkpoint = driveToNextCheckpoint(state);
+  const internal = state as unknown as {
+    registerCheckpointEligibility(wordId: string): void;
+    pendingCheckpointWordIds: string[] | null;
+    servedCheckpointGroupCount: number;
+  };
+
+  assert.equal(internal.servedCheckpointGroupCount, 1);
+  for (const wordId of checkpoint.wordIds) {
+    internal.registerCheckpointEligibility(wordId);
+    internal.registerCheckpointEligibility(wordId);
+  }
+
+  assert.equal(internal.pendingCheckpointWordIds, null);
+  assert.notEqual(state.next().kind, "word-search-checkpoint");
+});
+
+test("checkpoint advancement leaves mastery, stats, streaks, and review scheduling unchanged", () => {
+  const words = HANDLES.slice(0, 10);
+  const state = new VocabularyLessonState(words, deterministicRandom());
+  driveToNextCheckpoint(state);
+  const before = snapshotAuthoritativeLearningState(state, words);
+
+  const nextStep = state.next();
+
+  assert.notEqual(nextStep.kind, "word-search-checkpoint");
+  assert.deepEqual(snapshotAuthoritativeLearningState(state, words), before);
+  assert.equal("reward" in (state as unknown as Record<string, unknown>), false);
+  assert.equal("rewards" in (state as unknown as Record<string, unknown>), false);
+});
+
+function deterministicRandom(): () => number {
+  let seed = 42;
+  return () => {
+    seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+    return seed / 4_294_967_296;
+  };
+}
+
+type CheckpointRecord = { wordIds: string[] };
+
+type DriveVocabularyLessonOptions = {
+  initialStep?: VocabularyLessonStep;
+  stopAfterCheckpoints?: number;
+  guard?: number;
+  decideCorrect?: (
+    step: Extract<
+      VocabularyLessonStep,
+      { kind: "definition-practice" | "spelling-practice" }
+    >
+  ) => boolean;
+};
+
+// Drives an always-correct-by-default lesson, recording every Word Search
+// checkpoint and the step kind that immediately preceded it. Resumable via
+// `initialStep` so a test can perform direct state surgery (e.g. forcing a
+// review due) between two drive phases without skipping a step.
+function driveVocabularyLesson(
+  state: VocabularyLessonState,
+  options: DriveVocabularyLessonOptions = {}
+): {
+  checkpoints: CheckpointRecord[];
+  finalStep: VocabularyLessonStep;
+  precedingKinds: string[];
+} {
+  const decideCorrect = options.decideCorrect ?? (() => true);
+  const checkpoints: CheckpointRecord[] = [];
+  const precedingKinds: string[] = [];
+  let step = options.initialStep ?? state.next();
+  let lastKind: string = step.kind;
+  const guard = options.guard ?? 5_000;
+
+  for (let iteration = 0; iteration < guard; iteration += 1) {
+    if (step.kind === "lesson-complete") {
+      return { checkpoints, finalStep: step, precedingKinds };
+    }
+
+    if (step.kind === "word-search-checkpoint") {
+      checkpoints.push({ wordIds: step.wordIds });
+      precedingKinds.push(lastKind);
+      lastKind = step.kind;
+      step = state.next();
+      if (
+        options.stopAfterCheckpoints !== undefined &&
+        checkpoints.length >= options.stopAfterCheckpoints
+      ) {
+        return { checkpoints, finalStep: step, precedingKinds };
+      }
+      continue;
+    }
+
+    if (
+      step.kind === "definition-display" ||
+      step.kind === "definition-fun-fact" ||
+      step.kind === "answer-recap"
+    ) {
+      lastKind = step.kind;
+      step = state.next();
+      continue;
+    }
+
+    submitAnswer(state, step, decideCorrect(step));
+    lastKind = step.kind;
+    step = state.next();
+  }
+
+  throw new Error("Vocabulary lesson driver did not finish within guard.");
+}
+
+function driveToNextCheckpoint(
+  state: VocabularyLessonState
+): Extract<VocabularyLessonStep, { kind: "word-search-checkpoint" }> {
+  let step = state.next();
+
+  for (let iteration = 0; iteration < 5_000; iteration += 1) {
+    if (step.kind === "word-search-checkpoint") {
+      return step;
+    }
+    if (step.kind === "lesson-complete") {
+      throw new Error("Lesson completed before a checkpoint appeared.");
+    }
+    if (
+      step.kind === "definition-display" ||
+      step.kind === "definition-fun-fact" ||
+      step.kind === "answer-recap"
+    ) {
+      step = state.next();
+      continue;
+    }
+
+    submitAnswer(state, step, true);
+    step = state.next();
+  }
+
+  throw new Error("Vocabulary checkpoint did not appear within the guard.");
+}
+
+function getCheckpointEligibleOrder(state: VocabularyLessonState): string[] {
+  const internal = state as unknown as {
+    checkpointEligibleOrder: string[];
+  };
+  return [...internal.checkpointEligibleOrder];
+}
+
+function snapshotAuthoritativeLearningState(
+  state: VocabularyLessonState,
+  words: readonly { id: string }[]
+): {
+  stats: ReturnType<VocabularyLessonState["getStats"]>;
+  progress: Array<{ wordId: string; value: VocabularyWordProgress }>;
+} {
+  return {
+    stats: state.getStats(),
+    progress: words.map((word) => ({
+      wordId: word.id,
+      value: state.getWordProgress(word.id),
+    })),
+  };
+}
 
 function finishIntroductions(
   state: VocabularyLessonState,
