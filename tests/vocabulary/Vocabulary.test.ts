@@ -6,11 +6,58 @@ import Vocabulary, {
 import type { ScreenRequest } from "../../src/types/learning";
 import type { VocabularyContentRequest } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
 import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
+import { LearningRouteError } from "../../src/lib/learning-engine/errors/LearningRouteError";
 import {
   createInProcessVocabularyApi,
   getServerCorrectChoiceId,
   getServerSpellingAnswer,
 } from "./testVocabularyApi";
+
+test("constructor rejects a route without a list ID using the module-owned error", () => {
+  assert.throws(
+    () => new Vocabulary([]),
+    (error: unknown) =>
+      matchesVocabularyRouteError(error, {
+        kind: "MODULE_RESOURCE_MISSING",
+        code: "VOCABULARY_LIST_ID_MISSING",
+        message: "Vocabulary route omitted the required word-list ID.",
+      })
+  );
+});
+
+test("constructor rejects extra route variables using the module-owned error", () => {
+  assert.throws(
+    () => new Vocabulary(["word_list_id", "unexpected"]),
+    (error: unknown) =>
+      matchesVocabularyRouteError(error, {
+        kind: "INVALID_MODULE_ROUTE",
+        code: "VOCABULARY_ROUTE_INVALID",
+        message:
+          "Vocabulary route contains unexpected extra path segments.",
+      })
+  );
+});
+
+test("initialize rejects an unknown list using the module-owned error", async () => {
+  const baseApi = createInProcessVocabularyApi();
+  const api: VocabularyModuleApi = {
+    ...baseApi,
+    async loadContent() {
+      return null;
+    },
+  };
+  const vocabulary = new Vocabulary(["missing-word-list"], () => 0, api);
+
+  await assert.rejects(
+    vocabulary.initialize(),
+    (error: unknown) =>
+      matchesVocabularyRouteError(error, {
+        kind: "MODULE_RESOURCE_NOT_FOUND",
+        code: "VOCABULARY_LIST_NOT_FOUND",
+        message: "Vocabulary word list not found: missing-word-list",
+      })
+  );
+});
 
 test("real browser request bodies use only screen-specific capabilities for every content projection", async () => {
   const requests: VocabularyContentRequest[] = [];
@@ -390,6 +437,22 @@ async function requireScreen(
     throw new Error("Expected a screen request.");
   }
   return screen;
+}
+
+function matchesVocabularyRouteError(
+  error: unknown,
+  expected: {
+    kind: LearningRouteError["kind"];
+    code: string;
+    message: string;
+  }
+): boolean {
+  assert.ok(error instanceof LearningRouteError);
+  assert.equal(error.source, "module");
+  assert.equal(error.kind, expected.kind);
+  assert.equal(error.code, expected.code);
+  assert.equal(error.message, expected.message);
+  return true;
 }
 
 async function advanceVocabularyToWordSearchCheckpoint(

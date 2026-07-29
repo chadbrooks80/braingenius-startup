@@ -17,16 +17,25 @@ The current ownership rule is: the route hosts, the Learning Engine coordinates,
 - converting `ScreenRequest` into an `ActiveScreen`;
 - resetting feedback and speech when screens change;
 - injecting live `onAction`, feedback, and speech state;
-- learner-safe known route errors;
+- the subject-neutral route-error envelope, structured logging, terminal
+  rendering, recovery, and engine-generic safe presentations;
 - shared speech parsing, playback, cancellation, and providers.
 
 Only the registry resolves a `LearningWindowName` to React. Only `changeLearningEngineScreen` applies a `ScreenRequest`. The engine does not interpret Vocabulary answer payloads.
+
+Learning modules own their diagnostic codes, route-failure meaning, and
+learner-safe module-specific presentations. A module error travels through the
+shared `LearningRouteError` envelope, but the engine treats its code as opaque:
+it logs the neutral classification and technical details, then renders the
+already-approved presentation without deriving text or branching on the code.
 
 ## Module-owned work
 
 `src/learning-modules/vocabulary/` implements `ActiveModule`. It owns:
 
 - the list route variable and initial manifest request;
+- Vocabulary route-error codes and safe presentations for missing, unknown,
+  and structurally invalid list routes;
 - subject-specific public projections and strict answer variants;
 - the `VocabularyLessonState` state machine;
 - the active five-word pool, introductions, attempt activation, mastery streaks, recaps, delayed reviews, and completion;
@@ -48,7 +57,7 @@ The shared engine implementation is divided by responsibility:
 
 - Lifecycle and registry: `src/lib/learning-engine/LearningEngine.ts`, `src/lib/learning-engine/LearningWindowRegistry.ts`.
 - Generic actions: `src/lib/learning-engine/actions/createLearningEngineActionHandlers.ts`.
-- Route and synthesis errors: `src/lib/learning-engine/errors/LearningRouteError.ts`, `src/lib/learning-engine/errors/TtsSynthesisError.ts`, `src/lib/learning-engine/errors/logLearningRouteError.ts`, `src/lib/learning-engine/errors/logTtsSynthesisError.ts`.
+- Route and synthesis errors: `src/lib/learning-engine/errors/LearningRouteError.ts`, `src/lib/learning-engine/errors/learningEngineRouteErrors.ts`, `src/lib/learning-engine/errors/TtsSynthesisError.ts`, `src/lib/learning-engine/errors/logLearningRouteError.ts`, `src/lib/learning-engine/errors/logTtsSynthesisError.ts`.
 - Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts`, `src/lib/learning-engine/initialization/validateModuleSettings.ts`.
 - Screen application: `src/lib/learning-engine/screens/changeLearningEngineScreen.ts`, `src/lib/learning-engine/screens/withSharedScreenProps.ts`.
 - State-setter validation: `src/lib/learning-engine/validation/requiredLearningEngineStateSetterKeys.ts`, `src/lib/learning-engine/validation/validateLearningEngineStateSetters.ts`.
@@ -56,6 +65,9 @@ The shared engine implementation is divided by responsibility:
 - Speech parsing: `src/lib/learning-engine/speech/validation/parseSpeakActionPayload.ts`, `src/lib/learning-engine/speech/validation/parseTtsConfiguration.ts`, `src/lib/learning-engine/speech/validation/parseTtsSynthesisRequest.ts`.
 - Provider policy and dispatch: `src/lib/learning-engine/speech/supportedTtsConfigurations.ts`, `src/lib/learning-engine/speech/providers/types.ts`, `src/lib/learning-engine/speech/providers/synthesizeTts.ts`.
 - Provider transport: `src/lib/learning-engine/speech/providers/fetchUpstreamOrThrow.ts`, `src/lib/learning-engine/speech/providers/fetchWithTimeout.ts`, `src/lib/learning-engine/speech/providers/google.ts`, `src/lib/learning-engine/speech/providers/googleAuth.ts`, `src/lib/learning-engine/speech/providers/lemonfox.ts`.
+
+Vocabulary-specific route errors are defined only in
+`src/learning-modules/vocabulary/errors/vocabularyRouteErrors.ts`.
 
 Window barrel files and local mechanics remain inside the window boundary:
 

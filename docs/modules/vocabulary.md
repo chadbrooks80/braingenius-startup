@@ -6,9 +6,16 @@ Vocabulary is loaded for `/learning/vocabulary/<wordListId>` by `src/lib/learnin
 
 `src/learning-modules/vocabulary/settings.json` enables the shared Learning Header and Sidebar. `Vocabulary` implements the shared `ActiveModule` contract and uses browser clients for the content and answer APIs.
 
+Vocabulary owns the structured errors for a missing list ID, an unknown list
+ID, and unexpected extra route segments, including each local diagnostic code
+and safe presentation. The shared engine transports and logs those errors,
+treats the Vocabulary codes as opaque, and renders the supplied safe
+presentation without interpreting it.
+
 ## Implementation inventory
 
 - Module entry, `Vocabulary` class, and default export: `src/learning-modules/vocabulary/index.ts`. Configuration and shared types: `src/learning-modules/vocabulary/settings.json`, `src/learning-modules/vocabulary/types.ts`.
+- Module-owned route errors: `src/learning-modules/vocabulary/errors/vocabularyRouteErrors.ts`.
 - Startup presentation: `src/learning-modules/vocabulary/components/Startup/VocabularyStartupContent.tsx`, `src/learning-modules/vocabulary/components/Startup/VocabularyStartupVisual.tsx`.
 - Browser/server data contracts: `src/learning-modules/vocabulary/data/vocabularyContentTypes.ts`, `src/learning-modules/vocabulary/data/loadVocabularyContent.ts`, `src/learning-modules/vocabulary/data/submitVocabularyAnswer.ts`, `src/learning-modules/vocabulary/data/evaluateVocabularyAnswer.ts`, `src/learning-modules/vocabulary/data/getVocabularyPublicChoiceId.ts`, `src/learning-modules/vocabulary/data/vocabularyTts.ts`.
 - Server-only content and resolution: `src/learning-modules/vocabulary/data/getWordList.ts`, `src/learning-modules/vocabulary/data/getCorrectAnswer.ts`.

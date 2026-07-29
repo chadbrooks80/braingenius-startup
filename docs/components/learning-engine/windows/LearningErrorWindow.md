@@ -4,7 +4,10 @@ Source: `src/components/learning-engine/windows/Error/LearningErrorWindow.tsx`
 
 ## Registry and ownership
 
-Registry key: `error`. Server-compatible terminal presentation for known `LearningRouteError` codes. The engine selects it and fixed error mappings supply safe text.
+Registry key: `error`. Server-compatible terminal presentation for a
+learner-safe `LearningRouteError` presentation that has already been approved
+by either the shared engine or the active learning module. The Window and
+engine do not derive text from a module diagnostic code.
 
 ## Props
 
@@ -25,11 +28,18 @@ Uses `<h1>`, paragraph, and keyboard-accessible Next Link. The safe message is v
 
 ## Security boundary
 
-Only fixed learner-safe presentations should be passed. Technical route error details remain in server/console logging and are not rendered.
+Only the presentation's `title` and `message` should be passed. Technical route
+details remain in structured logging and are not rendered. The Window stays
+subject-neutral regardless of whether the safe presentation originated in the
+engine or a learning module.
 
 ## Consumers, playground, and tests
 
-Selected by `LearningEngine.showLearningRouteError` and registered centrally. It is not in the current playground gallery. `tests/learning-engine/LearningErrorWindow.test.tsx` proves safe presentation and Return Home recovery.
+Selected by `LearningEngine.showLearningRouteError` and registered centrally.
+It is not in the current playground gallery.
+`tests/learning-engine/LearningErrorWindow.test.tsx` supplies an explicit safe
+presentation and proves rendering, diagnostic exclusion, and Return Home
+recovery without enumerating module codes.
 
 ## Usage
 

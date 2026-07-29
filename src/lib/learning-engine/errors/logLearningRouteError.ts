@@ -8,6 +8,8 @@ export function logLearningRouteError(
 ): void {
   console.warn("Learning route error", {
     event: "learning_route_error",
+    source: error.source,
+    kind: error.kind,
     code: error.code,
     moduleName,
     moduleVariables,

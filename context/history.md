@@ -1,3 +1,13 @@
+## 2026-07-29 13:09
+
+- Completed module-owned learning route errors on `fix/module-owned-learning-route-errors`, removing the vocabulary-specific error codes and presentations that the shared `LearningRouteError` used to hardcode
+- Reworked `src/lib/learning-engine/errors/LearningRouteError.ts` into a generic `source`/`kind`/`code`/`technicalMessage`/`presentation` contract carried on the error instance itself (`LearningEngine.ts` now renders `error.presentation` directly instead of looking it up via a shared code map)
+- Added `src/lib/learning-engine/errors/learningEngineRouteErrors.ts` (engine-owned errors, e.g. unknown module) and `src/learning-modules/vocabulary/errors/vocabularyRouteErrors.ts` (Vocabulary-owned errors: missing list ID, list not found, invalid route), each module constructing its own `LearningRouteError` instances via dedicated factory functions
+- Updated `loadLearningModule.ts` and `src/learning-modules/vocabulary/index.ts` to throw through their respective factories instead of instantiating `LearningRouteError` with module-specific codes directly
+- Updated `docs/architecture/learning-engine-and-module-boundaries.md`, `docs/components/learning-engine/windows/LearningErrorWindow.md`, and `docs/modules/vocabulary.md` to describe the module-owned error boundary
+- Added `tests/learning-engine/LearningEngineRouteErrors.test.ts` and `tests/vocabulary/vocabularyRouteErrors.test.ts`; updated `tests/learning-engine/LearningErrorWindow.test.tsx` and `tests/vocabulary/Vocabulary.test.ts` for the new error shape
+- Verification and user approval passed
+
 ## 2026-07-29 15:30
 
 - Completed account-authentication-consistency hardening on `fix/account-authentication-consistency`

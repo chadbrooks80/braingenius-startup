@@ -2,7 +2,7 @@ import type {
   LearningModuleConstructor,
   ModuleSettings,
 } from "@/types/learning";
-import { LearningRouteError } from "@/lib/learning-engine/errors/LearningRouteError";
+import { createLearningModuleNotFoundError } from "@/lib/learning-engine/errors/learningEngineRouteErrors";
 
 type LearningModuleImport = {
   ModuleConstructor: LearningModuleConstructor;
@@ -33,10 +33,7 @@ export async function loadLearningModule(
   const loadModule = SUPPORTED_LEARNING_MODULE_LOADERS[moduleName];
 
   if (!loadModule) {
-    throw new LearningRouteError(
-      "LEARNING_MODULE_NOT_FOUND",
-      `Unknown learning module requested: ${moduleName}`
-    );
+    throw createLearningModuleNotFoundError(moduleName);
   }
 
   return loadModule();

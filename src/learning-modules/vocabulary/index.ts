@@ -4,7 +4,11 @@ import type {
   AnswerFeedback,
   ScreenRequest,
 } from "@/types/learning";
-import { LearningRouteError } from "@/lib/learning-engine/errors/LearningRouteError";
+import {
+  createInvalidVocabularyRouteError,
+  createVocabularyListIdMissingError,
+  createVocabularyListNotFoundError,
+} from "./errors/vocabularyRouteErrors";
 import { createStartupProps } from "./screens/startupScreen";
 import { createMultipleChoiceScreenRequest } from "./screens/multipleChoiceScreen";
 import { createDefinitionDisplayScreenRequest } from "./screens/definitionDisplayScreen";
@@ -58,17 +62,11 @@ class Vocabulary implements ActiveModule {
     api: VocabularyModuleApi = DEFAULT_VOCABULARY_API
   ) {
     if (moduleVariables.length === 0) {
-      throw new LearningRouteError(
-        "VOCABULARY_LIST_ID_MISSING",
-        "Vocabulary route omitted the required word-list ID."
-      );
+      throw createVocabularyListIdMissingError();
     }
 
     if (moduleVariables.length > 1) {
-      throw new LearningRouteError(
-        "INVALID_LEARNING_ROUTE",
-        "Vocabulary route contains unexpected extra path segments."
-      );
+      throw createInvalidVocabularyRouteError();
     }
 
     this.wordListId = moduleVariables[0];
@@ -83,10 +81,7 @@ class Vocabulary implements ActiveModule {
     });
 
     if (!manifest) {
-      throw new LearningRouteError(
-        "VOCABULARY_LIST_NOT_FOUND",
-        `Vocabulary word list not found: ${this.wordListId}`
-      );
+      throw createVocabularyListNotFoundError(this.wordListId);
     }
 
     this.lessonState = new VocabularyLessonState(

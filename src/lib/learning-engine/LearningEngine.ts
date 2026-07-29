@@ -10,10 +10,7 @@ import { validateModuleSettings } from "@/lib/learning-engine/initialization/val
 import { validateLearningEngineStateSetters } from "@/lib/learning-engine/validation/validateLearningEngineStateSetters";
 import { createLearningEngineActionHandlers } from "@/lib/learning-engine/actions/createLearningEngineActionHandlers";
 import { changeLearningEngineScreen } from "@/lib/learning-engine/screens/changeLearningEngineScreen";
-import {
-  LearningRouteError,
-  getLearningRouteErrorPresentation,
-} from "@/lib/learning-engine/errors/LearningRouteError";
+import { LearningRouteError } from "@/lib/learning-engine/errors/LearningRouteError";
 import { logLearningRouteError } from "@/lib/learning-engine/errors/logLearningRouteError";
 
 class LearningEngine {
@@ -93,7 +90,7 @@ class LearningEngine {
     setters.setShowSidebar(false);
 
     changeLearningEngineScreen(
-      { windowName: "error", props: getLearningRouteErrorPresentation(error.code) },
+      { windowName: "error", props: error.presentation },
       setters,
       (actionId, payload = {}) => this.action(actionId, payload)
     );
