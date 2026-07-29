@@ -67,22 +67,23 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 ### `POST /api/learning/vocabulary/speech`
 
 - Source: `src/app/api/learning/vocabulary/speech/route.ts`, delegating to `src/learning-modules/vocabulary/server/handleVocabularySpeechRequest.ts`.
+- Auth: authenticated NextAuth session plus current Stage 1 entitlement (direct or child-inherited) through the shared paid TTS usage policy in `src/lib/learning-engine/speech/ttsUsageService.ts`; requests are classified `VOCABULARY_PROTECTED`.
 - Request: exactly `{ reference: non-empty string }`; reference is an opaque spelling attempt.
-- Learner binding: requires the matching learner cookie and active spelling attempt, then resolves canonical text on the server.
+- Learner binding: requires the matching learner cookie and active spelling attempt, then resolves canonical text on the server. Text metrics are computed only after server-side resolution; the text itself is never persisted.
 - Success: `200 audio/mpeg`, `Cache-Control: no-store`.
-- Errors: JSON/shape/reference errors `400`; provider configuration `500`; upstream provider `502`; unexpected `500`, all without canonical text.
+- Errors: JSON/shape/reference errors `400`; missing session `401`; missing user, no entitlement, or manual TTS suspension `403`; burst/concurrency/ten-hour emergency limits `429` with integer `Retry-After`; provider configuration `500`; upstream provider `502`; usage-accounting or auth/entitlement database boundary unavailable `503`. All error responses are generic, carry `Cache-Control: no-store`, and never contain canonical text or usage state.
 - Tests: `tests/api/vocabularySpeechRoute.test.ts` and speech-controller tests.
 
 ## Text-to-speech
 
 ### `POST /api/tts`
 
-- Source: `src/app/api/tts/route.ts`; Node runtime.
-- Auth: none currently.
-- Request: strict `{ text, tts }`; text is non-blank and at most 4,000 UTF-8 bytes. Google and Lemonfox configurations must exactly match the server allowlist.
+- Source: `src/app/api/tts/route.ts`, delegating to `src/lib/learning-engine/speech/handleTtsSynthesisRequest.ts`; Node runtime.
+- Auth: authenticated NextAuth session plus current Stage 1 entitlement (direct or child-inherited), manual-suspension checks, and durable usage accounting through the shared paid TTS usage policy; requests are classified `PUBLIC_TEXT`.
+- Request: strict `{ text, tts }`; text is non-blank and at most 5,000 UTF-8 bytes per provider chunk. This is a chunk boundary, not a passage limit — the client splits long public teaching passages into sequential provider-safe chunks. Google and Lemonfox configurations must exactly match the server allowlist.
 - Success: `200 audio/mpeg`, `Cache-Control: no-store`.
-- Errors: malformed/invalid request `400`; missing provider config `500`; upstream failure `502`; unexpected `500`.
-- Side effects/security: may call a paid provider. It has no rate limit, quota, concurrency, or usage accounting and is not production-ready with paid credentials.
+- Errors: malformed/invalid request or an oversized chunk `400`; missing session `401`; missing user, no entitlement, or manual TTS suspension `403`; more than 120 accepted attempts per UTC minute, an eleventh concurrent attempt, or usage beyond an estimated ten hours (90,000 words) in one UTC day `429` with integer `Retry-After`; missing provider config `500`; upstream failure (including oversized provider responses) `502`; usage accounting unavailable `503`. All error responses are generic with `Cache-Control: no-store`.
+- Side effects/security: paid provider calls happen only after atomic PostgreSQL paid-attempt acquisition (transactionally re-derived direct/stable-parent entitlement, caller-minute/caller-day/entitlement-principal-day counters, and a 30-second concurrency lease). Audio returns only after the exact unexpired lease is claimed and success/generated-byte accounting commits; missing, expired, or unavailable completion accounting returns generic `503`. Crossing an estimated five hours (45,000 words) in a UTC day records one durable warning without changing the response. There is no normal daily request/byte cap. No spoken text or audio is stored.
 - Tests: `tests/api/ttsRoute.test.ts` plus all `tests/tts/`.
 
 ## Stripe

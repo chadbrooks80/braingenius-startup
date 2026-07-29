@@ -57,15 +57,15 @@ test("rejects non-string text", () => {
   );
 });
 
-test("rejects text over 4000 UTF-8 bytes", () => {
-  const oversizedText = "a".repeat(4001);
+test("rejects text over 5000 UTF-8 bytes", () => {
+  const oversizedText = "a".repeat(5001);
   assert.throws(() =>
     parseTtsSynthesisRequest({ text: oversizedText, tts: VALID_GOOGLE_TTS })
   );
 });
 
-test("accepts text at exactly 4000 UTF-8 bytes", () => {
-  const exactText = "a".repeat(4000);
+test("accepts text at exactly 5000 UTF-8 bytes", () => {
+  const exactText = "a".repeat(5000);
   const result = parseTtsSynthesisRequest({
     text: exactText,
     tts: VALID_GOOGLE_TTS,
@@ -74,8 +74,8 @@ test("accepts text at exactly 4000 UTF-8 bytes", () => {
 });
 
 test("measures UTF-8 bytes, not character count, for multi-byte text", () => {
-  // Each "é" is 2 UTF-8 bytes, so 2001 of them is 4002 bytes.
-  const multiByteText = "é".repeat(2001);
+  // Each "é" is 2 UTF-8 bytes, so 2501 of them is 5002 bytes.
+  const multiByteText = "é".repeat(2501);
   assert.throws(() =>
     parseTtsSynthesisRequest({ text: multiByteText, tts: VALID_GOOGLE_TTS })
   );

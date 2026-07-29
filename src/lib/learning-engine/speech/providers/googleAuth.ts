@@ -4,7 +4,9 @@ import {
   TtsConfigurationError,
   TtsUpstreamError,
 } from "../../errors/TtsSynthesisError";
+import { TTS_MAX_GOOGLE_OAUTH_JSON_BYTES } from "../ttsUsagePolicy";
 import { fetchUpstreamOrThrow } from "./fetchUpstreamOrThrow";
+import { readBoundedResponseBody } from "./readBoundedResponseBody";
 
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_TTS_OAUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
@@ -69,7 +71,8 @@ export function readGoogleServiceAccountCredentials(): GoogleServiceAccountCrede
 
 export async function getGoogleAccessToken(
   credentials: GoogleServiceAccountCredentials,
-  fetchImpl: typeof fetch
+  fetchImpl: typeof fetch,
+  upstreamTimeoutMs?: number
 ): Promise<string> {
   const cached = accessTokenCache.get(credentials.clientEmail);
   if (cached && cached.expiresAtMs > Date.now()) {
@@ -78,7 +81,7 @@ export async function getGoogleAccessToken(
 
   const assertion = signGoogleServiceAccountJwt(credentials);
 
-  const response = await fetchUpstreamOrThrow(
+  const token = await fetchUpstreamOrThrow(
     "google",
     fetchImpl,
     GOOGLE_TOKEN_ENDPOINT,
@@ -93,41 +96,74 @@ export async function getGoogleAccessToken(
     {
       networkFailure: "Failed to reach the Google OAuth token endpoint.",
       rejection: "Google OAuth token exchange was rejected.",
-    }
+    },
+    async (response, signal) => {
+      const contentType = response.headers
+        .get("Content-Type")
+        ?.split(";", 1)[0]
+        .trim();
+      if (contentType !== "application/json") {
+        throw new TtsUpstreamError(
+          "google",
+          "Google OAuth token response was not JSON.",
+          { upstreamStatus: response.status }
+        );
+      }
+
+      const rawBody = await readBoundedResponseBody(
+        "google",
+        response,
+        TTS_MAX_GOOGLE_OAUTH_JSON_BYTES,
+        "Google OAuth token response was oversized.",
+        undefined,
+        signal
+      );
+
+      let payload: unknown;
+      try {
+        payload = JSON.parse(Buffer.from(rawBody).toString("utf8"));
+      } catch (cause) {
+        throw new TtsUpstreamError(
+          "google",
+          "Google OAuth token response was not valid JSON.",
+          { upstreamStatus: response.status, cause }
+        );
+      }
+
+      const parsed = payload as {
+        access_token?: unknown;
+        expires_in?: unknown;
+      };
+      if (typeof parsed.access_token !== "string" || parsed.access_token === "") {
+        throw new TtsUpstreamError(
+          "google",
+          "Google OAuth token response did not include an access token.",
+          { upstreamStatus: response.status }
+        );
+      }
+
+      return {
+        accessToken: parsed.access_token,
+        expiresInSeconds:
+          typeof parsed.expires_in === "number"
+            ? parsed.expires_in
+            : ACCESS_TOKEN_TTL_SECONDS,
+      };
+    },
+    undefined,
+    upstreamTimeoutMs
   );
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch (cause) {
-    throw new TtsUpstreamError(
-      "google",
-      "Google OAuth token response was not valid JSON.",
-      { upstreamStatus: response.status, cause }
-    );
-  }
-
-  const parsed = payload as { access_token?: unknown; expires_in?: unknown };
-  const accessToken = parsed?.access_token;
-  if (typeof accessToken !== "string" || accessToken === "") {
-    throw new TtsUpstreamError(
-      "google",
-      "Google OAuth token response did not include an access token.",
-      { upstreamStatus: response.status }
-    );
-  }
-
-  const expiresInSeconds =
-    typeof parsed?.expires_in === "number"
-      ? parsed.expires_in
-      : ACCESS_TOKEN_TTL_SECONDS;
-
   accessTokenCache.set(credentials.clientEmail, {
-    accessToken,
+    accessToken: token.accessToken,
     expiresAtMs:
       Date.now() +
-      Math.max(expiresInSeconds - ACCESS_TOKEN_REFRESH_MARGIN_SECONDS, 0) * 1000,
+      Math.max(
+        token.expiresInSeconds - ACCESS_TOKEN_REFRESH_MARGIN_SECONDS,
+        0
+      ) *
+        1000,
   });
 
-  return accessToken;
+  return token.accessToken;
 }

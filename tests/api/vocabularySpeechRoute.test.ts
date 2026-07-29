@@ -22,14 +22,50 @@ import { VOCABULARY_LEARNER_COOKIE } from "../../src/learning-modules/vocabulary
 import {
   getServerCorrectChoiceId,
 } from "../vocabulary/testVocabularyApi";
+import type { PaidTtsUsageDeps } from "../../src/lib/learning-engine/speech/ttsUsageService";
+import {
+  ADMIN_SUBSCRIPTION,
+  FakeTtsUsageStore,
+} from "../tts/testDoubles/fakeTtsUsageStore";
 
 const WORDS = getWordList("word_list_id")!;
 const FAKE_AUDIO = new Uint8Array([1, 2, 3, 4]);
+const CALLER = "user-caller";
+const NOW = new Date("2026-07-29T10:30:30Z");
+const PRICES = { monthly: "price_monthly", lifetime: "price_lifetime" };
+
+// Deterministic entitled TTS access context: the handler must pass the same
+// shared paid usage policy as the public route, so every test provides an
+// injected session, entitlement, and durable usage store.
+function entitledAccess(overrides: PaidTtsUsageDeps = {}): {
+  accessDeps: PaidTtsUsageDeps;
+  usageStore: FakeTtsUsageStore;
+} {
+  const usageStore = new FakeTtsUsageStore();
+  usageStore.seedUser({ id: CALLER, subscription: ADMIN_SUBSCRIPTION });
+  return {
+    usageStore,
+    accessDeps: {
+      getSessionUserId: async () => CALLER,
+      resolveEntitlement: async () => ({
+        granted: true,
+        callerUserId: CALLER,
+        entitlementPrincipalUserId: CALLER,
+        source: "administrative",
+      }),
+      store: usageStore,
+      prices: PRICES,
+      now: () => NOW,
+      ...overrides,
+    },
+  };
+}
 
 test("resolves an opaque spelling reference to audio without exposing the word", async () => {
   const authorization = await createSpellingAuthorization();
   const word = WORDS.find((candidate) => candidate.id === authorization.wordId)!;
   const synthesized: TtsSynthesisRequest[] = [];
+  const { accessDeps, usageStore } = entitledAccess();
 
   const response = await handleVocabularySpeechRequest(
     speechRequest(
@@ -40,7 +76,8 @@ test("resolves an opaque spelling reference to audio without exposing the word",
       synthesized.push(request);
       return { bytes: FAKE_AUDIO, contentType: "audio/mpeg" };
     },
-    authorization.store
+    authorization.store,
+    accessDeps
   );
 
   assert.equal(response.status, 200);
@@ -62,10 +99,118 @@ test("resolves an opaque spelling reference to audio without exposing the word",
       `header ${name} leaks the word`
     );
   }
+
+  // Usage is durably recorded as protected speech with numbers only: no
+  // spoken text, canonical word, or definition appears in any stored row.
+  const dayBucket = usageStore.getBucket({
+    subjectUserId: CALLER,
+    scope: "CALLER_DAY",
+    windowStart: new Date("2026-07-29T00:00:00Z"),
+    provider: vocabularyTts.provider === "google" ? "GOOGLE" : "LEMONFOX",
+    requestKind: "VOCABULARY_PROTECTED",
+  });
+  assert.ok(dayBucket);
+  assert.equal(dayBucket.acceptedRequests, 1);
+  assert.equal(dayBucket.successfulRequests, 1);
+  assert.ok(dayBucket.acceptedWords > 0);
+  assertNoFixtureWord(
+    JSON.stringify([...usageStore.getBuckets(), ...usageStore.getLeases()], (key, value) =>
+      typeof value === "bigint" ? value.toString() : (value as unknown)
+    )
+  );
+});
+
+test("an anonymous protected speech request returns 401 without provider use or canonical-answer exposure", async () => {
+  const authorization = await createSpellingAuthorization();
+  const { accessDeps, usageStore } = entitledAccess({
+    getSessionUserId: async () => null,
+  });
+
+  const response = await handleVocabularySpeechRequest(
+    speechRequest(
+      { reference: authorization.attemptId },
+      authorization.learnerId
+    ),
+    async () => {
+      throw new Error("synthesis must not run for an anonymous caller");
+    },
+    authorization.store,
+    accessDeps
+  );
+
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const body = (await response.json()) as { error: string };
+  assert.equal(body.error, "Sign in to use text-to-speech.");
+  assertNoFixtureWord(JSON.stringify(body));
+  assert.deepEqual(usageStore.getBuckets(), []);
+  assert.deepEqual(usageStore.getLeases(), []);
+});
+
+test("a non-entitled caller receives a generic 403 without provider use", async () => {
+  const authorization = await createSpellingAuthorization();
+  const { accessDeps } = entitledAccess({
+    resolveEntitlement: async () => ({ granted: false }),
+  });
+
+  const response = await handleVocabularySpeechRequest(
+    speechRequest(
+      { reference: authorization.attemptId },
+      authorization.learnerId
+    ),
+    async () => {
+      throw new Error("synthesis must not run for a non-entitled caller");
+    },
+    authorization.store,
+    accessDeps
+  );
+
+  assert.equal(response.status, 403);
+  const body = (await response.json()) as { error: string };
+  assert.equal(body.error, "Text-to-speech is not available for this account.");
+  assertNoFixtureWord(JSON.stringify(body));
+});
+
+test("a caller past the emergency burst boundary receives 429 with an integer Retry-After and no provider call", async () => {
+  const authorization = await createSpellingAuthorization();
+  const { accessDeps, usageStore } = entitledAccess();
+  await usageStore.transact(async (tx) => {
+    for (let index = 0; index < 120; index += 1) {
+      await tx.addAcceptedUsage(
+        {
+          subjectUserId: CALLER,
+          scope: "CALLER_MINUTE",
+          windowStart: new Date("2026-07-29T10:30:00Z"),
+          provider: "GOOGLE",
+          requestKind: "VOCABULARY_PROTECTED",
+        },
+        { utf8Bytes: 1, characters: 1, words: 1 }
+      );
+    }
+  });
+
+  const response = await handleVocabularySpeechRequest(
+    speechRequest(
+      { reference: authorization.attemptId },
+      authorization.learnerId
+    ),
+    async () => {
+      throw new Error("synthesis must not run past the burst boundary");
+    },
+    authorization.store,
+    accessDeps
+  );
+
+  assert.equal(response.status, 429);
+  assert.match(response.headers.get("retry-after") ?? "", /^\d+$/);
+  const body = (await response.json()) as { error: string };
+  assert.equal(body.error, "Too many text-to-speech requests.");
+  assertNoFixtureWord(JSON.stringify(body));
 });
 
 test("rejects invalid, mismatched, and unsupported speech references with one generic error", async () => {
   const authorization = await createSpellingAuthorization();
+  const { accessDeps, usageStore } = entitledAccess();
   const rejectedBodies: unknown[] = [
     { reference: "definition-attempt" },
     { reference: "unknown-reference" },
@@ -84,7 +229,8 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
       async () => {
         throw new Error("synthesis must not run for a rejected reference");
       },
-      authorization.store
+      authorization.store,
+      accessDeps
     );
     assert.equal(response.status, 400, `expected 400 for ${JSON.stringify(body)}`);
 
@@ -101,7 +247,8 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
     async () => {
       throw new Error("synthesis must not run for another learner");
     },
-    authorization.store
+    authorization.store,
+    accessDeps
   );
   assert.equal(otherLearner.status, 400);
 
@@ -113,33 +260,47 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
     }),
     async () => {
       throw new Error("synthesis must not run for malformed JSON");
-    }
+    },
+    authorization.store,
+    accessDeps
   );
   assert.equal(malformed.status, 400);
+
+  // Rejected references never create an accepted paid attempt.
+  assert.deepEqual(usageStore.getBuckets(), []);
+  assert.deepEqual(usageStore.getLeases(), []);
 });
 
 test("provider failures return the generic learner-safe TTS errors without the word", async () => {
   const authorization = await createSpellingAuthorization();
   const reference = authorization.attemptId;
+  const { accessDeps, usageStore } = entitledAccess();
 
   const upstream = await handleVocabularySpeechRequest(
     speechRequest({ reference }, authorization.learnerId),
     async () => {
       throw new TtsUpstreamError("google", "provider raw failure detail");
     },
-    authorization.store
+    authorization.store,
+    accessDeps
   );
   assert.equal(upstream.status, 502);
   const upstreamBody = (await upstream.json()) as { error: string };
   assert.equal(upstreamBody.error, "The text-to-speech provider is unavailable.");
   assertNoFixtureWord(JSON.stringify(upstreamBody));
 
+  // The failed provider attempt remains counted; provider cost cannot be
+  // disproved after dispatch.
+  const buckets = usageStore.getBuckets();
+  assert.ok(buckets.some((row) => row.failedRequests === 1));
+
   const configuration = await handleVocabularySpeechRequest(
     speechRequest({ reference }, authorization.learnerId),
     async () => {
       throw new TtsConfigurationError("google", "missing credential detail");
     },
-    authorization.store
+    authorization.store,
+    accessDeps
   );
   assert.equal(configuration.status, 500);
   const configurationBody = (await configuration.json()) as { error: string };

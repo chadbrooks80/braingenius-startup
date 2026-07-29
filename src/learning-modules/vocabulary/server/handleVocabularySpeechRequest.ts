@@ -1,10 +1,13 @@
-import { logTtsSynthesisError } from "@/lib/learning-engine/errors/logTtsSynthesisError";
-import {
-  TtsConfigurationError,
-  TtsUpstreamError,
-} from "@/lib/learning-engine/errors/TtsSynthesisError";
 import { synthesizeTts } from "@/lib/learning-engine/speech/providers/synthesizeTts";
 import type { SynthesizedAudio } from "@/lib/learning-engine/speech/providers/types";
+import {
+  authorizePaidTtsCaller,
+  paidTtsAudioResponse,
+  paidTtsFailureResponse,
+  runMeteredTtsSynthesis,
+  ttsDenialResponse,
+  type PaidTtsUsageDeps,
+} from "@/lib/learning-engine/speech/ttsUsageService";
 import type { TtsSynthesisRequest } from "@/lib/learning-engine/speech/validation/parseTtsSynthesisRequest";
 import { getWordList } from "../data/getWordList";
 import { vocabularyTts } from "../data/vocabularyTts";
@@ -20,34 +23,43 @@ type SpeechSynthesizer = (
   request: TtsSynthesisRequest
 ) => Promise<SynthesizedAudio>;
 
+function jsonError(status: number, message: string): Response {
+  return Response.json(
+    { error: message },
+    { status, headers: { "Cache-Control": "no-store" } }
+  );
+}
+
 /**
  * Resolves an opaque spelling speech reference into provider audio entirely
  * on the server. The canonical written word exists only in the synthesis text
- * sent to the shared TTS service; browser responses carry audio bytes or the
- * generic error message, never the word.
+ * passed transiently to the shared paid TTS policy; browser responses carry
+ * audio bytes or a generic error message, never the word. Every request must
+ * pass the same authenticated/entitled/suspension-checked shared usage
+ * policy as public teaching speech, classified as VOCABULARY_PROTECTED.
  */
 export async function handleVocabularySpeechRequest(
   request: Request,
   synthesize: SpeechSynthesizer = synthesizeTts,
   capabilityStore: VocabularyContentCapabilityStore =
-    vocabularyContentCapabilityStore
+    vocabularyContentCapabilityStore,
+  accessDeps: PaidTtsUsageDeps = {}
 ): Promise<Response> {
   let rawBody: unknown;
   try {
     rawBody = await request.json();
   } catch {
-    return Response.json(
-      { error: "Request body must be valid JSON." },
-      { status: 400 }
-    );
+    return jsonError(400, "Request body must be valid JSON.");
   }
 
   const reference = parseSpeechReference(rawBody);
   if (!reference) {
-    return Response.json(
-      { error: "Invalid vocabulary speech request." },
-      { status: 400 }
-    );
+    return jsonError(400, "Invalid vocabulary speech request.");
+  }
+
+  const authorization = await authorizePaidTtsCaller(accessDeps);
+  if (!authorization.ok) {
+    return ttsDenialResponse(authorization.denial);
   }
 
   const learnerId = getVocabularyLearnerId(request);
@@ -60,46 +72,25 @@ export async function handleVocabularySpeechRequest(
       ) ?? null
     : null;
   if (!word) {
-    return Response.json(
-      { error: "Invalid vocabulary speech request." },
-      { status: 400 }
-    );
+    return jsonError(400, "Invalid vocabulary speech request.");
   }
 
   try {
-    const audio = await synthesize({
-      text: `Spell the word: ${word.word}. ${word.definition}`,
-      tts: vocabularyTts,
-    });
-
-    return new Response(audio.bytes as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": audio.contentType,
-        "Cache-Control": "no-store",
+    const result = await runMeteredTtsSynthesis(
+      {
+        text: `Spell the word: ${word.word}. ${word.definition}`,
+        tts: vocabularyTts,
       },
-    });
-  } catch (error) {
-    logTtsSynthesisError(error);
-
-    if (error instanceof TtsConfigurationError) {
-      return Response.json(
-        { error: "The text-to-speech service is not configured." },
-        { status: 500 }
-      );
-    }
-
-    if (error instanceof TtsUpstreamError) {
-      return Response.json(
-        { error: "The text-to-speech provider is unavailable." },
-        { status: 502 }
-      );
-    }
-
-    return Response.json(
-      { error: "An unexpected error occurred." },
-      { status: 500 }
+      "VOCABULARY_PROTECTED",
+      authorization.access,
+      { ...accessDeps, synthesize }
     );
+    if (result.status === "denied") {
+      return ttsDenialResponse(result.denial);
+    }
+    return paidTtsAudioResponse(result.audio);
+  } catch (error) {
+    return paidTtsFailureResponse(error);
   }
 }
 

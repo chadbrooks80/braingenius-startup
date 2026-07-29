@@ -23,3 +23,5 @@ This inventory lists names only. Never place real values in documentation, sourc
 | `NODE_ENV` | Prisma singleton caching behavior | Runtime-provided environment marker; production disables global client reuse. |
 
 No tracked `.env.example` exists. For local work, create an untracked environment file appropriate to Next.js, use test/sandbox provider credentials, and configure only the services being exercised. `.env*` files are excluded from the implementation handoff.
+
+Paid TTS abuse protection (`src/lib/learning-engine/speech/ttsUsagePolicy.ts`) adds no environment variables. Its numeric policy — 150 words/minute, the 45,000/90,000-word warning/cutoff thresholds, the 120-per-minute burst limit, the 10-lease concurrency cap, the 30-second lease duration, and the 5,000-byte/5 MiB/7,100,000-byte/65,536-byte size limits — is fixed in code and is not configurable through the environment.

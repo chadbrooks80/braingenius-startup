@@ -5,4 +5,6 @@ export type SynthesizedAudio = {
 
 export type TtsProviderDeps = {
   fetchImpl?: typeof fetch;
+  /** Deterministic test override; production always uses the fixed 10 seconds. */
+  upstreamTimeoutMs?: number;
 };

@@ -53,8 +53,8 @@ There are 10 current `route.ts` files:
 | `POST /api/auth/verify-email-code` | `src/app/api/auth/verify-email-code/route.ts` | Email verification |
 | `POST /api/learning/vocabulary/content` | `src/app/api/learning/vocabulary/content/route.ts` | Vocabulary content/capabilities |
 | `POST /api/learning/vocabulary/submit-answer` | `src/app/api/learning/vocabulary/submit-answer/route.ts` | Vocabulary grading |
-| `POST /api/learning/vocabulary/speech` | `src/app/api/learning/vocabulary/speech/route.ts` | Protected Vocabulary speech |
-| `POST /api/tts` | `src/app/api/tts/route.ts` | Shared public-text TTS |
+| `POST /api/learning/vocabulary/speech` | `src/app/api/learning/vocabulary/speech/route.ts` | Protected Vocabulary speech (authenticated, entitled, metered) |
+| `POST /api/tts` | `src/app/api/tts/route.ts` | Shared public-text TTS (authenticated, entitled, metered) |
 | `POST /api/webhooks/stripe` | `src/app/api/webhooks/stripe/route.ts` | Stripe synchronization |
 
 Request/response details are in [API Routes](../reference/api-routes.md).

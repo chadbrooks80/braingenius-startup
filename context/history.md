@@ -478,3 +478,9 @@
 - Completed word-search checkpoints on `feature/word-search-checkpoints`, adding an ungraded five-word reinforcement checkpoint after each Vocabulary mastery group
 - Added the shared subject-neutral input contract, deterministic exact-occurrence puzzle generation, official-placement matching, duplicate recovery, retry reseeding, touch/keyboard accessibility, narrow-screen support, and secure checkpoint content/state integration
 - Verified the Vocabulary progression and real route, Word Search playground interactions, focused unit/integration coverage, lint, and production build; audit and user approval passed
+
+## 2026-07-29 09:00
+
+- Completed paid TTS usage monitoring and extreme-abuse protection on `fix/paid-tts-abuse-protection` for both public and protected Vocabulary speech paths
+- Added database-authoritative paid entitlement, transactional usage accounting and lease finalization, burst/concurrency/extreme-usage controls, manual suspension/reporting, provider response bounds and complete-operation deadlines, and deterministic long-passage chunking
+- Verification passed across focused and regression tests, type-check, lint, production build, client-bundle security scan, and the real Vocabulary route E2E; audit and user approval passed

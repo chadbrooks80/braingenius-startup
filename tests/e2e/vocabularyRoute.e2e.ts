@@ -264,6 +264,20 @@ test(
       assert.ok(traffic.count(ANSWER_PATH) > 20);
       assert.ok(traffic.count(SPEECH_PATH) > 0);
       assert.ok(traffic.count(TTS_PATH) > 0);
+      // This harness has no authenticated entitled database account, so both
+      // paid TTS paths must now fail closed with 401 for the anonymous
+      // browser while the lesson itself still completes. Proving the
+      // entitled audio success path lives in the route-handler tests with an
+      // injected entitled context; adding an authentication bypass here to
+      // fake it is prohibited.
+      for (const path of [SPEECH_PATH, TTS_PATH]) {
+        const statuses = traffic.statuses(path);
+        assert.ok(statuses.length > 0);
+        assert.ok(
+          statuses.every((status) => status === 401),
+          `anonymous ${path} must be rejected with 401, saw: ${statuses.join(", ")}`
+        );
+      }
       assert.equal(traffic.failures(CONTENT_PATH), 0);
       assert.equal(traffic.failures(ANSWER_PATH), 0);
     } finally {
@@ -276,6 +290,7 @@ test(
 function observeVocabularyTraffic(page: Page) {
   const counts = new Map<string, number>();
   const failures = new Map<string, number>();
+  const statuses = new Map<string, number[]>();
   const latestContent = new Map<string, ContentBody>();
 
   page.on("response", (response) => {
@@ -284,7 +299,8 @@ function observeVocabularyTraffic(page: Page) {
       return;
     }
     counts.set(path, (counts.get(path) ?? 0) + 1);
-    if ([CONTENT_PATH, ANSWER_PATH, SPEECH_PATH].includes(path) && response.status() >= 400) {
+    statuses.set(path, [...(statuses.get(path) ?? []), response.status()]);
+    if ([CONTENT_PATH, ANSWER_PATH].includes(path) && response.status() >= 400) {
       failures.set(path, (failures.get(path) ?? 0) + 1);
     }
     if (path === CONTENT_PATH && response.ok()) {
@@ -298,6 +314,7 @@ function observeVocabularyTraffic(page: Page) {
     count: (path: string) => counts.get(path) ?? 0,
     snapshot: () => Object.fromEntries(counts),
     failures: (path: string) => failures.get(path) ?? 0,
+    statuses: (path: string) => statuses.get(path) ?? [],
     async waitForContent(
       contentType: string,
       matches: (body: ContentBody) => boolean = () => true

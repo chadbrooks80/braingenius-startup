@@ -35,30 +35,61 @@ enum OnboardingStep {
   COMPLETE
 }
 
-model User {
-  id                  String         @id @default(cuid())
-  isOwner             Boolean?
-  name                String?
-  fName               String?
-  lName               String?
-  email               String?        @unique
-  emailVerified       DateTime?
-  username            String?        @unique
-  image               String?
-  password            String?
-  role                UserRole?
-  onboardingCompleted Boolean        @default(false)
-  onboardingStep      OnboardingStep @default(VERIFY_EMAIL)
-  mustResetPassword   Boolean        @default(false)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+enum TtsUsageScope {
+  CALLER_MINUTE
+  CALLER_DAY
+  ENTITLEMENT_DAY
+}
 
-  accounts            Account[]
-  sessions            Session[]
-  parents             ParentStudent[]       @relation("StudentParents")
-  students            ParentStudent[]       @relation("ParentStudents")
-  subscription        Subscription?
-  passwordResetTokens PasswordResetToken[]
+enum TtsRequestKind {
+  PUBLIC_TEXT
+  VOCABULARY_PROTECTED
+}
+
+enum TtsProvider {
+  GOOGLE
+  LEMONFOX
+}
+
+enum TtsUsageAlertKind {
+  FIVE_HOUR_WARNING
+  TEN_HOUR_CUTOFF
+}
+
+model User {
+  id                      String         @id @default(cuid())
+  isOwner                 Boolean?
+  name                    String?
+  fName                   String?
+  lName                   String?
+  email                   String?        @unique
+  emailVerified           DateTime?
+  username                String?        @unique
+  image                   String?
+  password                String?
+  role                    UserRole?
+  onboardingCompleted     Boolean        @default(false)
+  onboardingStep          OnboardingStep @default(VERIFY_EMAIL)
+  mustResetPassword       Boolean        @default(false)
+  // Manual TTS suspension applied by an authorized operator after abuse
+  // review; never written automatically by warning/cutoff enforcement.
+  // The reason code is server-only operational state.
+  ttsSuspendedAt          DateTime?
+  ttsSuspensionReasonCode String?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  accounts             Account[]
+  sessions             Session[]
+  parents              ParentStudent[]      @relation("StudentParents")
+  students             ParentStudent[]      @relation("ParentStudents")
+  subscription         Subscription?
+  passwordResetTokens  PasswordResetToken[]
+  ttsUsageBuckets      TtsUsageBucket[]
+  ttsAlertsAsCaller    TtsUsageAlert[]      @relation("TtsUsageAlertCaller")
+  ttsAlertsAsPrincipal TtsUsageAlert[]      @relation("TtsUsageAlertPrincipal")
+  ttsLeasesAsCaller    TtsRequestLease[]    @relation("TtsCallerLeases")
+  ttsLeasesAsPrincipal TtsRequestLease[]    @relation("TtsPrincipalLeases")
 }
 
 model ParentStudent {
@@ -116,6 +147,80 @@ model Subscription {
   updatedAt            DateTime          @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Durable per-window paid TTS usage counters. Enforcement sums across the
+// provider/requestKind rows for one subject+scope+window; the rows stay
+// separate so operational reports can break usage down per provider and
+// request kind. No spoken text or audio is ever stored here.
+model TtsUsageBucket {
+  id                      String         @id @default(cuid())
+  subjectUserId           String
+  scope                   TtsUsageScope
+  windowStart             DateTime
+  provider                TtsProvider
+  requestKind             TtsRequestKind
+  acceptedRequests        Int            @default(0)
+  acceptedInputBytes      Int            @default(0)
+  acceptedInputCharacters Int            @default(0)
+  acceptedWords           Int            @default(0)
+  successfulRequests      Int            @default(0)
+  failedRequests          Int            @default(0)
+  rejectedBurst           Int            @default(0)
+  rejectedConcurrency     Int            @default(0)
+  rejectedExtremeUsage    Int            @default(0)
+  generatedAudioBytes     BigInt         @default(0)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  subjectUser User @relation(fields: [subjectUserId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectUserId, scope, windowStart, provider, requestKind])
+  @@index([subjectUserId, scope, windowStart])
+}
+
+// At most one warning and one cutoff alert row per caller per UTC day,
+// enforced by the unique constraint so concurrent threshold crossings
+// cannot create duplicates.
+model TtsUsageAlert {
+  id                         String            @id @default(cuid())
+  callerUserId               String
+  entitlementPrincipalUserId String
+  dayStart                   DateTime
+  kind                       TtsUsageAlertKind
+  observedWords              Int
+  createdAt                  DateTime          @default(now())
+
+  caller               User @relation("TtsUsageAlertCaller", fields: [callerUserId], references: [id], onDelete: Cascade)
+  entitlementPrincipal User @relation("TtsUsageAlertPrincipal", fields: [entitlementPrincipalUserId], references: [id], onDelete: Cascade)
+
+  @@unique([callerUserId, dayStart, kind])
+  @@index([entitlementPrincipalUserId, dayStart])
+}
+
+// Cross-instance in-flight provider attempt. A lease expires after 30
+// seconds so a crashed invocation cannot block its caller permanently.
+// It stores only numeric completion metadata, never spoken content.
+model TtsRequestLease {
+  id                         String         @id @default(cuid())
+  callerUserId               String
+  entitlementPrincipalUserId String
+  provider                   TtsProvider
+  requestKind                TtsRequestKind
+  inputBytes                 Int
+  inputCharacters            Int
+  inputWords                 Int
+  callerMinuteStart          DateTime
+  callerDayStart             DateTime
+  principalDayStart          DateTime
+  expiresAt                  DateTime
+  createdAt                  DateTime       @default(now())
+
+  caller               User @relation("TtsCallerLeases", fields: [callerUserId], references: [id], onDelete: Cascade)
+  entitlementPrincipal User @relation("TtsPrincipalLeases", fields: [entitlementPrincipalUserId], references: [id], onDelete: Cascade)
+
+  @@index([callerUserId, expiresAt])
+  @@index([entitlementPrincipalUserId, expiresAt])
 }
 
 model VerificationToken {

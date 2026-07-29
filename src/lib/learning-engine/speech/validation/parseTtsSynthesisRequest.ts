@@ -1,7 +1,11 @@
 import type { TtsConfiguration } from "@/types/learning";
+import { MAX_TTS_CHUNK_UTF8_BYTES } from "../chunkSpeechText";
 import { parseTtsConfiguration } from "./parseTtsConfiguration";
 
-const MAX_TEXT_BYTES = 4000;
+// Documented per-provider-call boundary, inclusive. This limits one provider
+// chunk, not a complete passage: long public teaching text is delivered as
+// multiple sequential chunks, each validated here independently.
+const MAX_TEXT_BYTES = MAX_TTS_CHUNK_UTF8_BYTES;
 const REQUEST_FIELDS = ["text", "tts"] as const;
 
 export type TtsSynthesisRequest = {

@@ -53,8 +53,8 @@ The host application owns authentication, accounts, onboarding, subscriptions, d
 
 - Learning progress and Vocabulary capability state are process-local and are not persisted to PostgreSQL. The capability store is unsuitable as a multi-instance guarantee.
 - The current Vocabulary route uses the server fixture ID `word_list_id`; there is no database-backed list selection.
-- The proxy matcher covers `/dashboard` and `/getting-started`, not `/learning/**`. It also lets requests without a token continue, so the dashboard is not proven protected by the current proxy/page source.
-- The generic `/api/tts` route has validation and provider allowlists but no authentication, quotas, rate limiting, concurrency accounting, or usage tracking.
+- The proxy matcher covers `/dashboard` and `/getting-started`, not `/learning/**`. It also lets requests without a token continue, so the dashboard is not proven protected by the current proxy/page source; both paid TTS routes independently authenticate and check entitlement at their own server boundary rather than relying on the proxy.
+- `/api/tts` and `/api/learning/vocabulary/speech` require an authenticated, currently entitled (direct or child-inherited) caller and share one server-owned paid-usage policy (`src/lib/learning-engine/speech/ttsUsageService.ts`) with durable PostgreSQL accounting, five-hour warning / ten-hour daily cutoff enforcement, burst/concurrency leases, and manual suspension. Long public teaching passages are chunked client-side to the 5,000-byte provider boundary via `chunkSpeechText.ts`.
 - Billing has no durable webhook event ledger or full stale/out-of-order reconciliation architecture; audit #27 remains deferred.
 - The dashboard and blog pages are placeholders, and learning header/sidebar values are static presentation data.
 

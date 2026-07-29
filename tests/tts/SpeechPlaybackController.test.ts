@@ -404,6 +404,111 @@ test("a failed server-resolved source request calls onDone exactly once", async 
   assert.equal(doneCalls, 1);
 });
 
+test("a long public passage is split into ordered provider-safe chunks fetched and played sequentially", async () => {
+  const sentences = Array.from(
+    { length: 40 },
+    (_, index) => `Sentence number ${index} has ${"filler ".repeat(30)}words.`
+  );
+  const longPassage = sentences.join(" ");
+  const encoder = new TextEncoder();
+  assert.ok(encoder.encode(longPassage).length > 5000);
+
+  const fetchedTexts: string[] = [];
+  const fetchImpl = (async (_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { text: string };
+    fetchedTexts.push(body.text);
+    return fakeResponse(true);
+  }) as typeof fetch;
+
+  const { deps, audio } = createFakeDeps({ fetchImpl });
+  const controller = new SpeechPlaybackController(deps);
+
+  let doneCalls = 0;
+  const started = controller.speakText(
+    { text: longPassage, tts: VALID_TTS },
+    { onDone: () => (doneCalls += 1) }
+  );
+  assert.equal(started, true);
+
+  // Drive the queue to completion one chunk at a time.
+  let playedChunks = 0;
+  for (let guard = 0; guard < 20; guard += 1) {
+    await flush();
+    if (doneCalls > 0) {
+      break;
+    }
+    playedChunks += 1;
+    audio.emit("ended");
+  }
+  await flush();
+
+  assert.equal(doneCalls, 1);
+  assert.ok(fetchedTexts.length > 1, "a long passage produces multiple chunks");
+  assert.equal(playedChunks, fetchedTexts.length, "chunks play strictly sequentially");
+  for (const chunk of fetchedTexts) {
+    assert.ok(
+      encoder.encode(chunk).length <= 5000,
+      "no fetched chunk exceeds the provider boundary"
+    );
+  }
+  // Order and words are preserved exactly across the chunk boundary.
+  assert.deepEqual(
+    fetchedTexts.flatMap((chunk) => chunk.split(/\s+/)),
+    longPassage.split(/\s+/)
+  );
+});
+
+test("cancellation between chunks stops the remaining chunk fetches of a long passage", async () => {
+  const longPassage = Array.from(
+    { length: 40 },
+    (_, index) => `Sentence number ${index} has ${"filler ".repeat(30)}words.`
+  ).join(" ");
+
+  const fetchedTexts: string[] = [];
+  const fetchImpl = (async (_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { text: string };
+    fetchedTexts.push(body.text);
+    return fakeResponse(true);
+  }) as typeof fetch;
+
+  const { deps, audio } = createFakeDeps({ fetchImpl });
+  const controller = new SpeechPlaybackController(deps);
+
+  let doneCalls = 0;
+  controller.speakText(
+    { text: longPassage, tts: VALID_TTS },
+    { onDone: () => (doneCalls += 1) }
+  );
+  await flush();
+  assert.equal(fetchedTexts.length, 1, "only the first chunk is in flight");
+
+  controller.cancelSpeech();
+  audio.emit("ended");
+  await flush();
+
+  assert.equal(fetchedTexts.length, 1, "no further chunk is fetched after cancellation");
+  assert.equal(doneCalls, 0);
+});
+
+test("a passage containing an unsplittable oversized token fails safely without any request", () => {
+  let fetchCalls = 0;
+  const { deps } = createFakeDeps({
+    fetchImpl: (async () => {
+      fetchCalls += 1;
+      return fakeResponse(true);
+    }) as typeof fetch,
+  });
+
+  const controller = new SpeechPlaybackController(deps);
+  const started = controller.speakText(
+    { text: `normal words then ${"x".repeat(6000)}`, tts: VALID_TTS },
+    { onDone: () => {} }
+  );
+
+  assert.equal(started, false);
+  assert.equal(fetchCalls, 0);
+});
+
 test("primeSpeechPlayback is idempotent and swallows a rejected play()", () => {
   const audio = new FakeAudioElement();
   audio.playRejects = true;

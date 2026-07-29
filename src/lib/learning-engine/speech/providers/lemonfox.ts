@@ -4,8 +4,10 @@ import {
   TtsConfigurationError,
   TtsUpstreamError,
 } from "../../errors/TtsSynthesisError";
+import { TTS_MAX_MP3_RESPONSE_BYTES } from "../ttsUsagePolicy";
 import { fetchUpstreamOrThrow } from "./fetchUpstreamOrThrow";
 import { isSupportedLemonfoxTtsConfiguration } from "../supportedTtsConfigurations";
+import { readBoundedResponseBody } from "./readBoundedResponseBody";
 import type { SynthesizedAudio, TtsProviderDeps } from "./types";
 
 const LEMONFOX_SYNTHESIZE_ENDPOINT = "https://api.lemonfox.ai/v1/audio/speech";
@@ -36,7 +38,7 @@ export async function synthesizeWithLemonfox(
 
   const fetchImpl = deps.fetchImpl ?? fetch;
 
-  const response = await fetchUpstreamOrThrow(
+  return fetchUpstreamOrThrow(
     "lemonfox",
     fetchImpl,
     LEMONFOX_SYNTHESIZE_ENDPOINT,
@@ -58,26 +60,38 @@ export async function synthesizeWithLemonfox(
       networkFailure: "Failed to reach the Lemonfox Text-to-Speech endpoint.",
       rejection: "Lemonfox Text-to-Speech rejected the request.",
     },
-    { voice: tts.voice }
+    async (response, signal) => {
+      const contentType = response.headers
+        .get("Content-Type")
+        ?.split(";", 1)[0]
+        .trim();
+      if (contentType !== "audio/mpeg") {
+        throw new TtsUpstreamError(
+          "lemonfox",
+          "Lemonfox Text-to-Speech returned a non-audio response.",
+          { voice: tts.voice, upstreamStatus: response.status }
+        );
+      }
+
+      const bytes = await readBoundedResponseBody(
+        "lemonfox",
+        response,
+        TTS_MAX_MP3_RESPONSE_BYTES,
+        "Lemonfox Text-to-Speech returned an oversized response body.",
+        { voice: tts.voice },
+        signal
+      );
+      if (bytes.byteLength === 0) {
+        throw new TtsUpstreamError(
+          "lemonfox",
+          "Lemonfox Text-to-Speech returned an empty response body.",
+          { voice: tts.voice, upstreamStatus: response.status }
+        );
+      }
+
+      return { bytes, contentType: "audio/mpeg" as const };
+    },
+    { voice: tts.voice },
+    deps.upstreamTimeoutMs
   );
-
-  const contentType = response.headers.get("Content-Type")?.split(";", 1)[0].trim();
-  if (contentType !== "audio/mpeg") {
-    throw new TtsUpstreamError(
-      "lemonfox",
-      "Lemonfox Text-to-Speech returned a non-audio response.",
-      { voice: tts.voice, upstreamStatus: response.status }
-    );
-  }
-
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength === 0) {
-    throw new TtsUpstreamError(
-      "lemonfox",
-      "Lemonfox Text-to-Speech returned an empty response body.",
-      { voice: tts.voice, upstreamStatus: response.status }
-    );
-  }
-
-  return { bytes, contentType: "audio/mpeg" };
 }

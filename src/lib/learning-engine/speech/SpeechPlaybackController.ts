@@ -1,4 +1,5 @@
 import type { SpeakActionPayload } from "@/types/learning";
+import { chunkSpeechText, SpeechChunkingError } from "./chunkSpeechText";
 import { normalizeSpeechQueue } from "./normalizeSpeechQueue";
 import { SILENT_AUDIO_DATA_URI } from "./silentAudioDataUri";
 
@@ -21,7 +22,10 @@ export type SpeechPlaybackDeps = {
 
 const TTS_ENDPOINT = "/api/tts";
 
-function createSpeechQueue(request: SpeakActionPayload): SpeechQueueItem[] {
+// Long public passages become multiple sequential provider-safe chunks split
+// at natural boundaries; a passage with an unsplittable oversized token fails
+// safely (no request is sent) instead of producing corrupted speech.
+function createSpeechQueue(request: SpeakActionPayload): SpeechQueueItem[] | null {
   if ("source" in request) {
     return [
       {
@@ -31,10 +35,19 @@ function createSpeechQueue(request: SpeakActionPayload): SpeechQueueItem[] {
     ];
   }
 
-  return normalizeSpeechQueue(request.text).map((text) => ({
-    endpoint: TTS_ENDPOINT,
-    body: { text, tts: request.tts },
-  }));
+  try {
+    return normalizeSpeechQueue(request.text).flatMap((text) =>
+      chunkSpeechText(text).map((chunk) => ({
+        endpoint: TTS_ENDPOINT,
+        body: { text: chunk, tts: request.tts },
+      }))
+    );
+  } catch (error) {
+    if (error instanceof SpeechChunkingError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export class SpeechPlaybackController {
@@ -59,7 +72,7 @@ export class SpeechPlaybackController {
     }
 
     const queue = createSpeechQueue(request);
-    if (queue.length === 0) {
+    if (!queue || queue.length === 0) {
       return false;
     }
 

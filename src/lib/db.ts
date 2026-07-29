@@ -33,3 +33,26 @@ if (process.env.NODE_ENV !== 'production')
 export async function lockUserRow(tx: Prisma.TransactionClient, userId: string): Promise<void> {
   await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
 }
+
+// Minimal raw-query surface shared by the real Prisma transaction client and
+// deterministic test doubles, so multi-user locking stays injectable without
+// widening the fake to the full Prisma contract.
+export type RawUserLockClient = {
+  $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown>;
+};
+
+/**
+ * Locks several user rows in one transaction. IDs are deduplicated and locked
+ * in ascending order so two transactions that lock overlapping user sets
+ * (e.g. a child and its parent) always acquire locks in the same order and
+ * cannot deadlock each other.
+ */
+export async function lockUserRows(
+  tx: RawUserLockClient,
+  userIds: readonly string[]
+): Promise<void> {
+  const ordered = [...new Set(userIds)].sort();
+  for (const userId of ordered) {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+  }
+}

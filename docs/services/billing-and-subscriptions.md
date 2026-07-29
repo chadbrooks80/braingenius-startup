@@ -3,7 +3,7 @@
 ## Ownership
 
 - `src/lib/stripe.ts`: lazy Stripe client, paid-plan type, and configured price map.
-- `src/lib/billing/entitlement.ts`: pure allowlisted entitlement evaluation.
+- `src/lib/billing/entitlement.ts`: pure allowlisted entitlement evaluation. Reused unchanged (not duplicated) by `src/lib/billing/user-entitlement.ts` for paid TTS access — see [Text-to-Speech](text-to-speech.md).
 - `src/lib/billing/stripe-state.ts`: server-only Checkout verification and shared Stripe-to-local synchronization.
 - `src/actions/checkout.ts`: authenticated Checkout Session creation.
 - `src/app/api/webhooks/stripe/route.ts`: signature verification and delegation to shared synchronization.
