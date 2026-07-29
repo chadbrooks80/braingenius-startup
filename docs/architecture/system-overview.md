@@ -42,8 +42,9 @@ flowchart LR
   Auth --> DB[(PostgreSQL via Prisma)]
   Auth --> Email[Resend]
   Auth --> Stripe[Stripe Checkout]
-  Stripe --> Webhook[Verified webhook]
-  Webhook --> DB
+  Stripe --> Billing[Verified shared billing state]
+  Billing --> Webhook[Verified webhook route]
+  Billing --> DB
 ```
 
 The host application owns authentication, accounts, onboarding, subscriptions, database infrastructure, and email. The Learning Engine is subject-neutral: it loads a module, routes generic actions, applies module `ScreenRequest` objects, resolves registered windows, and coordinates speech. Vocabulary owns subject content, attempts, progression, mastery, review scheduling, and completion.
@@ -54,7 +55,7 @@ The host application owns authentication, accounts, onboarding, subscriptions, d
 - The current Vocabulary route uses the server fixture ID `word_list_id`; there is no database-backed list selection.
 - The proxy matcher covers `/dashboard` and `/getting-started`, not `/learning/**`. It also lets requests without a token continue, so the dashboard is not proven protected by the current proxy/page source.
 - The generic `/api/tts` route has validation and provider allowlists but no authentication, quotas, rate limiting, concurrency accounting, or usage tracking.
-- The plan-success query path advances onboarding before re-reading webhook-established subscription state. This is implemented behavior, not the stricter billing rule in `.claude/rules/backend/billing-webhooks.md`.
+- Billing has no durable webhook event ledger or full stale/out-of-order reconciliation architecture; audit #27 remains deferred.
 - The dashboard and blog pages are placeholders, and learning header/sidebar values are static presentation data.
 
 See [Application and Route Map](application-and-route-map.md), [Learning Engine and Module Boundaries](learning-engine-and-module-boundaries.md), and [Security and Server Boundaries](security-and-server-boundaries.md).

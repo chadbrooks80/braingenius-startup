@@ -91,8 +91,8 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 - Source: `src/app/api/webhooks/stripe/route.ts`.
 - Auth: verifies `stripe-signature` over the raw request body with `STRIPE_WEBHOOK_SECRET`.
-- Request/events: handles `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`; ignores other verified events.
-- Success: always returns `200 { received: true }` after the switch. Completed paid checkout upserts subscription/customer/price/status data; update/delete synchronizes status, period end, cancellation, price, and tier.
-- Errors: missing signature/config or invalid signature returns `400`.
-- Security/limitations: unknown configured price maps to no paid tier, but many missing-data/processing branches are silently acknowledged. No stored event ID provides durable idempotency.
-- Tests: no focused webhook tests.
+- Request/events: handles `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, and `customer.subscription.deleted`; ignores other verified events.
+- Success: returns `200 { received: true }` after a supported event synchronizes or an unsupported verified event is ignored. Checkout events retrieve authoritative Stripe state through the shared billing service. Expected completed-but-unpaid state stays pending without mutation.
+- Errors: missing signature/config or invalid signature returns `400`; unexpected provider/database failure while processing a supported event returns `500 { error: "Webhook processing failed" }` so Stripe can retry.
+- Security/limitations: monthly status is the Stripe Subscription status, not Checkout payment status. Unknown prices and inactive/expired states clear paid tier. Responses contain no protected Stripe identifiers or payloads. No stored event ID or full out-of-order reconciliation exists; audit #27 remains deferred.
+- Tests: `tests/billing/stripeWebhook.test.ts` plus shared service coverage in the other billing tests.

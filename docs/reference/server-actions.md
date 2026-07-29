@@ -16,9 +16,10 @@
 
 - Input: typed `CheckoutPlan`, `"MONTHLY" | "LIFETIME"`.
 - Auth: requires a server session and derives user ID from it.
-- Side effects: reads the user/subscription and creates a Stripe subscription-mode or payment-mode Checkout Session using the matching server-configured price. Reuses a stored Stripe customer when present.
+- Side effects: validates the plan, reads the user/subscription, resolves a trusted application origin, and creates a Stripe subscription-mode or payment-mode Checkout Session using the matching server-configured price. Reuses a stored Stripe customer when present; a new lifetime Checkout explicitly creates one.
 - Return: success with Stripe-hosted URL or safe failure.
-- Consumers/evidence: `PlanStep`; no focused action test. Successful return does not itself update entitlement.
+- Return URLs: success uses `/getting-started?checkout=success&session_id={CHECKOUT_SESSION_ID}`; cancel uses `/getting-started?checkout=canceled`. Neither URL contains identity, price, tier, payment, or entitlement claims.
+- Consumers/evidence: `PlanStep`; checkout verification is covered by `tests/billing/checkoutConfirmation.test.ts` and the real return-page boundary by `tests/auth/gettingStartedPage.test.ts`. Successful action return does not itself update entitlement.
 
 ## `src/actions/onboarding.ts`
 

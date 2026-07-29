@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { getStripe, planFromPriceId } from "@/lib/stripe";
-import prisma from "@/lib/db";
+import { getStripe } from "@/lib/stripe";
+import {
+  synchronizeCheckoutForWebhook,
+  synchronizeSubscriptionDeleted,
+  synchronizeSubscriptionUpdated,
+} from "@/lib/billing/stripe-state";
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -11,7 +15,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Webhook is not configured" }, { status: 400 });
   }
 
-  const stripe = getStripe();
+  let stripe: ReturnType<typeof getStripe>;
+  try {
+    stripe = getStripe();
+  } catch {
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+  }
+
   const body = await req.text();
   let event: Stripe.Event;
 
@@ -21,76 +31,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const checkoutSession = event.data.object as Stripe.Checkout.Session;
-      const userId = checkoutSession.client_reference_id;
-      if (!userId) break;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded":
+        await synchronizeCheckoutForWebhook(event.data.object.id);
+        break;
 
-      // Delayed payment methods (e.g. bank debits) fire this event before funds clear.
-      // Only grant the paid tier once Stripe confirms the payment actually succeeded.
-      if (checkoutSession.payment_status !== "paid") break;
+      case "customer.subscription.updated":
+        await synchronizeSubscriptionUpdated(event.data.object);
+        break;
 
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) break;
+      case "customer.subscription.deleted":
+        await synchronizeSubscriptionDeleted(event.data.object);
+        break;
 
-      const lineItems = await stripe.checkout.sessions.listLineItems(checkoutSession.id);
-      const priceId = lineItems.data[0]?.price?.id ?? null;
-      const tier = planFromPriceId(priceId);
-
-      await prisma.subscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          tier: tier ?? undefined,
-          stripeCustomerId:
-            typeof checkoutSession.customer === "string" ? checkoutSession.customer : undefined,
-          stripeSubscriptionId:
-            typeof checkoutSession.subscription === "string"
-              ? checkoutSession.subscription
-              : undefined,
-          stripePriceId: priceId ?? undefined,
-          stripeStatus: checkoutSession.payment_status,
-        },
-        update: {
-          tier: tier ?? undefined,
-          stripeCustomerId:
-            typeof checkoutSession.customer === "string" ? checkoutSession.customer : undefined,
-          stripeSubscriptionId:
-            typeof checkoutSession.subscription === "string"
-              ? checkoutSession.subscription
-              : undefined,
-          stripePriceId: priceId ?? undefined,
-          stripeStatus: checkoutSession.payment_status,
-        },
-      });
-      break;
+      default:
+        break;
     }
-
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object as Stripe.Subscription;
-      const priceId = subscription.items.data[0]?.price?.id ?? null;
-      const tier = planFromPriceId(priceId);
-      const periodEndItem = subscription.items.data[0];
-
-      await prisma.subscription.updateMany({
-        where: { stripeSubscriptionId: subscription.id },
-        data: {
-          tier: event.type === "customer.subscription.deleted" ? "CANCELED" : tier ?? undefined,
-          stripePriceId: priceId ?? undefined,
-          stripeStatus: subscription.status,
-          currentPeriodEnd: periodEndItem
-            ? new Date(periodEndItem.current_period_end * 1000)
-            : undefined,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        },
-      });
-      break;
-    }
-
-    default:
-      break;
+  } catch {
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

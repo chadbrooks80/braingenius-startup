@@ -37,15 +37,13 @@ Password-reset tokens are 32 random bytes rendered as hex, stored hashed, expire
 
 ## Billing boundary
 
-Checkout derives the user from the server session and selects price IDs from server environment configuration. Stripe webhooks read the raw text, verify `stripe-signature`, map only configured prices, and synchronize the Prisma `Subscription`.
+Checkout derives the user from the server session, selects price IDs from server environment configuration, and constructs return URLs from a trusted configured origin. The browser receives only the hosted URL and later returns an untrusted Checkout Session ID; it never supplies identity, price, tier, payment, or entitlement claims.
 
-Current implementation gaps:
+`src/lib/billing/stripe-state.ts` retrieves the returned session from Stripe and requires authenticated ownership, exactly one quantity-one approved price, matching mode, complete/paid state, and a qualifying monthly Subscription when applicable. It synchronizes the same Prisma `Subscription` used by raw-body, signature-verified webhooks. The onboarding page advances only after the synchronized record passes `src/lib/billing/entitlement.ts`.
 
-- `checkout.session.completed` silently ignores missing user IDs, users, unpaid sessions, and unknown prices but still acknowledges the event.
-- no explicit event-ID persistence provides durable webhook idempotency;
-- `/getting-started?checkout=success` advances the plan step without verifying the Checkout Session or re-reading webhook-synchronized subscription state.
+The evaluator grants monthly only for the approved price, `active` or `trialing`, and a future period end; cancel-at-period-end expires at that boundary. Inactive, missing, expired, unknown, and price-mismatched state denies and clears paid tier during synchronization. Lifetime requires its approved price and explicit `paid`; administrative and unexpired free-trial access are independent allowlisted sources.
 
-These are documented source facts, not guarantees.
+Supported webhook processing failures return non-success for retry. Duplicate current supported events converge on the same row state. No explicit event-ID ledger, stale-event ordering, or reconciliation job exists; audit #27 remains deferred.
 
 ## Error handling
 

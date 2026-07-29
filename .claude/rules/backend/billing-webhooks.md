@@ -2,6 +2,7 @@
 paths:
   - "src/actions/{checkout,register,onboarding}.ts"
   - "src/lib/{stripe,subscription}.ts"
+  - "src/lib/billing/**/*"
   - "src/app/api/webhooks/stripe/**/*"
   - "src/components/onboarding/PlanStep.tsx"
   - "src/app/(auth)/(onboarding)/getting-started/page.tsx"

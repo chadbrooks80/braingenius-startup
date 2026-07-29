@@ -21,9 +21,3 @@ export const PRICE_ENV_BY_PLAN: Record<PaidPlan, string | undefined> = {
   MONTHLY: process.env.STRIPE_PRICE_MONTHLY,
   LIFETIME: process.env.STRIPE_PRICE_LIFETIME,
 };
-
-export function planFromPriceId(priceId: string | null | undefined): PaidPlan | null {
-  if (priceId === PRICE_ENV_BY_PLAN.MONTHLY) return "MONTHLY";
-  if (priceId === PRICE_ENV_BY_PLAN.LIFETIME) return "LIFETIME";
-  return null;
-}

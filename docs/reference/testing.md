@@ -21,6 +21,7 @@ Direct Node tests can be run by passing explicit files:
 ```bash
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/api/*.test.ts
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/auth/*.test.ts
+node --import ./tests/registerServerOnly.mjs --import tsx --test tests/billing/*.test.ts tests/auth/gettingStartedPage.test.ts
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/components/*.test.tsx tests/learning-engine/*.test.ts tests/learning-engine/*.test.tsx
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/multiple-choice/*.test.ts tests/spelling/*.test.ts
 node --import ./tests/registerServerOnly.mjs --import tsx --test tests/tts/*.test.ts
@@ -44,6 +45,7 @@ node --import ./tests/registerServerOnly.mjs --import tsx --test tests/e2e/vocab
 
 - `tests/api/`: TTS request handling, Vocabulary projections, learner cookie, protected speech, grading, and answer evaluator.
 - `tests/auth/`: sign-in return-path sanitization; the account-enumeration-resistant registration and email-verification/resend route contracts; database-authoritative onboarding transitions with database-role, earlier-step, later-step, and completed-account rejection for every protected onboarding Server Action, stale/duplicate/concurrent-request recovery, the two-child limit under concurrency, and username-conflict handling; the real `/getting-started` page's `checkout=success` boundary; the shared client-side recovery/session-refresh contract in `src/lib/onboarding-client.ts`; and JWT `session.update()` refresh behavior, including that browser-supplied onboarding claims are ignored.
+- `tests/billing/`: strict entitlement time/status/price boundaries; Checkout ownership, price, mode, quantity, payment, subscription, persistence, idempotency, and transient-failure confirmation; and real webhook signature/dispatch/failure behavior plus fail-closed subscription synchronization.
 - `tests/components/`: shared Button/Input/PasswordInput/LearningWindowShell recipes, plus a `VocabularyStartupVisual` regression proving no inline `style` attribute and representative required geometry/rotation/blur classes.
 - `tests/learning-engine/`: registry, screen injection/reset, generic action forwarding, route error presentation, and subject-neutral window rendering.
 - `tests/vocabulary/`, `tests/multiple-choice/`, `tests/spelling/`: state machine, attempts, strict payloads, projections, answer security, retries, and window flows.

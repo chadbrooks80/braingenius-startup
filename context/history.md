@@ -465,3 +465,10 @@
 - Updated `docs/architecture/application-and-route-map.md`, `docs/reference/api-routes.md`, `docs/reference/server-actions.md`, `docs/reference/testing.md`, `docs/reference/theme-and-styling.md`, `docs/services/authentication-and-accounts.md`, and `docs/services/email-verification-and-password-reset.md` to match the corrected behavior
 - Added `tests/auth/` (`authReturnPath.test.ts`, `emailVerificationRoutes.test.ts`, `registerUser.test.ts`) covering the new redirect validation and the registration/verification security fixes
 - Verification and user approval passed
+
+## 2026-07-28 21:57
+
+- Completed subscription-truth and paid-entitlement hardening on `fix/subscription-truth-paid-entitlement`
+- Centralized Stripe checkout, subscription synchronization, and entitlement decisions in server-only billing modules; onboarding now advances from paid checkout only after Stripe verifies the session, payment, price, customer, and owning user
+- Added focused checkout-confirmation, webhook, entitlement, and onboarding regression coverage; updated billing, security, route, action, component, testing, and Stripe operations documentation
+- Verification and user approval passed

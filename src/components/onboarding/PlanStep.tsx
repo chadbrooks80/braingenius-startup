@@ -9,11 +9,27 @@ import { continueWithFreeTrial } from "@/actions/onboarding";
 import { createCheckoutSession, type CheckoutPlan } from "@/actions/checkout";
 import { handleOnboardingRecovery } from "@/lib/onboarding-client";
 
-export default function PlanStep({ checkoutCanceled }: { checkoutCanceled: boolean }) {
+export type PlanStepCheckoutFeedback = "canceled" | "unconfirmed" | null;
+
+type PlanStepProps = {
+  checkoutFeedback: PlanStepCheckoutFeedback;
+};
+
+function feedbackMessage(feedback: PlanStepCheckoutFeedback): string | null {
+  if (feedback === "canceled") {
+    return "Checkout was canceled. You can try again when you're ready.";
+  }
+  if (feedback === "unconfirmed") {
+    return "We couldn't confirm this checkout yet. Please try again after payment completes.";
+  }
+  return null;
+}
+
+export default function PlanStep({ checkoutFeedback }: PlanStepProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(
-    checkoutCanceled ? "Checkout was canceled." : null
+    feedbackMessage(checkoutFeedback)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState<CheckoutPlan | null>(null);

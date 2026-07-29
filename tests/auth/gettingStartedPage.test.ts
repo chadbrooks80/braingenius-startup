@@ -8,8 +8,15 @@ registerAuthTestHooks();
 
 import { __getUsers, __resetFakeDb, __seedUser } from "./testDoubles/fakeDb";
 import { __setSessionUserId } from "./testDoubles/fakeNextAuth";
+import {
+  __getCheckoutConfirmationCalls,
+  __resetFakeBilling,
+  __setCheckoutConfirmationResult,
+} from "./testDoubles/fakeBilling";
 
-type GettingStartedPageProps = { searchParams: Promise<{ checkout?: string }> };
+type GettingStartedPageProps = {
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
+};
 
 let GettingStartedPage: (props: GettingStartedPageProps) => Promise<unknown>;
 
@@ -21,6 +28,7 @@ before(async () => {
 
 beforeEach(() => {
   __resetFakeDb();
+  __resetFakeBilling();
   __setSessionUserId(undefined);
 });
 
@@ -47,10 +55,13 @@ function redirectDestination(error: { digest: string }): string {
 }
 
 async function runPage(
-  checkout?: string
+  checkout?: string,
+  checkoutSessionId?: string
 ): Promise<{ redirected: true; destination: string } | { redirected: false }> {
   try {
-    await GettingStartedPage({ searchParams: Promise.resolve({ checkout }) });
+    await GettingStartedPage({
+      searchParams: Promise.resolve({ checkout, session_id: checkoutSessionId }),
+    });
     return { redirected: false };
   } catch (error) {
     if (isRedirectError(error)) {
@@ -60,47 +71,83 @@ async function runPage(
   }
 }
 
-test("checkout=success advances PLAN -> CHILDREN only when the database parent is still on PLAN and incomplete", async () => {
+test("checkout=success without session_id does not advance PLAN", async () => {
   const parent = seedParent("PLAN");
   __setSessionUserId(parent.id);
 
   const result = await runPage("success");
 
-  assert.deepEqual(result, { redirected: true, destination: "/getting-started" });
-  assert.equal(__getUsers()[0].onboardingStep, "CHILDREN", "the checkout return must advance the funnel");
+  assert.deepEqual(result, { redirected: false });
+  assert.equal(__getUsers()[0].onboardingStep, "PLAN");
+  assert.equal(__getCheckoutConfirmationCalls().length, 0);
 });
 
-test("a repeated checkout=success request after the first success does not advance the funnel again", async () => {
+test("a confirmed paid checkout advances PLAN -> CHILDREN exactly once", async () => {
   const parent = seedParent("PLAN");
   __setSessionUserId(parent.id);
+  __setCheckoutConfirmationResult({ status: "confirmed", plan: "MONTHLY" });
 
-  await runPage("success");
+  const result = await runPage("success", "cs_test_1234567890");
+
+  assert.deepEqual(result, { redirected: true, destination: "/getting-started" });
+  assert.equal(__getUsers()[0].onboardingStep, "CHILDREN");
+  assert.deepEqual(__getCheckoutConfirmationCalls(), [
+    { checkoutSessionId: "cs_test_1234567890", userId: parent.id },
+  ]);
+});
+
+test("a repeated valid return does not advance beyond CHILDREN or reconfirm", async () => {
+  const parent = seedParent("PLAN");
+  __setSessionUserId(parent.id);
+  __setCheckoutConfirmationResult({ status: "confirmed", plan: "LIFETIME" });
+
+  await runPage("success", "cs_test_1234567890");
   assert.equal(__getUsers()[0].onboardingStep, "CHILDREN");
 
-  const repeated = await runPage("success");
+  const repeated = await runPage("success", "cs_test_1234567890");
 
   assert.deepEqual(repeated, { redirected: false }, "a stale replay renders the current CHILDREN step instead of redirecting");
   assert.equal(__getUsers()[0].onboardingStep, "CHILDREN", "only the first request may advance");
+  assert.equal(__getCheckoutConfirmationCalls().length, 1);
+});
+
+test("rejected or pending checkout confirmation leaves the user on PLAN", async () => {
+  for (const confirmationResult of [
+    { status: "rejected" as const },
+    { status: "pending" as const },
+  ]) {
+    __resetFakeBilling();
+    __setCheckoutConfirmationResult(confirmationResult);
+    const parent = __getUsers()[0] ?? seedParent("PLAN");
+    __setSessionUserId(parent.id);
+
+    const result = await runPage("success", "cs_test_1234567890");
+
+    assert.deepEqual(result, { redirected: false });
+    assert.equal(__getUsers()[0].onboardingStep, "PLAN");
+  }
 });
 
 test("checkout=success from an earlier stored step does not advance and renders the current step", async () => {
   const parent = seedParent("WELCOME_VIDEO");
   __setSessionUserId(parent.id);
 
-  const result = await runPage("success");
+  const result = await runPage("success", "cs_test_1234567890");
 
   assert.deepEqual(result, { redirected: false });
   assert.equal(__getUsers()[0].onboardingStep, "WELCOME_VIDEO");
+  assert.equal(__getCheckoutConfirmationCalls().length, 0);
 });
 
 test("checkout=success from a later stored step does not advance and renders the current step", async () => {
   const parent = seedParent("CHILDREN");
   __setSessionUserId(parent.id);
 
-  const result = await runPage("success");
+  const result = await runPage("success", "cs_test_1234567890");
 
   assert.deepEqual(result, { redirected: false });
   assert.equal(__getUsers()[0].onboardingStep, "CHILDREN");
+  assert.equal(__getCheckoutConfirmationCalls().length, 0);
 });
 
 test("checkout=success for a completed account redirects to /dashboard without touching onboarding state", async () => {
@@ -128,12 +175,15 @@ test("checkout=success for an unauthenticated request redirects to /sign-in with
   assert.deepEqual(result, { redirected: true, destination: "/sign-in" });
 });
 
-test("visiting getting-started without checkout=success never advances PLAN", async () => {
+test("visiting without success or after cancellation never advances PLAN", async () => {
   const parent = seedParent("PLAN");
   __setSessionUserId(parent.id);
 
-  const result = await runPage(undefined);
+  const ordinary = await runPage(undefined);
+  const canceled = await runPage("canceled");
 
-  assert.deepEqual(result, { redirected: false });
-  assert.equal(__getUsers()[0].onboardingStep, "PLAN", "only an explicit checkout=success may advance PLAN");
+  assert.deepEqual(ordinary, { redirected: false });
+  assert.deepEqual(canceled, { redirected: false });
+  assert.equal(__getUsers()[0].onboardingStep, "PLAN");
+  assert.equal(__getCheckoutConfirmationCalls().length, 0);
 });

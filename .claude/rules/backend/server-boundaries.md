@@ -5,6 +5,7 @@ paths:
   - "src/auth.ts"
   - "src/proxy.ts"
   - "src/lib/{auth-tokens,db,email,onboarding-funnel,stripe,subscription}.ts"
+  - "src/lib/billing/**/*"
   - "src/learning-modules/**/server/**/*"
   - "src/learning-modules/**/validation/**/*"
   - "src/lib/learning-engine/speech/providers/**/*"
