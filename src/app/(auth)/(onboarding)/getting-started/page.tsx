@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/db";
 import { OnboardingStep } from "@/generated/prisma";
-import { advanceParentOnboardingStep, getOnboardingRoute } from "@/lib/onboarding-funnel";
+import { advanceParentOnboardingStep } from "@/lib/onboarding-funnel";
+import { getAccountAccessRoute } from "@/lib/auth/account-access";
 import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import WelcomeVideoStep from "@/components/onboarding/WelcomeVideoStep";
 import ProfileStep from "@/components/onboarding/ProfileStep";
@@ -32,7 +33,9 @@ export default async function GettingStartedPage({ searchParams }: GettingStarte
     redirect("/sign-in");
   }
 
-  const targetRoute = getOnboardingRoute({
+  const targetRoute = getAccountAccessRoute({
+    role: user.role,
+    mustResetPassword: user.mustResetPassword,
     onboardingCompleted: user.onboardingCompleted,
     onboardingStep: user.onboardingStep,
   });

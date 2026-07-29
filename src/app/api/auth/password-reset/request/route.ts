@@ -10,9 +10,10 @@ import {
 } from "@/lib/auth-tokens";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { buildPasswordResetUrl } from "@/lib/app-base-url";
+import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
 
 const RequestSchema = z.object({
-  email: z.email(),
+  email: CanonicalEmailSchema,
 });
 
 export async function POST(request: NextRequest) {

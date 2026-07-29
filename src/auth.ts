@@ -8,6 +8,7 @@ import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { getTrialDates } from "@/lib/subscription";
 import { OnboardingStep } from "@/generated/prisma";
+import { normalizeEmail } from "@/lib/auth/email-normalization";
 
 const prismaAdapter = PrismaAdapter(prisma);
 const createPrismaUser = prismaAdapter.createUser as (
@@ -90,10 +91,21 @@ export const authOptions: NextAuthOptions = {
       // credentials-registered account that shares the same email.
       allowDangerousEmailAccountLinking: true,
       profile(profile) {
+        // Google already validates its own address, but a missing or
+        // malformed provider email must never fall back to a raw,
+        // non-canonical value reaching the adapter's create/link path --
+        // only the shared canonical form may ever reach Prisma, so an
+        // invalid provider email fails the sign-in instead of creating or
+        // linking an account with a noncanonical identity.
+        const canonicalEmail = normalizeEmail(profile.email);
+        if (!canonicalEmail) {
+          throw new Error("INVALID_GOOGLE_EMAIL");
+        }
+
         return {
           id: profile.sub,
           name: profile.name,
-          email: profile.email,
+          email: canonicalEmail,
           image: profile.picture,
           // The default Google profile mapping doesn't set this, so it's
           // explicit here: Google already verified the address.
@@ -110,16 +122,16 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials) return null;
 
-        const emailOrUsername: "email" | "username" = credentials.username.includes("@")
-          ? "email"
-          : "username";
+        let identityWhere: { email: string } | { username: string };
+        if (credentials.username.includes("@")) {
+          const canonicalEmail = normalizeEmail(credentials.username);
+          if (!canonicalEmail) return null;
+          identityWhere = { email: canonicalEmail };
+        } else {
+          identityWhere = { username: credentials.username };
+        }
 
-        const user = await prisma.user.findUnique({
-          where:
-            emailOrUsername === "email"
-              ? { email: credentials.username }
-              : { username: credentials.username },
-        });
+        const user = await prisma.user.findUnique({ where: identityWhere });
 
         if (!user || !user.password) return null;
 
@@ -145,28 +157,35 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
 
         // Re-read from the DB rather than trusting `user` directly, so this
-        // always reflects the latest onboardingStep regardless of provider.
+        // always reflects the latest onboardingStep/role/reset state
+        // regardless of provider.
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { onboardingCompleted: true, onboardingStep: true },
+          select: { role: true, onboardingCompleted: true, onboardingStep: true, mustResetPassword: true },
         });
+        token.role = dbUser?.role ?? null;
         token.onboardingCompleted = Boolean(dbUser?.onboardingCompleted);
         token.onboardingStep = dbUser?.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
+        token.mustResetPassword = Boolean(dbUser?.mustResetPassword);
       }
 
       // `session.update()` is a signal to refresh, not a source of truth:
-      // onboarding claims a caller places on the `session` payload here are
-      // browser-supplied and untrusted, so they are ignored. The token is
-      // always re-synced from the signed-in user's current database record.
+      // onboarding/reset claims a caller places on the `session` payload here
+      // are browser-supplied and untrusted, so they are ignored. The token is
+      // always re-synced from the signed-in user's current database record --
+      // this is what lets a completed required-password-reset take effect
+      // without a full sign-out/sign-in.
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id },
-          select: { onboardingCompleted: true, onboardingStep: true },
+          select: { role: true, onboardingCompleted: true, onboardingStep: true, mustResetPassword: true },
         });
 
         if (dbUser) {
+          token.role = dbUser.role;
           token.onboardingCompleted = dbUser.onboardingCompleted;
           token.onboardingStep = dbUser.onboardingStep;
+          token.mustResetPassword = dbUser.mustResetPassword;
         }
       }
 
@@ -176,8 +195,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id;
+        session.user.role = token.role ?? null;
         session.user.onboardingCompleted = Boolean(token.onboardingCompleted);
         session.user.onboardingStep = token.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
+        session.user.mustResetPassword = Boolean(token.mustResetPassword);
       }
       return session;
     },

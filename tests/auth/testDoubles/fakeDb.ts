@@ -390,6 +390,20 @@ const passwordResetTokenMethods = {
       );
     return matches[0] ?? null;
   },
+  async findUnique({
+    where,
+    include,
+  }: {
+    where: { tokenHash: string };
+    include?: { user?: boolean };
+  }): Promise<(FakePasswordResetToken & { user: FakeUser }) | null> {
+    const token = passwordResetTokens.find((t) => t.tokenHash === where.tokenHash);
+    if (!token) return null;
+    if (!include?.user) return token as FakePasswordResetToken & { user: FakeUser };
+    const user = users.find((u) => u.id === token.userId);
+    if (!user) return null;
+    return { ...token, user };
+  },
   async create({
     data,
   }: {
@@ -405,6 +419,21 @@ const passwordResetTokenMethods = {
     };
     passwordResetTokens.push(record);
     return record;
+  },
+  async updateMany({
+    where,
+    data,
+  }: {
+    where: { userId: string; usedAt: null };
+    data: { usedAt: Date };
+  }): Promise<{ count: number }> {
+    const targets = passwordResetTokens.filter(
+      (token) => token.userId === where.userId && token.usedAt === where.usedAt
+    );
+    for (const target of targets) {
+      target.usedAt = data.usedAt;
+    }
+    return { count: targets.length };
   },
 };
 

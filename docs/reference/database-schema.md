@@ -18,7 +18,7 @@
 
 ### `User`
 
-Primary key `id` is a cuid. Optional identity/profile fields include `isOwner`, `name`, `fName`, `lName`, unique nullable `email`, unique nullable `username`, `image`, bcrypt `password`, and `role`. Funnel fields are `onboardingCompleted` (default false), `onboardingStep` (default `VERIFY_EMAIL`), and `mustResetPassword` (default false). Nullable `ttsSuspendedAt`/`ttsSuspensionReasonCode` hold narrow manual paid-TTS suspension state, set only through an authorized operator boundary (`src/lib/learning-engine/speech/ttsAccessSuspension.ts`), never automatically by usage enforcement. `createdAt` defaults now and `updatedAt` is automatic.
+Primary key `id` is a cuid. Optional identity/profile fields include `isOwner`, `name`, `fName`, `lName`, unique nullable `email` (`citext`, case-insensitive, with a database check constraint requiring the stored value to already equal its own trimmed-lowercase form — see [Email Identity](../services/authentication-and-accounts.md#email-identity)), unique nullable `username`, `image`, bcrypt `password`, and `role`. Funnel fields are `onboardingCompleted` (default false) and `onboardingStep` (default `VERIFY_EMAIL`); `getOnboardingRoute` treats a `CHILD` role as always `/dashboard` regardless of these defaults. `mustResetPassword` (default false) is enforced end-to-end — see [Required Password Reset](../services/authentication-and-accounts.md#required-password-reset). Nullable `ttsSuspendedAt`/`ttsSuspensionReasonCode` hold narrow manual paid-TTS suspension state, set only through an authorized operator boundary (`src/lib/learning-engine/speech/ttsAccessSuspension.ts`), never automatically by usage enforcement. `createdAt` defaults now and `updatedAt` is automatic.
 
 Relations: accounts, sessions, parent/student join rows, optional one-to-one subscription, password-reset tokens, and paid-TTS usage buckets/alerts/leases (as subject, caller, and entitlement principal). Deleting a user cascades through all foreign-key relations.
 
@@ -44,7 +44,7 @@ NextAuth adapter token model with `identifier`, unique `token`, and `expires`; c
 
 ### `EmailVerificationCode`
 
-Cuid `id`, email, `codeHash`, expiry, optional used time, attempts default zero, and created time. It has a non-unique index on email. Account flows store only the code hash and query the most recent unused row.
+Cuid `id`, `citext` email (same canonical-storage check constraint as `User.email`), `codeHash`, expiry, optional used time, attempts default zero, and created time. It has a non-unique index on email. Account flows store only the code hash and query the most recent unused row.
 
 ### `PasswordResetToken`
 
@@ -65,3 +65,5 @@ One row per in-flight paid provider attempt: caller/principal IDs, provider, req
 ## Migration workflow
 
 Use `npx prisma migrate dev --name <name>` for approved local schema changes, review generated SQL, then run `npx prisma generate`. Do not edit applied migrations or use `db push` as a migration substitute. Production uses `npx prisma migrate deploy`; no repository deployment wrapper is currently present.
+
+`normalize_auth_emails` enables the PostgreSQL `citext` extension (`extensions = [citext]` in the `datasource` block, requiring the `postgresqlExtensions` preview feature on the `client` generator), converts `User.email` and `EmailVerificationCode.email` to `citext`, canonicalizes existing non-null values with `LOWER(BTRIM(...))`, and adds a check constraint on each column requiring the stored value to already equal its own trimmed-lowercase form (compared as `text`, since `citext` equality is itself case-insensitive and would otherwise never actually reject a differently-cased value). It is forward-only and does not touch any other table.

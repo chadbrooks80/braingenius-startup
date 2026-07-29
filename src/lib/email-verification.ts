@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { hashValue, VERIFICATION_CODE_MAX_ATTEMPTS } from "@/lib/auth-tokens";
 import { getNextOnboardingStep } from "@/lib/onboarding-funnel";
 import { OnboardingStep, UserRole } from "@/generated/prisma";
+import { normalizeEmail } from "@/lib/auth/email-normalization";
 
 export type EmailVerificationResult = { success: true } | { success: false };
 
@@ -24,9 +25,19 @@ class VerificationClaimRejected extends Error {}
  * another request already consumed, expired, or exhausted.
  */
 export async function attemptEmailVerification(
-  email: string,
+  rawEmail: string,
   code: string
 ): Promise<EmailVerificationResult> {
+  // Normalized here, at the owning service boundary, rather than trusting
+  // that every caller already canonicalized -- the HTTP route validates with
+  // the same schema, but a direct service call with surrounding whitespace or
+  // mixed case must still resolve the canonical identity instead of silently
+  // matching nothing.
+  const email = normalizeEmail(rawEmail);
+  if (!email) {
+    return { success: false };
+  }
+
   const now = new Date();
 
   const verificationCode = await prisma.emailVerificationCode.findFirst({

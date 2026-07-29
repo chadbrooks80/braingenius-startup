@@ -3,9 +3,10 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
 import { hashValue } from "@/lib/auth-tokens";
+import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
 
 const ConfirmSchema = z.object({
-  email: z.email(),
+  email: CanonicalEmailSchema,
   token: z.string().min(1),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -43,9 +44,13 @@ export async function POST(request: NextRequest) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await prisma.$transaction([
+    // A valid email-token reset proves possession of the reset link, which is
+    // sufficient to also clear a pending required-reset flag -- otherwise a
+    // mustResetPassword child who recovers through this ordinary flow would
+    // stay permanently routed to /required-password-reset.
     prisma.user.update({
       where: { id: resetToken.userId },
-      data: { password: hashedPassword },
+      data: { password: hashedPassword, mustResetPassword: false },
     }),
     prisma.passwordResetToken.updateMany({
       where: { userId: resetToken.userId, usedAt: null },

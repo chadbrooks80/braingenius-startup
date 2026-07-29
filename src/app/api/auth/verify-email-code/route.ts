@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { attemptEmailVerification } from "@/lib/email-verification";
+import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
 
 const VerifySchema = z.object({
-  email: z.email(),
+  email: CanonicalEmailSchema,
   code: z.string().length(4),
 });
 

@@ -36,6 +36,25 @@ test("no active code returns failure", async () => {
   assert.deepEqual(result, { success: false });
 });
 
+test("a padded, mixed-case direct call still resolves the canonical identity's active code", async () => {
+  __seedUser({ email: EMAIL });
+  const code = __seedVerificationCode({ email: EMAIL, codeHash: CODE_HASH });
+
+  const result = await attemptEmailVerification(`  ${EMAIL.toUpperCase()} `, CODE);
+
+  assert.deepEqual(result, { success: true });
+  assert.ok(__getVerificationCodes().find((c) => c.id === code.id)?.usedAt);
+});
+
+test("an invalid raw email is rejected before any database lookup", async () => {
+  __seedUser({ email: EMAIL });
+  __seedVerificationCode({ email: EMAIL, codeHash: CODE_HASH });
+
+  const result = await attemptEmailVerification("not-an-email", CODE);
+
+  assert.deepEqual(result, { success: false });
+});
+
 test("an expired code returns failure and performs no write", async () => {
   __seedUser({ email: EMAIL });
   const code = __seedVerificationCode({

@@ -1,3 +1,11 @@
+## 2026-07-29 15:30
+
+- Completed account-authentication-consistency hardening on `fix/account-authentication-consistency`
+- Added `src/lib/auth/email-normalization.ts` (`CanonicalEmailSchema`, `normalizeEmail`) as the single trim+lowercase canonicalization rule for email identity, and applied it to Google profile mapping and credentials sign-in in `src/auth.ts` so a differently-cased or padded address can never create or match a second account; added a `citext`-backed Postgres migration (`prisma/migrations/20260729142601_normalize_auth_emails/`) that canonicalizes existing `User`/`EmailVerificationCode` rows and adds a canonical-storage check constraint
+- Added `src/lib/auth/account-access.ts` (`getAccountAccessRoute`, `resolveSessionAccountAccess`) as the single database-authoritative "where does this account belong" decision, where a pending required password reset always wins over onboarding routing; wired it into a new server-side gate at `src/app/(app)/layout.tsx` and into the auth-only playground routes (`src/app/playground/restrict/page.tsx`, `src/app/playground/users/page.tsx`), with `src/proxy.ts` using it only for a fast JWT-derived redirect hint, never as final authorization
+- Added the `mustResetPassword` flow end-to-end: `prisma/schema.prisma` field, `src/actions/required-password-reset.ts` server action, and the `src/app/(auth)/required-password-reset/` route/form; `src/auth.ts`'s JWT/session callbacks now re-read `role` and `mustResetPassword` from the database on every sign-in and `session.update()` call so a completed reset takes effect without a full sign-out
+- Verified: focused and regression auth/billing test suites, including new `accountAccessRouting`, `appLayoutAccountGate`, `credentialsSignIn`, `emailNormalization`, `googleProfileMapping`, `passwordResetConfirm`, `playgroundAccountGate`, `proxyRouting`, `requiredPasswordReset`, and `checkoutSession` coverage; audit and user approval passed
+
 ## 2026-07-28 22:38
 
 - Completed Phase 2 of Playground-Independent Product Test Cleanup on `test/playground-independent-product-tests`, closing the two verified Phase 1 audit findings (PIPT-P1-01, PIPT-P1-02) without touching the deleted playground E2E or adding a real-route Word Search E2E

@@ -33,6 +33,7 @@ const SUBSCRIPTION_ENTITLEMENT_SELECT = {
 type EntitlementUserRow = {
   id: string;
   role: string | null;
+  mustResetPassword: boolean;
   ttsSuspendedAt: Date | null;
   subscription: EntitlementSubscription | null;
 };
@@ -68,6 +69,7 @@ const prismaEntitlementDb: TtsEntitlementDb = {
       select: {
         id: true,
         role: true,
+        mustResetPassword: true,
         ttsSuspendedAt: true,
         subscription: { select: SUBSCRIPTION_ENTITLEMENT_SELECT },
       },
@@ -119,6 +121,14 @@ export async function resolveTtsEntitlement(
 
   const caller = await db.findUserForTtsEntitlement(callerUserId);
   if (!caller) {
+    return { granted: false };
+  }
+
+  // A reset-required caller must complete their required password change
+  // before any paid TTS access, direct or inherited -- denied here, before
+  // usage acquisition or provider dispatch, independently of the shared
+  // (app) layout gate.
+  if (caller.mustResetPassword) {
     return { granted: false };
   }
 

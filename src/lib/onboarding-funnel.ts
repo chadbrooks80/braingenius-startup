@@ -20,11 +20,23 @@ export function getNextOnboardingStep(step: OnboardingStep): OnboardingStep {
   return ONBOARDING_STEP_ORDER[Math.min(index + 1, ONBOARDING_STEP_ORDER.length - 1)];
 }
 
-/** Decides where a signed-in user should land based on their funnel progress. */
+/**
+ * Decides where a signed-in user should land based on their funnel progress.
+ * A CHILD account is never routed into the parent verify-email/onboarding
+ * funnel: its onboardingStep/onboardingCompleted default to the same
+ * "incomplete" shape as a brand-new parent, but that default has no meaning
+ * for a child account, which is created directly by its parent and never
+ * progresses through these steps itself.
+ */
 export function getOnboardingRoute(user: {
+  role: UserRole | null;
   onboardingStep: OnboardingStep;
   onboardingCompleted: boolean;
 }): string {
+  if (user.role === UserRole.CHILD) {
+    return "/dashboard";
+  }
+
   if (user.onboardingCompleted || user.onboardingStep === OnboardingStep.COMPLETE) {
     return "/dashboard";
   }
@@ -60,14 +72,14 @@ export const ONBOARDING_UNAUTHENTICATED: OnboardingActionResult<never> = {
 };
 
 /**
- * Reads only the minimum state (step + completion) needed to route a caller
- * whose mutation was rejected as stale, duplicated, out of order, or already
- * completed. Never used to authorize a write.
+ * Reads only the minimum state (role + step + completion) needed to route a
+ * caller whose mutation was rejected as stale, duplicated, out of order, or
+ * already completed. Never used to authorize a write.
  */
 async function resolveRecoveryRoute(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { onboardingStep: true, onboardingCompleted: true },
+    select: { role: true, onboardingStep: true, onboardingCompleted: true },
   });
 
   if (!user) {

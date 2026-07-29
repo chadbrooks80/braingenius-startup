@@ -12,6 +12,7 @@ const PRICES = { monthly: "price_monthly", lifetime: "price_lifetime" };
 type SeedUser = {
   id: string;
   role?: string | null;
+  mustResetPassword?: boolean;
   ttsSuspendedAt?: Date | null;
   subscription?: EntitlementSubscription | null;
   parentIds?: string[];
@@ -24,6 +25,7 @@ function createFakeDb(seed: SeedUser[]): TtsEntitlementDb & { failNext: () => vo
       {
         id: user.id,
         role: user.role ?? "PARENT",
+        mustResetPassword: user.mustResetPassword ?? false,
         ttsSuspendedAt: user.ttsSuspendedAt ?? null,
         subscription: user.subscription ?? null,
         parentIds: user.parentIds ?? [],
@@ -46,6 +48,7 @@ function createFakeDb(seed: SeedUser[]): TtsEntitlementDb & { failNext: () => vo
         ? {
             id: user.id,
             role: user.role,
+            mustResetPassword: user.mustResetPassword,
             ttsSuspendedAt: user.ttsSuspendedAt,
             subscription: user.subscription,
           }
@@ -329,6 +332,28 @@ test("lifting a manual suspension restores evaluation through the unchanged Stag
   ]);
   const restored = await resolveTtsEntitlement("user-1", deps(db));
   assert.equal(restored.granted, true);
+});
+
+test("a reset-required caller is denied for direct and inherited entitlement", async () => {
+  const direct = createFakeDb([
+    { id: "user-1", subscription: admin(), mustResetPassword: true },
+  ]);
+  assert.deepEqual(await resolveTtsEntitlement("user-1", deps(direct)), {
+    granted: false,
+  });
+
+  const inherited = createFakeDb([
+    { id: "parent-1", subscription: admin() },
+    {
+      id: "child-1",
+      role: "CHILD",
+      parentIds: ["parent-1"],
+      mustResetPassword: true,
+    },
+  ]);
+  assert.deepEqual(await resolveTtsEntitlement("child-1", deps(inherited)), {
+    granted: false,
+  });
 });
 
 test("a database failure propagates so the boundary fails closed", async () => {

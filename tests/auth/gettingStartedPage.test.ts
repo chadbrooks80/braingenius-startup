@@ -175,6 +175,15 @@ test("checkout=success for an unauthenticated request redirects to /sign-in with
   assert.deepEqual(result, { redirected: true, destination: "/sign-in" });
 });
 
+test("a reset-required account is redirected to /required-password-reset instead of rendering onboarding", async () => {
+  const parent = seedParent("PROFILE", { mustResetPassword: true });
+  __setSessionUserId(parent.id);
+
+  const result = await runPage(undefined);
+
+  assert.deepEqual(result, { redirected: true, destination: "/required-password-reset" });
+});
+
 test("visiting without success or after cancellation never advances PLAN", async () => {
   const parent = seedParent("PLAN");
   __setSessionUserId(parent.id);

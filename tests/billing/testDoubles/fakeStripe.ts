@@ -17,6 +17,26 @@ export function __setStripeEvent(nextEvent: FakeStripeEvent): void {
   event = nextEvent;
 }
 
+type CheckoutSessionCreateArgs = Record<string, unknown>;
+
+let checkoutSessionCalls: CheckoutSessionCreateArgs[] = [];
+let checkoutSessionResult: { url: string | null } | "throw" = {
+  url: "https://checkout.stripe.test/session",
+};
+
+export function __resetFakeStripeCheckoutSessions(): void {
+  checkoutSessionCalls = [];
+  checkoutSessionResult = { url: "https://checkout.stripe.test/session" };
+}
+
+export function __getCheckoutSessionCalls(): CheckoutSessionCreateArgs[] {
+  return checkoutSessionCalls;
+}
+
+export function __setCheckoutSessionResult(result: { url: string | null } | "throw"): void {
+  checkoutSessionResult = result;
+}
+
 export function getStripe() {
   return {
     webhooks: {
@@ -25,6 +45,17 @@ export function getStripe() {
           throw new Error("invalid signature");
         }
         return event;
+      },
+    },
+    checkout: {
+      sessions: {
+        async create(args: CheckoutSessionCreateArgs) {
+          checkoutSessionCalls.push(args);
+          if (checkoutSessionResult === "throw") {
+            throw new Error("fakeStripe: simulated Stripe failure");
+          }
+          return checkoutSessionResult;
+        },
       },
     },
   };

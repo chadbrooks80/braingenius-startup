@@ -9,9 +9,10 @@ import {
   VERIFICATION_CODE_EXPIRY_MINUTES,
 } from "@/lib/auth-tokens";
 import { sendVerificationCodeEmail } from "@/lib/email";
+import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
 
 const ResendSchema = z.object({
-  email: z.email(),
+  email: CanonicalEmailSchema,
 });
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };

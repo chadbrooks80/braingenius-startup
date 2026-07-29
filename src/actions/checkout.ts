@@ -41,6 +41,14 @@ export async function createCheckoutSession(plan: CheckoutPlan): Promise<Checkou
     return { success: false, error: "Account not found." };
   }
 
+  // A reset-required account must complete its required password change
+  // before it can reach paid checkout -- this is a direct Server Action
+  // call, not a hidden UI route, so it must be denied here independently of
+  // the shared (app) layout gate.
+  if (user.mustResetPassword) {
+    return { success: false, error: "You must reset your password before continuing." };
+  }
+
   try {
     const stripe = getStripe();
     const existingCustomerId = user.subscription?.stripeCustomerId ?? null;

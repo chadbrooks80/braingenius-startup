@@ -12,9 +12,10 @@ import {
   VERIFICATION_CODE_EXPIRY_MINUTES,
 } from "@/lib/auth-tokens";
 import { sendVerificationCodeEmail } from "@/lib/email";
+import { CanonicalEmailSchema } from "@/lib/auth/email-normalization";
 
 const RegisterSchema = z.object({
-  email: z.email("Invalid email address"),
+  email: CanonicalEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 

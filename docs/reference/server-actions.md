@@ -15,10 +15,11 @@
 ### `createCheckoutSession(plan)`
 
 - Input: typed `CheckoutPlan`, `"MONTHLY" | "LIFETIME"`.
-- Auth: requires a server session and derives user ID from it.
+- Auth: requires a server session and derives user ID from it; denies a missing account or a `mustResetPassword` caller before any Stripe call (see [Required Password Reset](../services/authentication-and-accounts.md#required-password-reset)).
 - Side effects: validates the plan, reads the user/subscription, resolves a trusted application origin, and creates a Stripe subscription-mode or payment-mode Checkout Session using the matching server-configured price. Reuses a stored Stripe customer when present; a new lifetime Checkout explicitly creates one.
 - Return: success with Stripe-hosted URL or safe failure.
 - Return URLs: success uses `/getting-started?checkout=success&session_id={CHECKOUT_SESSION_ID}`; cancel uses `/getting-started?checkout=canceled`. Neither URL contains identity, price, tier, payment, or entitlement claims.
+- Consumers/evidence: `tests/billing/checkoutSession.test.ts` covers unauthenticated, invalid-plan, missing-account, and reset-required rejection (each with zero Stripe `checkout.sessions.create` calls) and a successful session creation, against a faked Stripe client.
 - Consumers/evidence: `PlanStep`; checkout verification is covered by `tests/billing/checkoutConfirmation.test.ts` and the real return-page boundary by `tests/auth/gettingStartedPage.test.ts`. Successful action return does not itself update entitlement.
 
 ## `src/actions/onboarding.ts`
@@ -52,6 +53,17 @@ Validates name, lowercase-alphanumeric username, eight-character password, and r
 ### `finishChildrenStep()`
 
 Requires a session and advances `CHILDREN` to `COMPLETE` (which sets `onboardingCompleted`) only when the database still says `CHILDREN` with incomplete onboarding. Consumed by both Skip and Finish controls in `ChildrenStep`; the component then calls `session.update()` only to trigger a refresh (it sends no onboarding claims) and routes to `/dashboard`.
+
+## `src/actions/required-password-reset.ts`
+
+### `submitRequiredPasswordReset(input)`
+
+- Input: `{ currentPassword, newPassword, confirmNewPassword }`; Zod requires a non-empty current password, an eight-character-minimum new password, and a `confirmNewPassword` that matches `newPassword` (enforced server-side, not just in the client form).
+- Auth: requires a server session; ignores every client-supplied field beyond the three passwords and re-reads the user from the authenticated ID.
+- Eligibility: if the database no longer says `mustResetPassword = true`, or the account has no credentials password, returns `{ status: "recovery", redirectTo }` (the account's current authoritative destination via `getAccountAccessRoute`) instead of running the security checks below.
+- Side effects: verifies the current password with bcrypt; rejects a new password identical to the current one; on success, hashes the new password and clears `mustResetPassword` together in one conditional `updateMany` matched on `{ id, mustResetPassword: true }`. A zero-row match (already cleared, or a losing concurrent request) also returns `recovery` rather than success.
+- Return: reuses `OnboardingActionResult<{ redirectTo: string }>` from `src/lib/onboarding-funnel.ts` — `{ status: "success", data: { redirectTo } }`, `{ status: "recovery", redirectTo }`, `{ status: "unauthenticated" }`, or `{ status: "error", error }`. Wrong current password, a same-as-current new password, a missing/mismatched confirmation, and a stale/concurrent update all return the identical generic `error` result so the response never reveals which check failed.
+- Consumers/evidence: `RequiredPasswordResetForm` under `/required-password-reset`, which submits all three fields, calls `session.update()` with no arguments, then `router.replace()` (not `push`) to the returned `redirectTo` so the cleared flag is re-read from the database and Back cannot return to the completed form; `tests/auth/requiredPasswordReset.test.ts`.
 
 ## Validation and authorization
 

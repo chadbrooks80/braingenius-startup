@@ -38,19 +38,28 @@ test("getOnboardingRoute routes by completion state and step", () => {
   const { getOnboardingRoute } = onboardingFunnel;
 
   assert.equal(
-    getOnboardingRoute({ onboardingStep: "VERIFY_EMAIL", onboardingCompleted: false }),
+    getOnboardingRoute({ role: "PARENT", onboardingStep: "VERIFY_EMAIL", onboardingCompleted: false }),
     "/verify-email"
   );
   assert.equal(
-    getOnboardingRoute({ onboardingStep: "PROFILE", onboardingCompleted: false }),
+    getOnboardingRoute({ role: "PARENT", onboardingStep: "PROFILE", onboardingCompleted: false }),
     "/getting-started"
   );
   assert.equal(
-    getOnboardingRoute({ onboardingStep: "COMPLETE", onboardingCompleted: false }),
+    getOnboardingRoute({ role: "PARENT", onboardingStep: "COMPLETE", onboardingCompleted: false }),
     "/dashboard"
   );
   assert.equal(
-    getOnboardingRoute({ onboardingStep: "CHILDREN", onboardingCompleted: true }),
+    getOnboardingRoute({ role: "PARENT", onboardingStep: "CHILDREN", onboardingCompleted: true }),
+    "/dashboard"
+  );
+});
+
+test("getOnboardingRoute always routes a CHILD role to /dashboard, ignoring its default onboarding fields", () => {
+  const { getOnboardingRoute } = onboardingFunnel;
+
+  assert.equal(
+    getOnboardingRoute({ role: "CHILD", onboardingStep: "VERIFY_EMAIL", onboardingCompleted: false }),
     "/dashboard"
   );
 });
