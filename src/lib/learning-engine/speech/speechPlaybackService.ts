@@ -3,6 +3,7 @@ import {
   SpeechPlaybackController,
   type SpeakTextOptions,
 } from "./SpeechPlaybackController";
+import { logSpeechPlaybackFailure } from "./logSpeechPlaybackFailure";
 
 function isSupportedInBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.Audio !== "undefined";
@@ -14,6 +15,7 @@ const controller = new SpeechPlaybackController({
   createAudioElement: () => new Audio(),
   createObjectURL: (blob) => URL.createObjectURL(blob),
   revokeObjectURL: (url) => URL.revokeObjectURL(url),
+  reportFailure: logSpeechPlaybackFailure,
 });
 
 export function speakText(

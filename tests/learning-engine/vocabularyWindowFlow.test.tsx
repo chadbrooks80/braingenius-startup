@@ -175,9 +175,10 @@ test("the Word Search checkpoint screen builder rejects malformed checkpoint con
   }
 });
 
-test("screen changes reset feedback and ScreenRenderer injects live feedback after module props", () => {
+test("screen changes clear feedback and speech failure state without injecting the notice into a Learning Window", () => {
   const activeScreens: ActiveScreen[] = [];
   const feedbackChanges: Array<AnswerFeedback | null> = [];
+  const speechFailureNoticeChanges: unknown[] = [];
 
   changeLearningEngineScreen(
     {
@@ -197,14 +198,18 @@ test("screen changes reset feedback and ScreenRenderer injects live feedback aft
       setShowSidebar: () => {},
       setAnswerFeedback: (feedback) => feedbackChanges.push(feedback),
       setIsSpeaking: () => {},
+      setSpeechFailureNotice: (notice) =>
+        speechFailureNoticeChanges.push(notice),
     },
     () => {}
   );
 
   assert.deepEqual(feedbackChanges, [null]);
+  assert.deepEqual(speechFailureNoticeChanges, [null]);
   const activeScreen = activeScreens[0];
   assert.ok(activeScreen);
   assert.equal(typeof activeScreen.props.onAction, "function");
+  assert.equal("speechFailureNotice" in activeScreen.props, false);
 
   function FeedbackProbe({
     feedback,

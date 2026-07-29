@@ -6,4 +6,5 @@ export const requiredLearningEngineStateSetterKeys: (keyof LearningEngineStateSe
   "setShowSidebar",
   "setAnswerFeedback",
   "setIsSpeaking",
+  "setSpeechFailureNotice",
 ];

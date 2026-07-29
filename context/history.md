@@ -1,3 +1,14 @@
+## 2026-07-29 20:00
+
+- Completed shared speech-playback failure handling on `fix/shared-speech-playback-failure-handling`, giving every Learning Engine module and window the same learner-visible notice for a failed `speak` request instead of a silent failure
+- Reworked `SpeechPlaybackController` around one subject-neutral `SpeechPlaybackFailure` contract (`unsupported`, `request-preparation`, `request`, `http-response`, `audio-blob`, `audio-decode`, `audio-play` stages) carrying only a monotonic request ID and bounded metadata (integer HTTP status, numeric media error code, safe browser error name); every active failed generation is reported exactly once through the new `logSpeechPlaybackFailure`, with diagnostics excluding spoken text, queue contents, protected references, endpoints, response bodies, provider details, credentials, and raw errors
+- `runSpeakRequest` bridges the active failure to a route-owned `{ requestId }` notice; the learning route (`src/app/(app)/(learning)/learning/[...learning]/page.tsx`) owns and request-ID-guards that single notice so a stale timer or dismissal callback can never clear a newer failure, and `changeLearningEngineScreen` clears an old notice on screen replacement
+- Added the shared `SpeechPlaybackFailureBanner` (`src/components/learning-engine/SpeechPlaybackFailureBanner.tsx`) as the one engine-wide `role="alert"` notice — fixed learner-safe copy, accessible dismiss button, and a 12-second auto-dismiss timer refreshed on notice replacement; it receives no diagnostic fields, so modules and windows implement no failure UI of their own
+- Each chunk's fetch `AbortController` is now released in a `finally` covering every terminal path (success, request rejection, non-OK response, blob-read failure), guarded by a generation-identity check so a stale generation can never clear or abort a newer generation's controller
+- Added `tests/tts/runSpeakRequest.test.ts` and `tests/components/speechPlaybackFailureBanner.test.tsx`, expanded `tests/tts/SpeechPlaybackController.test.ts` for every failure stage/one-time settlement/stale-generation suppression, added `tests/e2e/speechPlaybackFailure.e2e.ts` against the real learning route with locally intercepted speech responses, and extended `tests/learning-engine/` route-error and window-flow tests for notice clearing and the no-notice-prop boundary
+- Updated docs: `docs/architecture/application-and-route-map.md`, `docs/architecture/learning-engine-and-module-boundaries.md`, `docs/reference/testing.md`, `docs/services/text-to-speech.md`, `docs/components/learning-engine/SpeechPlaybackFailureBanner.md`
+- Verification and user approval passed
+
 ## 2026-07-29 13:09
 
 - Completed module-owned learning route errors on `fix/module-owned-learning-route-errors`, removing the vocabulary-specific error codes and presentations that the shared `LearningRouteError` used to hardcode

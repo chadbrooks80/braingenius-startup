@@ -15,6 +15,9 @@ export function changeLearningEngineScreen(
 ): void {
   cancelSpeech();
   learningEngineStateSetters.setIsSpeaking(false);
+  // A failure notice belongs to the screen occurrence that produced it; it
+  // must never remain visible after that screen is replaced.
+  learningEngineStateSetters.setSpeechFailureNotice(null);
 
   const WindowComponent = resolveLearningWindow(
     screenRequest.windowName

@@ -209,6 +209,7 @@ function createEngineStateCapture(): EngineStateCapture {
       setShowSidebar: (show) => showSidebarValues.push(show),
       setAnswerFeedback: (feedback) => answerFeedbackValues.push(feedback),
       setIsSpeaking: (isSpeaking) => isSpeakingValues.push(isSpeaking),
+      setSpeechFailureNotice: () => {},
     },
     showHeaderValues,
     showSidebarValues,

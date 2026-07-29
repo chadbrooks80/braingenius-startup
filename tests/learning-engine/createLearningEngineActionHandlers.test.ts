@@ -33,6 +33,7 @@ test("submitAnswer forwards an opaque non-vocabulary payload without interpretin
       feedbackChanges.push(value);
     },
     setIsSpeaking() {},
+    setSpeechFailureNotice() {},
   };
   const handlers = createLearningEngineActionHandlers({
     getActiveModule: () => testModule,

@@ -35,12 +35,17 @@ export type AnswerFeedback =
   | { correct: true }
   | { correct: false; correctAnswer: string };
 
+export type SpeechFailureNotice = {
+  readonly requestId: number;
+};
+
 export type LearningEngineStateSetters = {
   setActiveScreen: (screen: ActiveScreen) => void;
   setShowHeader: (show: boolean) => void;
   setShowSidebar: (show: boolean) => void;
   setAnswerFeedback: (answerFeedback: AnswerFeedback | null) => void;
   setIsSpeaking: (isSpeaking: boolean) => void;
+  setSpeechFailureNotice: (notice: SpeechFailureNotice | null) => void;
 };
 
 export type LearningEngineInitializeResult = "ready" | "route-error" | "stale";

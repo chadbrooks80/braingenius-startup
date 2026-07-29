@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ScreenRenderer } from "@/components/learning-engine/ScreenRenderer";
 import { LearningHeader } from "@/components/learning-engine/layout/LearningHeader";
 import { LearningSidebar } from "@/components/learning-engine/layout/LearningSidebar";
+import { SpeechPlaybackFailureBanner } from "@/components/learning-engine/SpeechPlaybackFailureBanner";
 import LearningEngine from "@/lib/learning-engine/LearningEngine";
 import { cancelSpeech } from "@/lib/learning-engine/speech/speechPlaybackService";
-import type { ActiveScreen, AnswerFeedback } from "@/types/learning";
+import type {
+  ActiveScreen,
+  AnswerFeedback,
+  SpeechFailureNotice,
+} from "@/types/learning";
 
 export default function LearningPage() {
   const { learning } = useParams<{ learning: string[] }>();
@@ -33,7 +38,16 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
     null
   );
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechFailureNotice, setSpeechFailureNotice] =
+    useState<SpeechFailureNotice | null>(null);
   const learningEngineRef = useRef<LearningEngine | null>(null);
+
+  const dismissSpeechFailureNotice = useCallback((requestId: number) => {
+    // A stale timer or stale X callback must never dismiss a newer notice.
+    setSpeechFailureNotice((current) =>
+      current && current.requestId === requestId ? null : current
+    );
+  }, []);
 
   useEffect(() => {
     const [moduleName, ...moduleVariables] = learning;
@@ -53,6 +67,7 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
           setShowSidebar,
           setAnswerFeedback,
           setIsSpeaking,
+          setSpeechFailureNotice,
         },
         routePath,
         initializationController.signal
@@ -87,6 +102,12 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
 
   return (
     <>
+      {speechFailureNotice && (
+        <SpeechPlaybackFailureBanner
+          requestId={speechFailureNotice.requestId}
+          onDismiss={dismissSpeechFailureNotice}
+        />
+      )}
       {showHeader && <LearningHeader />}
       <div className="flex flex-1">
         {showSidebar && <LearningSidebar />}

@@ -4,7 +4,7 @@ The current ownership rule is: the route hosts, the Learning Engine coordinates,
 
 ## Route-owned session
 
-`src/app/(app)/(learning)/learning/[...learning]/page.tsx` reads the catch-all segments, remounts by joined route key, and owns React state for the active screen, header/sidebar visibility, answer feedback, and speech status. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, aborts stale route work, and cancels shared speech on teardown.
+`src/app/(app)/(learning)/learning/[...learning]/page.tsx` reads the catch-all segments, remounts by joined route key, and owns React state for the active screen, header/sidebar visibility, answer feedback, speech status, and the one current speech-failure notice. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, renders the shared failure banner above the learning header/content, aborts stale route work, and cancels shared speech on teardown. Notice dismissal is request-ID guarded so an old timer or X callback cannot clear a newer failure.
 
 ## Engine-owned work
 
@@ -15,11 +15,12 @@ The current ownership rule is: the route hosts, the Learning Engine coordinates,
 - generic `next`, `submitAnswer`, and `speak` action routing;
 - the typed `LearningWindowRegistry`;
 - converting `ScreenRequest` into an `ActiveScreen`;
-- resetting feedback and speech when screens change;
+- resetting feedback, speech, and any old speech-failure notice when screens change;
 - injecting live `onAction`, feedback, and speech state;
 - the subject-neutral route-error envelope, structured logging, terminal
   rendering, recovery, and engine-generic safe presentations;
-- shared speech parsing, playback, cancellation, and providers.
+- shared speech parsing, playback, typed client-failure classification, bounded
+  diagnostics, cancellation, and providers.
 
 Only the registry resolves a `LearningWindowName` to React. Only `changeLearningEngineScreen` applies a `ScreenRequest`. The engine does not interpret Vocabulary answer payloads.
 
@@ -43,7 +44,7 @@ already-approved presentation without deriving text or branching on the code.
 - browser clients for the content and answer endpoints;
 - the module server handlers, capability/attempt bindings, canonical fixture, answer evaluation, and protected speech resolution.
 
-The module returns registered window names and public props. It does not import window implementations or mutate route React state.
+The module returns registered window names and public props. It does not import window implementations, mutate route React state, or own speech-failure diagnostics, notice state, learner copy, or timers. Every current and future module receives the same failure behavior by emitting the generic `speak` action.
 
 ## Window-owned work
 
@@ -62,6 +63,8 @@ The shared engine implementation is divided by responsibility:
 - Screen application: `src/lib/learning-engine/screens/changeLearningEngineScreen.ts`, `src/lib/learning-engine/screens/withSharedScreenProps.ts`.
 - State-setter validation: `src/lib/learning-engine/validation/requiredLearningEngineStateSetterKeys.ts`, `src/lib/learning-engine/validation/validateLearningEngineStateSetters.ts`.
 - Playback and client orchestration: `src/lib/learning-engine/speech/SpeechPlaybackController.ts`, `src/lib/learning-engine/speech/normalizeSpeechQueue.ts`, `src/lib/learning-engine/speech/runSpeakRequest.ts`, `src/lib/learning-engine/speech/silentAudioDataUri.ts`, `src/lib/learning-engine/speech/speechPlaybackService.ts`.
+- Playback failure contract and diagnostics: `src/lib/learning-engine/speech/speechPlaybackFailure.ts`, `src/lib/learning-engine/speech/logSpeechPlaybackFailure.ts`.
+- Shared learner notification: `src/components/learning-engine/SpeechPlaybackFailureBanner.tsx`, hosted once by the learning route.
 - Speech parsing: `src/lib/learning-engine/speech/validation/parseSpeakActionPayload.ts`, `src/lib/learning-engine/speech/validation/parseTtsConfiguration.ts`, `src/lib/learning-engine/speech/validation/parseTtsSynthesisRequest.ts`.
 - Provider policy and dispatch: `src/lib/learning-engine/speech/supportedTtsConfigurations.ts`, `src/lib/learning-engine/speech/providers/types.ts`, `src/lib/learning-engine/speech/providers/synthesizeTts.ts`.
 - Provider transport: `src/lib/learning-engine/speech/providers/fetchUpstreamOrThrow.ts`, `src/lib/learning-engine/speech/providers/fetchWithTimeout.ts`, `src/lib/learning-engine/speech/providers/google.ts`, `src/lib/learning-engine/speech/providers/googleAuth.ts`, `src/lib/learning-engine/speech/providers/lemonfox.ts`.
@@ -81,7 +84,7 @@ Window barrel files and local mechanics remain inside the window boundary:
 2. `LearningEngine.action` selects the generic handler.
 3. `next` delegates to the active module; `submitAnswer` delegates and stores returned feedback; `speak` delegates to shared speech.
 4. A module transition returns a `ScreenRequest`.
-5. The engine cancels old speech, clears feedback, resolves the window, injects `onAction`, sets the screen, and starts any declarative speech.
+5. The engine cancels old speech, clears feedback and the old speech-failure notice, resolves the window, injects `onAction`, sets the screen, and starts any declarative speech.
 6. `ScreenRenderer` spreads stored props first, then injects current `feedback` and `isSpeaking`, so live engine state wins.
 
 ## Vocabulary content and attempt flow
@@ -92,6 +95,8 @@ The browser-side module maintains a matching lesson state and does not advance a
 
 ## Speech
 
-Public teaching text uses the generic `speak` payload and `/api/tts`. Spelling uses an opaque attempt as a source reference to `/api/learning/vocabulary/speech`; only that server handler resolves the canonical written word. Screen or route changes cancel pending fetch/audio and revoke object URLs.
+Public teaching text uses the generic `speak` payload and `/api/tts`. Spelling uses an opaque attempt as a source reference to `/api/learning/vocabulary/speech`; only that server handler resolves the canonical written word. Both paths share the singleton `SpeechPlaybackController`, typed failure contract, bounded diagnostic reporter, and `runSpeakRequest` state bridge.
+
+The route stores only the active failure's request ID. `SpeechPlaybackFailureBanner` owns the fixed learner-safe copy, accessible X, and 12-second timer; it does not receive or render diagnostic fields. A newer failure replaces the one notice, a successful retry clears it, and screen replacement clears a notice from the old screen. Windows and modules receive no failure-notice prop. Cancellation, replacement, screen changes, and route teardown make late controller results silent and revoke object URLs/remove listeners as applicable.
 
 See [Vocabulary](../modules/vocabulary.md), [Text-to-Speech](../services/text-to-speech.md), and the Learning Window component documents.

@@ -20,7 +20,17 @@ import {
 
 const ROUTE = "/learning/vocabulary/word_list_id";
 
-test("real Vocabulary route/module flow reaches completion through real content and answer handlers", async () => {
+test("real Vocabulary route/module flow reaches completion through real content and answer handlers", async (context) => {
+  const originalWarn = console.warn;
+  console.warn = (message?: unknown, ...optionalParams: unknown[]) => {
+    if (message !== "speech_playback_failure") {
+      originalWarn(message, ...optionalParams);
+    }
+  };
+  context.after(() => {
+    console.warn = originalWarn;
+  });
+
   const { moduleName, moduleVariables } = parseLearningRoute(ROUTE);
   assert.equal(moduleName, "vocabulary");
 
@@ -226,6 +236,7 @@ function createEngineHarness(module: ActiveModule): {
       answerFeedback = feedback;
     },
     setIsSpeaking: () => {},
+    setSpeechFailureNotice: () => {},
   };
   const handlers = createLearningEngineActionHandlers({
     getActiveModule: () => module,
