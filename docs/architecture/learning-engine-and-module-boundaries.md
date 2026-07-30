@@ -4,7 +4,9 @@ The current ownership rule is: the route hosts, the Learning Engine coordinates,
 
 ## Route-owned session
 
-`src/app/(app)/(learning)/learning/[...learning]/page.tsx` reads the catch-all segments, remounts by joined route key, and owns React state for the active screen, header/sidebar visibility, answer feedback, speech status, and the one current speech-failure notice. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, renders the shared failure banner above the learning header/content, aborts stale route work, and cancels shared speech on teardown. Notice dismissal is request-ID guarded so an old timer or X callback cannot clear a newer failure.
+`src/app/(app)/(learning)/learning/[...learning]/page.tsx` is a Server Component that owns the pre-initialization authorization boundary: it calls the host-owned `authorizeLearningModuleAccess()` (see [Security and Server Boundaries](../architecture/security-and-server-boundaries.md#learning-module-access)) before any client engine work, and renders `src/components/learning-engine/LearningRouteClient.tsx` only once access is granted (or the module is unregistered, deferring to the engine's own existing "not found" ownership).
+
+`LearningRouteClient` reads the catch-all segments passed as a prop, remounts by joined route key, and owns React state for the active screen, header/sidebar visibility, answer feedback, speech status, and the one current speech-failure notice. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, renders the shared failure banner above the learning header/content, aborts stale route work, and cancels shared speech on teardown. Notice dismissal is request-ID guarded so an old timer or X callback cannot clear a newer failure.
 
 ## Engine-owned work
 
@@ -29,6 +31,10 @@ learner-safe module-specific presentations. A module error travels through the
 shared `LearningRouteError` envelope, but the engine treats its code as opaque:
 it logs the neutral classification and technical details, then renders the
 already-approved presentation without deriving text or branching on the code.
+
+## Module access (subscription tier)
+
+Every registered module's `settings.json` must declare a required, non-empty `subscriptionTier` array using the shared client-safe `LearningSubscriptionTier` contract (`src/types/learning.ts`). The shared engine only loads and structurally validates this field through `validateModuleSettings()`; it does not interpret Stripe state, query accounts, or select parents. The host (`src/lib/auth/module-access.ts`, `src/lib/billing/effective-subscription-tier.ts`) owns comparing a caller's current effective tier against the module's declared list and is the only place that authorizes access. See [Security and Server Boundaries](../architecture/security-and-server-boundaries.md#learning-module-access).
 
 ## Module-owned work
 
@@ -59,7 +65,7 @@ The shared engine implementation is divided by responsibility:
 - Lifecycle and registry: `src/lib/learning-engine/LearningEngine.ts`, `src/lib/learning-engine/LearningWindowRegistry.ts`.
 - Generic actions: `src/lib/learning-engine/actions/createLearningEngineActionHandlers.ts`.
 - Route and synthesis errors: `src/lib/learning-engine/errors/LearningRouteError.ts`, `src/lib/learning-engine/errors/learningEngineRouteErrors.ts`, `src/lib/learning-engine/errors/TtsSynthesisError.ts`, `src/lib/learning-engine/errors/logLearningRouteError.ts`, `src/lib/learning-engine/errors/logTtsSynthesisError.ts`.
-- Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts`, `src/lib/learning-engine/initialization/validateModuleSettings.ts`.
+- Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts` (also exports `loadLearningModuleSettings`, a settings-only loader reused by the host-owned Learning Module access boundary so it never needs to import a module's client-facing implementation), `src/lib/learning-engine/initialization/validateModuleSettings.ts` (also validates the required, non-empty, deduplicated `subscriptionTier` array against the shared `LearningSubscriptionTier` contract in `src/types/learning.ts`).
 - Screen application: `src/lib/learning-engine/screens/changeLearningEngineScreen.ts`, `src/lib/learning-engine/screens/withSharedScreenProps.ts`.
 - State-setter validation: `src/lib/learning-engine/validation/requiredLearningEngineStateSetterKeys.ts`, `src/lib/learning-engine/validation/validateLearningEngineStateSetters.ts`.
 - Playback and client orchestration: `src/lib/learning-engine/speech/SpeechPlaybackController.ts`, `src/lib/learning-engine/speech/normalizeSpeechQueue.ts`, `src/lib/learning-engine/speech/runSpeakRequest.ts`, `src/lib/learning-engine/speech/silentAudioDataUri.ts`, `src/lib/learning-engine/speech/speechPlaybackService.ts`.

@@ -3,7 +3,8 @@
 ## Ownership
 
 - `src/lib/stripe.ts`: lazy Stripe client, paid-plan type, and configured price map.
-- `src/lib/billing/entitlement.ts`: pure allowlisted entitlement evaluation. Reused unchanged (not duplicated) by `src/lib/billing/user-entitlement.ts` for paid TTS access — see [Text-to-Speech](text-to-speech.md).
+- `src/lib/billing/entitlement.ts`: pure allowlisted entitlement evaluation. Reused unchanged (not duplicated) by `src/lib/billing/user-entitlement.ts` for paid TTS access (see [Text-to-Speech](text-to-speech.md)) and by `src/lib/billing/effective-subscription-tier.ts` for general Learning Module access (see [Learning Module access](../architecture/security-and-server-boundaries.md#learning-module-access)).
+- `src/lib/billing/effective-subscription-tier.ts`: general server-only resolver mapping an authenticated user ID to their current effective Learning Module access tier (`resolveEffectiveSubscriptionTier()`) — a direct current entitlement first, otherwise a database `CHILD`'s first currently entitled linked parent's tier, otherwise `null`. Deliberately independent of `user-entitlement.ts`: it carries no TTS-specific suspension, usage, or provider/request-kind policy. Powers both the NextAuth `subscriptionTier` session claim and the final `authorizeLearningModuleAccess()` re-check.
 - `src/lib/billing/stripe-state.ts`: server-only Checkout verification and shared Stripe-to-local synchronization.
 - `src/actions/checkout.ts`: authenticated Checkout Session creation.
 - `src/app/api/webhooks/stripe/route.ts`: signature verification and delegation to shared synchronization.
@@ -41,7 +42,7 @@ Subscription updates persist current Stripe state and retain `MONTHLY` only when
 
 The webhook requires `stripe-signature` and `STRIPE_WEBHOOK_SECRET` and calls `constructEvent` on the raw text. Invalid/missing signatures return `400`. Unsupported verified event types are acknowledged without mutation.
 
-Focused automated coverage lives in `tests/billing/entitlement.test.ts`, `tests/billing/checkoutConfirmation.test.ts`, `tests/billing/stripeWebhook.test.ts`, and the real page boundary in `tests/auth/gettingStartedPage.test.ts`.
+Focused automated coverage lives in `tests/billing/entitlement.test.ts`, `tests/billing/checkoutConfirmation.test.ts`, `tests/billing/stripeWebhook.test.ts`, `tests/billing/effectiveSubscriptionTier.test.ts`, and the real page boundary in `tests/auth/gettingStartedPage.test.ts`.
 
 Current limitations:
 

@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { getTrialDates } from "@/lib/subscription";
 import { OnboardingStep, UserRole } from "@/generated/prisma";
 import { normalizeEmail } from "@/lib/auth/email-normalization";
+import { resolveEffectiveSubscriptionTier } from "@/lib/billing/effective-subscription-tier";
 
 const prismaAdapter = PrismaAdapter(prisma);
 
@@ -200,14 +201,19 @@ export const authOptions: NextAuthOptions = {
         token.onboardingCompleted = Boolean(dbUser?.onboardingCompleted);
         token.onboardingStep = dbUser?.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
         token.mustResetPassword = Boolean(dbUser?.mustResetPassword);
+        // Derived only from the signed-in user's current database state --
+        // never from provider/credentials payloads. `null` when no current
+        // direct or inherited entitlement qualifies.
+        token.subscriptionTier = await resolveEffectiveSubscriptionTier(user.id);
       }
 
       // `session.update()` is a signal to refresh, not a source of truth:
-      // onboarding/reset claims a caller places on the `session` payload here
-      // are browser-supplied and untrusted, so they are ignored. The token is
-      // always re-synced from the signed-in user's current database record --
-      // this is what lets a completed required-password-reset take effect
-      // without a full sign-out/sign-in.
+      // onboarding/reset/tier claims a caller places on the `session`
+      // payload here are browser-supplied and untrusted, so they are
+      // ignored. The token is always re-synced from the signed-in user's
+      // current database record -- this is what lets a completed
+      // required-password-reset or a webhook-driven subscription change
+      // take effect without a full sign-out/sign-in.
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id },
@@ -219,6 +225,7 @@ export const authOptions: NextAuthOptions = {
           token.onboardingCompleted = dbUser.onboardingCompleted;
           token.onboardingStep = dbUser.onboardingStep;
           token.mustResetPassword = dbUser.mustResetPassword;
+          token.subscriptionTier = await resolveEffectiveSubscriptionTier(token.id);
         }
       }
 
@@ -232,6 +239,7 @@ export const authOptions: NextAuthOptions = {
         session.user.onboardingCompleted = Boolean(token.onboardingCompleted);
         session.user.onboardingStep = token.onboardingStep ?? OnboardingStep.VERIFY_EMAIL;
         session.user.mustResetPassword = Boolean(token.mustResetPassword);
+        session.user.subscriptionTier = token.subscriptionTier ?? null;
       }
       return session;
     },

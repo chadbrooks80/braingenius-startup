@@ -1,9 +1,24 @@
 import type { ElementType, ReactNode } from "react";
 import type { LearningWindowName } from "@/lib/learning-engine/LearningWindowRegistry";
 
+// Client-safe, dependency-free Learning Module access tiers. Deliberately
+// excludes `CANCELED`: that is a database subscription-lifecycle value, not
+// a grantable module-access tier. Centralized here so settings validation,
+// route/API access comparison, and tests share one source instead of
+// scattering independent tier lists.
+export const LEARNING_SUBSCRIPTION_TIERS = [
+  "FREE_TRIAL",
+  "MONTHLY",
+  "LIFETIME",
+  "ADMIN",
+] as const;
+
+export type LearningSubscriptionTier = (typeof LEARNING_SUBSCRIPTION_TIERS)[number];
+
 export type ModuleSettings = {
   showHeader: boolean;
   showSidebar: boolean;
+  subscriptionTier: LearningSubscriptionTier[];
 };
 
 export type StartupButtonVariant = "primary" | "secondary" | "ghost";

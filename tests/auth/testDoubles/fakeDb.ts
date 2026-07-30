@@ -21,6 +21,10 @@ type FakeSubscription = {
   tier: string | null;
   trialStartedAt: Date | null;
   trialEndsAt: Date | null;
+  stripePriceId: string | null;
+  stripeStatus: string | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
 };
 
 type FakeAccount = {
@@ -161,6 +165,24 @@ export function __seedParentStudent(parentId: string, studentId: string): FakePa
   return record;
 }
 
+export function __seedSubscription(
+  subscription: Partial<FakeSubscription> & { userId: string }
+): FakeSubscription {
+  const record: FakeSubscription = {
+    id: newId("subscription"),
+    tier: null,
+    trialStartedAt: null,
+    trialEndsAt: null,
+    stripePriceId: null,
+    stripeStatus: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    ...subscription,
+  };
+  subscriptions.push(record);
+  return record;
+}
+
 export function __getUsers(): FakeUser[] {
   return users;
 }
@@ -273,13 +295,32 @@ function findUserByWhere(where: UserWhere): FakeUser | undefined {
   return users.find((user) => matchesUserWhere(user, where));
 }
 
+function subscriptionForUser(userId: string): FakeSubscription | null {
+  return subscriptions.find((subscription) => subscription.userId === userId) ?? null;
+}
+
+type UserSelect = Partial<{ subscription: unknown }>;
+
 const userMethods = {
-  async findUnique({ where }: { where: UserWhere }): Promise<FakeUser | null> {
+  async findUnique({
+    where,
+    select,
+  }: {
+    where: UserWhere;
+    select?: UserSelect;
+  }): Promise<(FakeUser & { subscription?: FakeSubscription | null }) | null> {
     if (forceUnexpectedFailure) {
       forceUnexpectedFailure = false;
       throw new Error("fakeDb: simulated unexpected database failure");
     }
-    return findUserByWhere(where) ?? null;
+    const record = findUserByWhere(where);
+    if (!record) {
+      return null;
+    }
+    if (select && "subscription" in select) {
+      return { ...record, subscription: subscriptionForUser(record.id) };
+    }
+    return record;
   },
   async create({
     data,
@@ -337,6 +378,10 @@ const userMethods = {
         tier: data.subscription.create.tier,
         trialStartedAt: data.subscription.create.trialStartedAt,
         trialEndsAt: data.subscription.create.trialEndsAt,
+        stripePriceId: null,
+        stripeStatus: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       });
     }
     return record;
@@ -388,6 +433,26 @@ const parentStudentMethods = {
     const record: FakeParentStudent = { ...data, createdAt: new Date() };
     parentStudents.push(record);
     return record;
+  },
+  async findMany({
+    where,
+    orderBy,
+  }: {
+    where: { studentId: string };
+    orderBy?: { parentId: "asc" | "desc" };
+  }): Promise<Array<{ parentId: string; parent: FakeUser & { subscription: FakeSubscription | null } }>> {
+    const links = parentStudents
+      .filter((row) => row.studentId === where.studentId)
+      .map((row) => row.parentId)
+      .sort((a, b) => (orderBy?.parentId === "desc" ? b.localeCompare(a) : a.localeCompare(b)));
+
+    return links.flatMap((parentId) => {
+      const parent = users.find((user) => user.id === parentId);
+      if (!parent) {
+        return [];
+      }
+      return [{ parentId, parent: { ...parent, subscription: subscriptionForUser(parent.id) } }];
+    });
   },
 };
 

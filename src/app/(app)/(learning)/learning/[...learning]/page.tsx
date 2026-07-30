@@ -1,122 +1,35 @@
-"use client";
+import { redirect } from "next/navigation";
+import { authorizeLearningModuleAccess } from "@/lib/auth/module-access";
+import { LearningRouteClient } from "@/components/learning-engine/LearningRouteClient";
+import { LearningModuleAccessUnavailable } from "@/components/learning-engine/LearningModuleAccessUnavailable";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import { ScreenRenderer } from "@/components/learning-engine/ScreenRenderer";
-import { LearningHeader } from "@/components/learning-engine/layout/LearningHeader";
-import { LearningSidebar } from "@/components/learning-engine/layout/LearningSidebar";
-import { SpeechPlaybackFailureBanner } from "@/components/learning-engine/SpeechPlaybackFailureBanner";
-import LearningEngine from "@/lib/learning-engine/LearningEngine";
-import { cancelSpeech } from "@/lib/learning-engine/speech/speechPlaybackService";
-import type {
-  ActiveScreen,
-  AnswerFeedback,
-  SpeechFailureNotice,
-} from "@/types/learning";
-
-export default function LearningPage() {
-  const { learning } = useParams<{ learning: string[] }>();
-  const routeKey = learning.join("/");
-
-  return (
-    <LearningRoute key={routeKey} learning={learning} routeKey={routeKey} />
-  );
-}
-
-type LearningRouteProps = {
-  learning: string[];
-  routeKey: string;
+type LearningPageProps = {
+  params: Promise<{ learning: string[] }>;
 };
 
-function LearningRoute({ learning, routeKey }: LearningRouteProps) {
-  const [activeScreen, setActiveScreen] = useState<ActiveScreen | null>(
-    null
-  );
-  const [showHeader, setShowHeader] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [answerFeedback, setAnswerFeedback] = useState<AnswerFeedback | null>(
-    null
-  );
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechFailureNotice, setSpeechFailureNotice] =
-    useState<SpeechFailureNotice | null>(null);
-  const learningEngineRef = useRef<LearningEngine | null>(null);
+/**
+ * Server authorization boundary for `/learning/:module/:variables*`. Owns
+ * resolving the requested module's access decision before any client
+ * Learning Engine initialization; the narrow `LearningRouteClient` below
+ * preserves the exact existing route-key remount, initialization, and
+ * teardown behavior unchanged. An unregistered/malformed module is not an
+ * access decision -- it renders the client host unchanged so the existing
+ * Learning Engine module-not-found route error keeps its own ownership.
+ */
+export default async function LearningPage({ params }: LearningPageProps) {
+  const { learning } = await params;
+  const moduleName = learning[0];
 
-  const dismissSpeechFailureNotice = useCallback((requestId: number) => {
-    // A stale timer or stale X callback must never dismiss a newer notice.
-    setSpeechFailureNotice((current) =>
-      current && current.requestId === requestId ? null : current
-    );
-  }, []);
+  const access = await authorizeLearningModuleAccess(moduleName);
 
-  useEffect(() => {
-    const [moduleName, ...moduleVariables] = learning;
-    const routePath = `/learning/${learning.join("/")}`;
-    const initializationController = new AbortController();
-
-    async function initializeLearningEngine() {
-      const learningEngine = new LearningEngine();
-      learningEngineRef.current = learningEngine;
-
-      const result = await learningEngine.initialize(
-        moduleName,
-        moduleVariables,
-        {
-          setActiveScreen,
-          setShowHeader,
-          setShowSidebar,
-          setAnswerFeedback,
-          setIsSpeaking,
-          setSpeechFailureNotice,
-        },
-        routePath,
-        initializationController.signal
-      );
-
-      // A slower initialize() can resolve after this route has already been
-      // torn down (fast navigation); its speech/screen side effects must not
-      // run against a singleton speech service no longer owned by any route.
-      if (initializationController.signal.aborted) {
-        return;
-      }
-
-      if (result === "ready") {
-        learningEngine.showStartupScreen();
-      }
-    }
-
-    initializeLearningEngine();
-
-    return () => {
-      initializationController.abort();
-      cancelSpeech();
-    };
-    // Only routeKey should retrigger initialization: the state setters are stable,
-    // and moduleName/moduleVariables are derived from learning, which changes in lockstep with routeKey.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeKey]);
-
-  if (!activeScreen) {
-    return null;
+  if (access.status === "unauthenticated") {
+    const requestedPath = `/learning/${learning.map(encodeURIComponent).join("/")}`;
+    redirect(`/sign-in?${new URLSearchParams({ callbackUrl: requestedPath }).toString()}`);
   }
 
-  return (
-    <>
-      {speechFailureNotice && (
-        <SpeechPlaybackFailureBanner
-          requestId={speechFailureNotice.requestId}
-          onDismiss={dismissSpeechFailureNotice}
-        />
-      )}
-      {showHeader && <LearningHeader />}
-      <div className="flex flex-1">
-        {showSidebar && <LearningSidebar />}
-        <ScreenRenderer
-          screen={activeScreen}
-          answerFeedback={answerFeedback}
-          isSpeaking={isSpeaking}
-        />
-      </div>
-    </>
-  );
+  if (access.status === "forbidden" || access.status === "unavailable") {
+    return <LearningModuleAccessUnavailable />;
+  }
+
+  return <LearningRouteClient learning={learning} />;
 }

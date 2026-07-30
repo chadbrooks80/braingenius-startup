@@ -2,10 +2,25 @@ import { getVocabularyAnswerForAttempt } from "@/learning-modules/vocabulary/dat
 import { handleVocabularyAnswerRequest } from "./handleVocabularyAnswerRequest";
 import { vocabularyContentCapabilityStore } from "@/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
 import { getVocabularyLearnerId } from "@/learning-modules/vocabulary/server/vocabularyLearnerSession";
+import {
+  authorizeLearningModuleAccess,
+  learningModuleAccessDenialResponse,
+  type AuthorizeLearningModuleAccessDeps,
+} from "@/lib/auth/module-access";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request): Promise<Response> {
+const VOCABULARY_MODULE_NAME = "vocabulary";
+
+export async function handleVocabularySubmitAnswerRouteRequest(
+  request: Request,
+  accessDeps: AuthorizeLearningModuleAccessDeps = {}
+): Promise<Response> {
+  const access = await authorizeLearningModuleAccess(VOCABULARY_MODULE_NAME, accessDeps);
+  if (access.status !== "granted") {
+    return learningModuleAccessDenialResponse(access);
+  }
+
   const learnerId = getVocabularyLearnerId(request);
   return handleVocabularyAnswerRequest(request, (submission) => {
     if (!learnerId) {
@@ -17,4 +32,8 @@ export async function POST(request: Request): Promise<Response> {
       getVocabularyAnswerForAttempt
     );
   });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  return handleVocabularySubmitAnswerRouteRequest(request);
 }

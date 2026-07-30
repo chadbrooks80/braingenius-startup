@@ -44,15 +44,17 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 
 ## Vocabulary
 
+Every route in this section first calls the shared `authorizeLearningModuleAccess("vocabulary")` boundary (`src/app/api/learning/vocabulary/<route>/route.ts` exports the wrapped handler, e.g. `handleVocabularyContentRouteRequest`, that the thin `POST` export delegates to) before any of its own content, grading, or speech behavior runs. That check independently returns `401` (no session), `403` (no current allowed tier), or `503` (unavailable/unregistered), all generic with `Cache-Control: no-store`, before content creation, capability mutation, grading, or paid TTS usage acquisition. See [Learning Module access](../architecture/security-and-server-boundaries.md#learning-module-access). Only after that check grants access does each route's own behavior below apply.
+
 ### `POST /api/learning/vocabulary/content`
 
 - Source: `src/app/api/learning/vocabulary/content/route.ts`, delegating to `src/learning-modules/vocabulary/server/handleVocabularyContentRequest.ts`.
 - Request: strict discriminated JSON. Manifest is exactly `{ contentType: "manifest", wordListId }`; screen requests contain exact opaque lesson/capability fields, with `exampleIndex` for recap.
 - Learner binding: manifest creates/reuses the `brain-genius-learner` HttpOnly cookie. Later requests bind cookie, lesson, capability, projection type, screen step, and recap index.
 - Success: `200` narrow projection with `Cache-Control: no-store`. A manifest includes opaque word IDs, seed, lesson, and next capability. Screen responses include only current-screen content and a rotated capability.
-- Errors: malformed JSON/input `400`; invalid capability `400`; unknown list/content `404`.
+- Errors: module access `401`/`403`/`503` (see above); malformed JSON/input `400`; invalid capability `400`; unknown list/content `404`.
 - Side effects: process-local lesson/capability/attempt state; bounded cached replay of the same content capability.
-- Tests: `tests/api/vocabularyContentRoute.test.ts`, `tests/api/vocabularyLearnerSession.test.ts`, `tests/vocabulary/Vocabulary.test.ts`, and the route integration/E2E tests.
+- Tests: `tests/api/vocabularyContentRoute.test.ts`, `tests/api/vocabularyLearnerSession.test.ts`, `tests/vocabulary/Vocabulary.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, and the route integration/E2E tests.
 
 ### `POST /api/learning/vocabulary/submit-answer`
 
@@ -60,19 +62,19 @@ All request bodies are untrusted. Unless noted, handlers do not set explicit cac
 - Request: strict definition `{ answerType, attemptId, selectedChoiceId }` or spelling `{ answerType, attemptId, answer }`; no unknown fields.
 - Learner binding: anonymous learner cookie plus active process-local attempt, lesson, word, and answer type.
 - Success: definition returns only `{ answerType, correctChoiceId }`; spelling returns `{ answerType, correct }` and includes `correctAnswer` only after an incorrect grade.
-- Errors: malformed JSON, invalid shape, unknown/stale/cross-boundary attempt, changed duplicate, or failed grading all return the same `400` style.
+- Errors: module access `401`/`403`/`503` (see above); malformed JSON, invalid shape, unknown/stale/cross-boundary attempt, changed duplicate, or failed grading all return the same `400` style.
 - Side effects/cache: records confirmed progress and exact duplicate result in memory; no explicit cache header.
-- Tests: `tests/api/vocabularySubmitAnswerRoute.test.ts`, `tests/api/evaluateVocabularyAnswer.test.ts`, parser/module tests, integration, and E2E.
+- Tests: `tests/api/vocabularySubmitAnswerRoute.test.ts`, `tests/api/evaluateVocabularyAnswer.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, parser/module tests, integration, and E2E.
 
 ### `POST /api/learning/vocabulary/speech`
 
 - Source: `src/app/api/learning/vocabulary/speech/route.ts`, delegating to `src/learning-modules/vocabulary/server/handleVocabularySpeechRequest.ts`.
-- Auth: authenticated NextAuth session plus current Stage 1 entitlement (direct or child-inherited) through the shared paid TTS usage policy in `src/lib/learning-engine/speech/ttsUsageService.ts`; requests are classified `VOCABULARY_PROTECTED`.
+- Auth: current Vocabulary module access (see above), then an authenticated NextAuth session plus current Stage 1 entitlement (direct or child-inherited) through the shared paid TTS usage policy in `src/lib/learning-engine/speech/ttsUsageService.ts`; requests are classified `VOCABULARY_PROTECTED`. These are two independent checks with different tier rules: module access requires `MONTHLY`/`LIFETIME`/`ADMIN`, while the downstream TTS entitlement also allows an active `FREE_TRIAL`.
 - Request: exactly `{ reference: non-empty string }`; reference is an opaque spelling attempt.
 - Learner binding: requires the matching learner cookie and active spelling attempt, then resolves canonical text on the server. Text metrics are computed only after server-side resolution; the text itself is never persisted.
 - Success: `200 audio/mpeg`, `Cache-Control: no-store`.
-- Errors: JSON/shape/reference errors `400`; missing session `401`; missing user, no entitlement, or manual TTS suspension `403`; burst/concurrency/ten-hour emergency limits `429` with integer `Retry-After`; provider configuration `500`; upstream provider `502`; usage-accounting or auth/entitlement database boundary unavailable `503`. All error responses are generic, carry `Cache-Control: no-store`, and never contain canonical text or usage state.
-- Tests: `tests/api/vocabularySpeechRoute.test.ts` and speech-controller tests.
+- Errors: module access `401`/`403`/`503` (see above); JSON/shape/reference errors `400`; missing session `401`; missing user, no entitlement, or manual TTS suspension `403`; burst/concurrency/ten-hour emergency limits `429` with integer `Retry-After`; provider configuration `500`; upstream provider `502`; usage-accounting or auth/entitlement database boundary unavailable `503`. All error responses are generic, carry `Cache-Control: no-store`, and never contain canonical text or usage state.
+- Tests: `tests/api/vocabularySpeechRoute.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, and speech-controller tests.
 
 ## Text-to-speech
 

@@ -1,4 +1,5 @@
 {
   "showHeader": true,
-  "showSidebar": true
+  "showSidebar": true,
+  "subscriptionTier": ["MONTHLY", "LIFETIME", "ADMIN"]
 }

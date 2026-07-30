@@ -6,7 +6,7 @@ import { registerAuthTestHooks } from "./testDoubles/registerAuthTestHooks";
 // resolve to the fakes for every transitive import auth.ts performs.
 registerAuthTestHooks();
 
-import { __resetFakeDb, __seedUser } from "./testDoubles/fakeDb";
+import { __resetFakeDb, __seedUser, __seedSubscription, __seedParentStudent } from "./testDoubles/fakeDb";
 
 let jwtCallback: (params: {
   token: Record<string, unknown>;
@@ -15,9 +15,15 @@ let jwtCallback: (params: {
   session?: Record<string, unknown>;
 }) => Promise<Record<string, unknown>>;
 
+let sessionCallback: (params: {
+  session: { user?: Record<string, unknown> };
+  token: Record<string, unknown>;
+}) => Promise<{ user?: Record<string, unknown> }>;
+
 before(async () => {
   const { authOptions } = await import("../../src/auth");
   jwtCallback = authOptions.callbacks!.jwt! as typeof jwtCallback;
+  sessionCallback = authOptions.callbacks!.session! as unknown as typeof sessionCallback;
 });
 
 beforeEach(() => {
@@ -84,4 +90,75 @@ test("an update trigger for an account that no longer exists leaves the token un
 
   assert.equal(result.onboardingStep, "PROFILE");
   assert.equal(result.onboardingCompleted, false);
+});
+
+test("a fresh sign-in populates subscriptionTier from the database, not a provider payload", async () => {
+  const user = __seedUser({ role: "PARENT", onboardingStep: "COMPLETE", onboardingCompleted: true });
+  __seedSubscription({ userId: user.id, tier: "ADMIN" });
+
+  const token = await jwtCallback({ token: {}, user: { id: user.id } });
+
+  assert.equal(token.subscriptionTier, "ADMIN");
+});
+
+test("a user with no current subscription resolves subscriptionTier to null on fresh sign-in", async () => {
+  const user = __seedUser({ role: "PARENT", onboardingStep: "COMPLETE", onboardingCompleted: true });
+
+  const token = await jwtCallback({ token: {}, user: { id: user.id } });
+
+  assert.equal(token.subscriptionTier, null);
+});
+
+test("a CHILD with no direct subscription inherits the linked parent's tier on fresh sign-in", async () => {
+  const parent = __seedUser({ role: "PARENT" });
+  __seedSubscription({ userId: parent.id, tier: "ADMIN" });
+  const child = __seedUser({ role: "CHILD" });
+  __seedParentStudent(parent.id, child.id);
+
+  const token = await jwtCallback({ token: {}, user: { id: child.id } });
+
+  assert.equal(token.subscriptionTier, "ADMIN");
+});
+
+test("session.update() re-reads subscriptionTier from the database and ignores a browser-supplied claim", async () => {
+  const user = __seedUser({ role: "PARENT", onboardingStep: "COMPLETE", onboardingCompleted: true });
+  const staleToken = { id: user.id, onboardingStep: "COMPLETE", onboardingCompleted: true, subscriptionTier: null };
+
+  const refreshed = await jwtCallback({
+    token: staleToken,
+    trigger: "update",
+    // A caller attempting to forge an elevated tier through the update payload.
+    session: { subscriptionTier: "ADMIN" },
+  });
+
+  assert.equal(refreshed.subscriptionTier, null, "must reflect the database, not the forged claim");
+});
+
+test("session.update() reflects a real subscription upgrade recorded in the database", async () => {
+  const user = __seedUser({ role: "PARENT", onboardingStep: "COMPLETE", onboardingCompleted: true });
+  __seedSubscription({ userId: user.id, tier: "ADMIN" });
+  const staleToken = { id: user.id, onboardingStep: "COMPLETE", onboardingCompleted: true, subscriptionTier: null };
+
+  const refreshed = await jwtCallback({ token: staleToken, trigger: "update" });
+
+  assert.equal(refreshed.subscriptionTier, "ADMIN");
+});
+
+test("the session callback projects subscriptionTier and never lets a forged session field through", async () => {
+  const token = { id: "user-1", role: "PARENT", onboardingCompleted: true, onboardingStep: "COMPLETE", mustResetPassword: false, subscriptionTier: "ADMIN" };
+
+  const session = await sessionCallback({
+    session: { user: { subscriptionTier: "LIFETIME" } },
+    token,
+  });
+
+  assert.equal(session.user?.subscriptionTier, "ADMIN", "must come from the token, not a pre-existing session field");
+});
+
+test("the session callback projects a null subscriptionTier as null, not undefined", async () => {
+  const token = { id: "user-1", role: "PARENT", onboardingCompleted: true, onboardingStep: "COMPLETE", mustResetPassword: false };
+
+  const session = await sessionCallback({ session: { user: {} }, token });
+
+  assert.equal(session.user?.subscriptionTier, null);
 });
