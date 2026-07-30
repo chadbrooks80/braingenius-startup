@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Button from "@/components/ui/Button";
+import AuthAction from "./AuthAction";
 
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
@@ -18,7 +19,11 @@ const getServerSnapshot = () => false;
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export default function HeaderNav() {
+type HeaderNavProps = {
+  isAuthenticated: boolean;
+};
+
+export default function HeaderNav({ isAuthenticated }: HeaderNavProps) {
   // `Header` renders `HeaderNav` twice (one per breakpoint container), each
   // with its own portal-mounted drawer, so this must be per-instance rather
   // than a single hardcoded ID.
@@ -125,7 +130,8 @@ export default function HeaderNav() {
                 </a>
               ))}
             </nav>
-            <div className="px-5 py-6 border-t border-surface/(--alpha-surface)">
+            <div className="flex flex-col gap-3 px-5 py-6 border-t border-surface/(--alpha-surface)">
+              <AuthAction isAuthenticated={isAuthenticated} className="w-full justify-center" />
               <Button variant="primary" href="/sign-up" className="w-full justify-center">
                 Get Started Free
               </Button>

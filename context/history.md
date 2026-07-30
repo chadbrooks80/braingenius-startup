@@ -1,3 +1,12 @@
+## 2026-07-29 21:30
+
+- Completed the header sign-in/sign-out control on `feature/header-sign-in-out`
+- Added `src/components/layout/header/AuthAction.tsx`, a Client Component rendering "Sign In" (`href="/sign-in"`) when signed out or "Sign Out" (calls NextAuth `signOut()`, with a pending "Signing Out..." state) when signed in, using the existing `secondary` `Button` variant with no new variant or raw color
+- Wired it into all three existing "Get Started Free" locations: `Header.tsx` mobile bar and desktop bar (Server Component, resolves session via `getServerSession(authOptions)` and passes `isAuthenticated` down) and `HeaderNav.tsx` mobile drawer (receives the same prop from `Header.tsx` rather than duplicating the session fetch)
+- Added `tests/components/authAction.test.tsx` covering the signed-out and signed-in render states and the sign-out click
+- Left `LearningHeader.tsx` and `src/app/playground/users/signInOut.tsx` untouched, per scope
+- Verification and user approval passed
+
 ## 2026-07-29 20:11
 
 - Completed subscription-tier Learning Module access gating on `feature/subscription-tier-module-access`, enforcing each module's required `subscriptionTier` settings for every entry point instead of only the client route
