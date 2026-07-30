@@ -542,3 +542,11 @@
 - Added `tests/auth/oauthAdapterAtomicity.test.ts` and `tests/auth/atomicAuthDatabase.integration.test.ts` (a guarded disposable-PostgreSQL serialization/rollback/deadlock harness that refuses to run against a non-local/non-test `DATABASE_URL`), and extended `tests/auth/emailVerificationRoutes.test.ts`, `tests/auth/passwordResetRequest.test.ts`, `tests/auth/passwordResetConfirm.test.ts`, and `tests/auth/testDoubles/fakeDb.ts` for the new atomic paths
 - Updated docs: `docs/architecture/security-and-server-boundaries.md`, `docs/reference/api-routes.md`, `docs/reference/database-schema.md`, `docs/reference/server-actions.md`, `docs/reference/testing.md`, `docs/services/authentication-and-accounts.md`, `docs/services/email-verification-and-password-reset.md`
 - Verification and user approval passed
+
+## 2026-07-30 18:30
+
+- Completed the Vocabulary module persistence tables (`feature/mod-vocab-database-tables`) across Phase 1 (schema/migration/test/docs) and Phase 2 (handoff and migration-integrity repairs)
+- Added eight `mod_vocab_...` Prisma models/tables (`mod_vocab_lists`, `mod_vocab_list_words`, `mod_vocab_learnings`, `mod_vocab_word_progress`, `mod_vocab_sessions`, `mod_vocab_attempts`, `mod_vocab_attempt_choices`, `mod_vocab_daily_practice`), six `ModVocab...` enums, and migration `20260730181054_add_mod_vocab_tables` with 23 nonnegative/consistency check constraints; no runtime Vocabulary code, seeding, or Dictionary integration was touched
+- Added `tests/vocabulary/vocabularyPersistenceSchema.test.ts` and `docs/modules/vocabulary-persistence-schema.md`
+- Phase 2 regenerated the handoff patch/inventory from Git (covering all five changed files including `context/current-feature.md`) and independently re-verified, read-only, that the applied migration's checksum matches `_prisma_migrations` and that all eight tables, six enum types, and 23 check constraints exist in the development database, closing out the prior unapproved manual migration-history edit
+- Verification and user approval passed

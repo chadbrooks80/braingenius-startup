@@ -75,8 +75,9 @@ Use this only after the feature is fully implemented, verified, and approved by 
 
 2. Log only completed work. Do not log rejected, incomplete, or in-progress work.
 
-3. Output exactly:
+3. Empty the contents of `context/current-feature.md` (the file must exist afterward but contain no feature content).
 
-```text
-EVERYTHING COMPLETE PLEASE EMPTY THE current-feature.md CONTENTS
-```
+4. Report:
+   - that `context/current-feature.md` has been emptied;
+   - that `context/history.md` has been appended;
+   - the exact entry that was appended to `context/history.md`.

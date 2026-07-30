@@ -58,6 +58,55 @@ enum TtsUsageAlertKind {
   TEN_HOUR_CUTOFF
 }
 
+enum ModVocabContentSource {
+  WORD_ONLY
+  DICTIONARY
+  TEACHER
+  MIXED
+
+  @@map("mod_vocab_content_source")
+}
+
+enum ModVocabLearningStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+
+  @@map("mod_vocab_learning_status")
+}
+
+enum ModVocabReviewStage {
+  IDLE
+  DEFINITION_PENDING
+  SPELLING_PENDING
+
+  @@map("mod_vocab_review_stage")
+}
+
+enum ModVocabSessionStatus {
+  ACTIVE
+  ENDED
+  ABANDONED
+
+  @@map("mod_vocab_session_status")
+}
+
+enum ModVocabAttemptType {
+  DEFINITION
+  SPELLING
+
+  @@map("mod_vocab_attempt_type")
+}
+
+enum ModVocabAttemptStatus {
+  ACTIVE
+  ANSWERED
+  CANCELED
+  EXPIRED
+
+  @@map("mod_vocab_attempt_status")
+}
+
 model User {
   id                      String         @id @default(cuid())
   isOwner                 Boolean?
@@ -92,6 +141,11 @@ model User {
   ttsAlertsAsPrincipal TtsUsageAlert[]      @relation("TtsUsageAlertPrincipal")
   ttsLeasesAsCaller    TtsRequestLease[]    @relation("TtsCallerLeases")
   ttsLeasesAsPrincipal TtsRequestLease[]    @relation("TtsPrincipalLeases")
+
+  modVocabLists              ModVocabList[]          @relation("ModVocabListOwner")
+  modVocabLearningsAsLearner ModVocabLearning[]      @relation("ModVocabLearningLearner")
+  modVocabLearningsAssigned  ModVocabLearning[]      @relation("ModVocabLearningAssignedBy")
+  modVocabDailyPractice      ModVocabDailyPractice[] @relation("ModVocabDailyPracticeLearner")
 }
 
 model ParentStudent {
@@ -264,4 +318,225 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Vocabulary module persistence. Every physical table is prefixed
+// mod_vocab_ to mark it as owned by the Vocabulary learning module. See
+// docs/modules/vocabulary-persistence-schema.md for the full data model.
+
+// A reusable ordered Vocabulary list owned by its creator. One list may be
+// assigned to many learners as independent ModVocabLearning records.
+model ModVocabList {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation("ModVocabListOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  words     ModVocabListWord[]
+  learnings ModVocabLearning[]
+
+  @@index([ownerUserId, createdAt])
+  @@map("mod_vocab_lists")
+}
+
+// One ordered, list-specific Vocabulary content snapshot. Content fields
+// besides word may be temporarily incomplete until a future Dictionary
+// hydration feature fills only missing fields; teacher content always wins.
+model ModVocabListWord {
+  id                String  @id @default(cuid())
+  listId            String
+  dictionaryEntryId String?
+  position          Int
+  word              String
+  normalizedWord    String
+
+  definition         String?
+  spellingDefinition String?
+  exampleSentence1   String?
+  exampleSentence2   String?
+  exampleSentence3   String?
+  interestingFact    String?
+  contentSource      ModVocabContentSource @default(WORD_ONLY)
+  contentResolvedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  list ModVocabList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  progress       ModVocabWordProgress[]
+  attempts       ModVocabAttempt[]
+  sourcedChoices ModVocabAttemptChoice[] @relation("ModVocabAttemptChoiceSource")
+
+  @@unique([listId, position])
+  @@unique([listId, normalizedWord])
+  @@index([dictionaryEntryId])
+  @@index([listId, position])
+  @@map("mod_vocab_list_words")
+}
+
+// The learner-specific assignment/enrollment represented by learningId in
+// the future Vocabulary route. The same list may be assigned to a learner
+// more than once, so (learnerUserId, listId) is intentionally not unique.
+model ModVocabLearning {
+  id                         String                 @id @default(cuid())
+  listId                     String
+  learnerUserId              String
+  assignedByUserId           String?
+  status                     ModVocabLearningStatus @default(ACTIVE)
+  dailyGoalSeconds           Int                    @default(1800)
+  gradedAnswerCount          Int                    @default(0)
+  correctAnswerCount         Int                    @default(0)
+  incorrectAnswerCount       Int                    @default(0)
+  servedCheckpointGroupCount Int                    @default(0)
+  startedAt                  DateTime               @default(now())
+  completedAt                DateTime?
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+
+  list       ModVocabList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  learner    User         @relation("ModVocabLearningLearner", fields: [learnerUserId], references: [id], onDelete: Cascade)
+  assignedBy User?        @relation("ModVocabLearningAssignedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  wordProgress ModVocabWordProgress[]
+  sessions     ModVocabSession[]
+
+  @@index([learnerUserId, status])
+  @@index([listId])
+  @@index([assignedByUserId])
+  @@map("mod_vocab_learnings")
+}
+
+// Durable progress for exactly one list word inside one learner's Vocabulary
+// learning record. initialMasterySequence/firstMasteredAt record the first
+// time the word ever reaches full mastery and are never cleared by a later
+// review failure, so the existing five-word checkpoint groups stay durable.
+model ModVocabWordProgress {
+  id                           String              @id @default(cuid())
+  learningId                   String
+  listWordId                   String
+  introduced                   Boolean             @default(false)
+  introducedAt                 DateTime?
+  definitionConsecutiveCorrect Int                 @default(0)
+  definitionMastered           Boolean             @default(false)
+  definitionMasteredAt         DateTime?
+  spellingConsecutiveCorrect   Int                 @default(0)
+  spellingMastered             Boolean             @default(false)
+  spellingMasteredAt           DateTime?
+  practicePresentationCount    Int                 @default(0)
+  reviewStage                  ModVocabReviewStage @default(IDLE)
+  nextReviewQuestionNumber     Int?
+  totalCorrect                 Int                 @default(0)
+  totalIncorrect               Int                 @default(0)
+  initialMasterySequence       Int?
+  firstMasteredAt              DateTime?
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+
+  learning ModVocabLearning @relation(fields: [learningId], references: [id], onDelete: Cascade)
+  listWord ModVocabListWord @relation(fields: [listWordId], references: [id], onDelete: Cascade)
+
+  @@unique([learningId, listWordId])
+  @@unique([learningId, initialMasterySequence])
+  @@index([learningId, spellingMastered])
+  @@index([learningId, reviewStage, nextReviewQuestionNumber])
+  @@index([listWordId])
+  @@map("mod_vocab_word_progress")
+}
+
+// One durable learner visit/session within a Vocabulary learning record.
+model ModVocabSession {
+  id                   String                @id @default(uuid())
+  learningId           String
+  status               ModVocabSessionStatus @default(ACTIVE)
+  stateVersion         Int                   @default(0)
+  activeSeconds        Int                   @default(0)
+  gradedAnswerCount    Int                   @default(0)
+  correctAnswerCount   Int                   @default(0)
+  incorrectAnswerCount Int                   @default(0)
+  startedAt            DateTime              @default(now())
+  lastActivityAt       DateTime              @default(now())
+  endedAt              DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  learning ModVocabLearning  @relation(fields: [learningId], references: [id], onDelete: Cascade)
+  attempts ModVocabAttempt[]
+
+  @@index([learningId, startedAt])
+  @@index([learningId, status])
+  @@map("mod_vocab_sessions")
+}
+
+// A durable, idempotent definition or spelling attempt bound to one session
+// and list word. correctAnswerSnapshot/submittedAnswer are server-only and
+// must never be returned in a public lesson projection.
+model ModVocabAttempt {
+  id                    String                @id @default(uuid())
+  sessionId             String
+  listWordId            String
+  answerType            ModVocabAttemptType
+  status                ModVocabAttemptStatus @default(ACTIVE)
+  review                Boolean               @default(false)
+  correctAnswerSnapshot String?
+  submittedAnswer       String?
+  wasCorrect            Boolean?
+  createdAt             DateTime              @default(now())
+  answeredAt            DateTime?
+  updatedAt             DateTime              @updatedAt
+
+  session  ModVocabSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  listWord ModVocabListWord @relation(fields: [listWordId], references: [id], onDelete: Cascade)
+
+  choices ModVocabAttemptChoice[]
+
+  @@index([sessionId, status])
+  @@index([listWordId, createdAt])
+  @@map("mod_vocab_attempts")
+}
+
+// Durable server-authoritative choice snapshots for a definition attempt.
+// id is the opaque public choice ID exposed to the browser.
+model ModVocabAttemptChoice {
+  id               String   @id @default(uuid())
+  attemptId        String
+  sourceListWordId String?
+  position         Int
+  textSnapshot     String
+  isCorrect        Boolean
+  createdAt        DateTime @default(now())
+
+  attempt        ModVocabAttempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  sourceListWord ModVocabListWord? @relation("ModVocabAttemptChoiceSource", fields: [sourceListWordId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, position])
+  @@unique([attemptId, sourceListWordId])
+  @@index([sourceListWordId])
+  @@map("mod_vocab_attempt_choices")
+}
+
+// Module-owned daily study-time and answer totals aggregated across a
+// learner's Vocabulary sessions for one calendar date, used later by the
+// Vocabulary module panel and dashboard.
+model ModVocabDailyPractice {
+  id                String    @id @default(cuid())
+  learnerUserId     String
+  practiceDate      DateTime  @db.Date
+  goalSeconds       Int       @default(1800)
+  secondsStudied    Int       @default(0)
+  questionsAnswered Int       @default(0)
+  correctAnswers    Int       @default(0)
+  goalReachedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  learner User @relation("ModVocabDailyPracticeLearner", fields: [learnerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([learnerUserId, practiceDate])
+  @@index([learnerUserId, practiceDate])
+  @@map("mod_vocab_daily_practice")
 }
