@@ -1,3 +1,14 @@
+## 2026-07-30 12:00
+
+- Completed authenticated database-backed Vocabulary word loading on `feature/database-backed-vocabulary-word-loading`, replacing the hardcoded 20-word `getWordList.ts` fixture with bounded, authorized Prisma reads from `ModVocabList`/`ModVocabListWord`, then closed the five audit findings from the Phase 2 repair pass
+- Added `src/learning-modules/vocabulary/server/vocabularyListStore.ts` as the module-owned Prisma boundary: every query is bounded (a single row, a small `take`, or a count) behind narrow DB-shaped interfaces (not the raw Prisma client) so tests can inject a deterministic in-memory double; deleted `src/learning-modules/vocabulary/data/getWordList.ts`
+- Active pool stays at five ordered words (`position ASC`), with exactly one authorized refill request per confirmed full initial mastery, session-derived ownership authorization repeated at every content/answer/speech boundary, and `totalWordCount` reported from the database count rather than the loaded descriptor count
+- Phase 2 repairs: definition-practice choices can no longer be deterministically joined against earlier browser-visible teaching/recap data; `VocabularyLessonState`'s canonical word-record retention is now bounded instead of accumulating every refilled record; each due refill slot gets its own scoped idempotency identity so replaying an older slot after a later one becomes due still returns the original result; concurrent reads of an uncached content capability now share one in-flight build so replay is atomic; definition-distractor selection deduplicates by normalized text to guarantee four unique visible choices
+- Updated `src/learning-modules/vocabulary/{data,server,state}/*`, `src/app/api/learning/vocabulary/{content,speech,submit-answer}/*`, and `src/lib/auth/module-access.ts`
+- Added `tests/vocabulary/vocabularyDatabaseLoading.test.ts`, `tests/vocabulary/vocabularyListStore.integration.test.ts`, `tests/vocabulary/fakeVocabularyListStore.ts`; updated the existing Vocabulary, API, auth, security, and integration suites for the new data source and Phase 2 repairs
+- Updated docs: `docs/architecture/{application-and-route-map,security-and-server-boundaries,system-overview}.md`, `docs/modules/{vocabulary,vocabulary-persistence-schema}.md`, `docs/operations/local-development.md`, `docs/reference/{api-routes,testing}.md`
+- Verification and user approval passed
+
 ## 2026-07-29 21:30
 
 - Completed the header sign-in/sign-out control on `feature/header-sign-in-out`

@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getVocabularyAnswer } from "../../src/learning-modules/vocabulary/data/getCorrectAnswer";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
-import { getVocabularyContent } from "../../src/learning-modules/vocabulary/server/getVocabularyContent";
 import {
   DELAYED_REVIEW_ANSWER_COUNT,
   VocabularyLessonState,
@@ -10,11 +7,17 @@ import {
   type VocabularyWordProgress,
 } from "../../src/learning-modules/vocabulary/state/VocabularyLessonState";
 
-const WORDS = getWordList("word_list_id")!;
-const HANDLES = WORDS.map((word) => ({ id: word.id }));
+// VocabularyLessonState is a pure progression/state machine independent of
+// content generation, grading, or a database source, so these tests use
+// synthetic lesson word descriptors and synthetic attempt data rather than
+// real content-building or a database pipeline. Lazy-loading/refill behavior
+// (loadedWordCount vs totalWordCount, appendWord) is covered separately.
+const HANDLES = Array.from({ length: 20 }, (_unused, index) => ({
+  id: `word-${index + 1}`,
+}));
 
-test("introduces the first five active words in fixture order before practice", () => {
-  const state = new VocabularyLessonState(HANDLES, () => 0);
+test("introduces the first five active words in load order before practice", () => {
+  const state = new VocabularyLessonState(HANDLES, HANDLES.length, () => 0);
   const introduced: string[] = [];
   let step = state.next();
 
@@ -34,7 +37,7 @@ test("introduces the first five active words in fixture order before practice", 
 
 test("one correct definition and one correct spelling master independently", () => {
   const word = HANDLES[0];
-  const state = new VocabularyLessonState([word], () => 0);
+  const state = new VocabularyLessonState([word], 1, () => 0);
   let step = finishIntroductions(state, 1);
 
   step = answerAndAdvance(state, step, true);
@@ -62,7 +65,7 @@ test("one correct definition and one correct spelling master independently", () 
 
 test("normal practice keeps a five-word pool, avoids immediate repetition, and favors less-shown words", () => {
   let randomCall = 0;
-  const state = new VocabularyLessonState(HANDLES.slice(0, 6), () => {
+  const state = new VocabularyLessonState(HANDLES.slice(0, 6), 6, () => {
     const values = [0.05, 0.25, 0.45, 0.65, 0.85];
     const value = values[randomCall % values.length];
     randomCall += 1;
@@ -222,7 +225,7 @@ test("review definition still advances directly to spelling for the same word", 
 });
 
 test("Lesson Complete never appears with a due or partially completed review and ignores only future reviews", () => {
-  const state = new VocabularyLessonState([HANDLES[0]], () => 0);
+  const state = new VocabularyLessonState([HANDLES[0]], 1, () => 0);
   setProgress(state, HANDLES[0].id, {
     introduced: true,
     definitionMastered: true,
@@ -251,7 +254,7 @@ test("Lesson Complete never appears with a due or partially completed review and
 
 test("always-correct 20-word flow inserts a recap after every answer, replaces mastered words, runs reviews, and completes", () => {
   let seed = 42;
-  const state = new VocabularyLessonState(HANDLES, () => {
+  const state = new VocabularyLessonState(HANDLES, HANDLES.length, () => {
     seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
     return seed / 4_294_967_296;
   });
@@ -306,7 +309,7 @@ test("always-correct 20-word flow inserts a recap after every answer, replaces m
 });
 
 test("checkpoints appear for unique mastered words 1-5, 6-10, 11-15, and 16-20, each served once directly after its mastering recap", () => {
-  const state = new VocabularyLessonState(HANDLES, deterministicRandom());
+  const state = new VocabularyLessonState(HANDLES, HANDLES.length, deterministicRandom());
   const { checkpoints, precedingKinds, finalStep } = driveVocabularyLesson(
     state
   );
@@ -330,7 +333,7 @@ test("checkpoints appear for unique mastered words 1-5, 6-10, 11-15, and 16-20, 
 
 test("the checkpoint after the fifth mastered word appears immediately after that word's answer recap and gates progress", () => {
   const words = HANDLES.slice(0, 5);
-  const state = new VocabularyLessonState(words, deterministicRandom());
+  const state = new VocabularyLessonState(words, words.length, deterministicRandom());
   const { checkpoints, precedingKinds, finalStep } = driveVocabularyLesson(
     state
   );
@@ -346,7 +349,7 @@ test("the checkpoint after the fifth mastered word appears immediately after tha
 });
 
 test("no checkpoint appears when fewer than five unique words can reach full mastery", () => {
-  const state = new VocabularyLessonState(HANDLES.slice(0, 4), () => 0);
+  const state = new VocabularyLessonState(HANDLES.slice(0, 4), 4, () => 0);
   const { checkpoints, finalStep } = driveVocabularyLesson(state);
 
   assert.equal(checkpoints.length, 0);
@@ -355,7 +358,7 @@ test("no checkpoint appears when fewer than five unique words can reach full mas
 
 test("a failed review resets mastery but the word keeps its assigned group and cannot enter a later checkpoint", () => {
   const words = HANDLES.slice(0, 10);
-  const state = new VocabularyLessonState(words, deterministicRandom());
+  const state = new VocabularyLessonState(words, words.length, deterministicRandom());
 
   const phase1 = driveVocabularyLesson(state, { stopAfterCheckpoints: 1 });
   assert.equal(phase1.checkpoints.length, 1);
@@ -401,6 +404,7 @@ test("a failed review resets mastery but the word keeps its assigned group and c
 test("a served checkpoint cannot be queued again by repeated eligibility recomputation within one attempt", () => {
   const state = new VocabularyLessonState(
     HANDLES.slice(0, 10),
+    10,
     deterministicRandom()
   );
   const checkpoint = driveToNextCheckpoint(state);
@@ -422,7 +426,7 @@ test("a served checkpoint cannot be queued again by repeated eligibility recompu
 
 test("checkpoint advancement leaves mastery, stats, streaks, and review scheduling unchanged", () => {
   const words = HANDLES.slice(0, 10);
-  const state = new VocabularyLessonState(words, deterministicRandom());
+  const state = new VocabularyLessonState(words, words.length, deterministicRandom());
   driveToNextCheckpoint(state);
   const before = snapshotAuthoritativeLearningState(state, words);
 
@@ -588,64 +592,50 @@ function answerAndAdvance(
   return state.next();
 }
 
+let syntheticAttemptCounter = 0;
+
 function submitAnswer(
   state: VocabularyLessonState,
   step: VocabularyLessonStep,
   correct: boolean
 ): void {
+  syntheticAttemptCounter += 1;
+
   if (step.kind === "definition-practice") {
-    const content = getVocabularyContent({
-      contentType: "definition-practice",
-      wordListId: "word_list_id",
-      wordId: step.wordId,
-    })!;
-    const serverResult = getVocabularyAnswer({
-      answerType: "definition",
-      attemptId: content.attemptId,
-      selectedChoiceId: content.choices[0].id,
-    });
-    assert.ok(serverResult && serverResult.answerType === "definition");
-    const selectedChoiceId = correct
-      ? serverResult.correctChoiceId
-      : content.choices.find(
-          (choice) => choice.id !== serverResult.correctChoiceId
-        )!.id;
+    const attemptId = `synthetic-definition-attempt-${syntheticAttemptCounter}`;
+    const choiceIds = ["choice-a", "choice-b", "choice-c", "choice-d"];
+    const correctChoiceId = choiceIds[0];
+    const selectedChoiceId = correct ? correctChoiceId : choiceIds[1];
 
     state.activateAttempt({
       wordId: step.wordId,
       answerType: "definition",
-      attemptId: content.attemptId,
-      validChoiceIds: content.choices.map((choice) => choice.id),
+      attemptId,
+      validChoiceIds: choiceIds,
       review: step.review,
     });
     state.beginSubmission({
       answerType: "definition",
-      attemptId: content.attemptId,
+      attemptId,
       selectedChoiceId,
     });
-    state.recordSubmission(serverResult);
+    state.recordSubmission({ answerType: "definition", correctChoiceId });
     return;
   }
 
   if (step.kind === "spelling-practice") {
-    const content = getVocabularyContent({
-      contentType: "spelling-practice",
-      wordListId: "word_list_id",
-      wordId: step.wordId,
-    })!;
-    // The public projection intentionally omits the word; the test reads the
-    // canonical word from the server-only fixture, as the answer handler does.
-    const canonicalWord = WORDS.find((word) => word.id === step.wordId)!.word;
+    const attemptId = `synthetic-spelling-attempt-${syntheticAttemptCounter}`;
+    const canonicalWord = "synthetic-word";
     state.activateAttempt({
       wordId: step.wordId,
       answerType: "spelling",
-      attemptId: content.attemptId,
+      attemptId,
       validChoiceIds: [],
       review: step.review,
     });
     state.beginSubmission({
       answerType: "spelling",
-      attemptId: content.attemptId,
+      attemptId,
       answer: correct ? canonicalWord : "incorrect",
     });
     state.recordSubmission(
@@ -667,7 +657,7 @@ function createScheduledState(
   gradedAnswerCount: number,
   scheduled: Array<{ wordId: string; dueAt: number }>
 ): VocabularyLessonState {
-  const state = new VocabularyLessonState(HANDLES.slice(0, 3), () => 0);
+  const state = new VocabularyLessonState(HANDLES.slice(0, 3), 3, () => 0);
   for (const word of HANDLES.slice(0, 3)) {
     setProgress(state, word.id, { introduced: true });
   }

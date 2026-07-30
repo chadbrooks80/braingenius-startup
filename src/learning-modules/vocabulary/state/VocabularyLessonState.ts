@@ -49,7 +49,8 @@ type IntroductionPhase = {
 };
 
 export class VocabularyLessonState {
-  private readonly words: readonly VocabularyLessonWord[];
+  private words: readonly VocabularyLessonWord[];
+  private readonly totalWordCount: number;
   private readonly random: () => number;
   private readonly progressByWordId: Map<string, VocabularyWordProgress>;
   private activeAttempt: VocabularyActiveAttempt | null = null;
@@ -74,13 +75,46 @@ export class VocabularyLessonState {
 
   constructor(
     words: readonly VocabularyLessonWord[],
+    totalWordCount: number,
     random: () => number = Math.random
   ) {
     this.words = words;
+    this.totalWordCount = totalWordCount;
     this.random = random;
     this.progressByWordId = new Map(
       words.map((word) => [word.id, createInitialVocabularyWordProgress()])
     );
+  }
+
+  /**
+   * Appends exactly one newly loaded word after an authorized refill. A
+   * duplicate append (a replayed or concurrent refill result) is silently
+   * ignored so the same database word can never enter the ordered lesson
+   * twice.
+   */
+  appendWord(word: VocabularyLessonWord): void {
+    if (this.progressByWordId.has(word.id)) {
+      return;
+    }
+    this.words = [...this.words, word];
+    this.progressByWordId.set(word.id, createInitialVocabularyWordProgress());
+  }
+
+  // The current active pool: the first ACTIVE_POOL_SIZE currently loaded
+  // words that have not yet reached full spelling mastery, in load order.
+  getActivePoolWordIds(): string[] {
+    return this.words
+      .filter((word) => !this.requireProgress(word.id).spellingMastered)
+      .slice(0, ACTIVE_POOL_SIZE)
+      .map((word) => word.id);
+  }
+
+  // The number of unique words that have ever reached full initial mastery.
+  // A later review failure and re-mastery never increases this again, so it
+  // is the correct signal for "one more active-pool slot is now due a
+  // refill" -- exactly once per word, exactly at first mastery.
+  getFirstMasteryCount(): number {
+    return this.checkpointEligibleOrder.length;
   }
 
   next(): VocabularyLessonStep {
@@ -177,7 +211,7 @@ export class VocabularyLessonState {
 
   getStats(): VocabularyLessonStats {
     return {
-      totalWords: this.words.length,
+      totalWords: this.totalWordCount,
       gradedAnswerCount: this.gradedAnswerCount,
       correctCount: this.correctCount,
       incorrectCount: this.incorrectCount,
@@ -207,9 +241,8 @@ export class VocabularyLessonState {
       );
     }
 
-    const activePool = this.words
-      .filter((word) => !this.requireProgress(word.id).spellingMastered)
-      .slice(0, ACTIVE_POOL_SIZE);
+    const activePoolIds = new Set(this.getActivePoolWordIds());
+    const activePool = this.words.filter((word) => activePoolIds.has(word.id));
     const unintroducedWord = activePool.find(
       (word) => !this.requireProgress(word.id).introduced
     );
@@ -230,6 +263,11 @@ export class VocabularyLessonState {
     }
 
     if (activePool.length === 0) {
+      if (this.words.length < this.totalWordCount) {
+        throw new Error(
+          "Vocabulary lesson has no active work but the database source is not exhausted; an authorized refill must complete before advancing."
+        );
+      }
       return { kind: "lesson-complete", ...this.getStats() };
     }
 
@@ -365,6 +403,7 @@ export class VocabularyLessonState {
   private captureCompletionReviewSnapshotIfReady(): void {
     if (
       this.completionReviewWordIds !== null ||
+      this.words.length < this.totalWordCount ||
       this.words.some((word) => !this.requireProgress(word.id).introduced)
     ) {
       return;

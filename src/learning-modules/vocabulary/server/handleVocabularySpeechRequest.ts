@@ -9,7 +9,6 @@ import {
   type PaidTtsUsageDeps,
 } from "@/lib/learning-engine/speech/ttsUsageService";
 import type { TtsSynthesisRequest } from "@/lib/learning-engine/speech/validation/parseTtsSynthesisRequest";
-import { getWordList } from "../data/getWordList";
 import { vocabularyTts } from "../data/vocabularyTts";
 import {
   vocabularyContentCapabilityStore,
@@ -32,14 +31,18 @@ function jsonError(status: number, message: string): Response {
 
 /**
  * Resolves an opaque spelling speech reference into provider audio entirely
- * on the server. The canonical written word exists only in the synthesis text
- * passed transiently to the shared paid TTS policy; browser responses carry
- * audio bytes or a generic error message, never the word. Every request must
- * pass the same authenticated/entitled/suspension-checked shared usage
- * policy as public teaching speech, classified as VOCABULARY_PROTECTED.
+ * on the server. The canonical written word and its speech-synthesis
+ * definition come only from the stored active-attempt snapshot captured at
+ * content-build time (after authentication, list authorization, and attempt
+ * validation) -- this never scans a database list for a matching word.
+ * Browser responses carry audio bytes or a generic error message, never the
+ * word. Every request passes the same authenticated/entitled/suspension-
+ * checked shared usage policy as public teaching speech, classified as
+ * VOCABULARY_PROTECTED.
  */
 export async function handleVocabularySpeechRequest(
   request: Request,
+  userId: string,
   synthesize: SpeechSynthesizer = synthesizeTts,
   capabilityStore: VocabularyContentCapabilityStore =
     vocabularyContentCapabilityStore,
@@ -63,22 +66,23 @@ export async function handleVocabularySpeechRequest(
   }
 
   const learnerId = getVocabularyLearnerId(request);
-  const attempt = learnerId
-    ? capabilityStore.getSpellingAttempt(learnerId, reference)
-    : null;
-  const word = attempt
-    ? getWordList(attempt.wordListId)?.find(
-        (candidate) => candidate.id === attempt.wordId
-      ) ?? null
-    : null;
-  if (!word) {
+  let attempt;
+  try {
+    attempt = learnerId
+      ? await capabilityStore.getSpellingAttempt(learnerId, userId, reference)
+      : null;
+  } catch (error) {
+    console.error("[vocabulary-speech] list authorization unavailable", error);
+    return jsonError(503, "This learning module is temporarily unavailable.");
+  }
+  if (!attempt || !attempt.canonicalSpelling || !attempt.speechDefinition) {
     return jsonError(400, "Invalid vocabulary speech request.");
   }
 
   try {
     const result = await runMeteredTtsSynthesis(
       {
-        text: `Spell the word: ${word.word}. ${word.definition}`,
+        text: `Spell the word: ${attempt.canonicalSpelling}. ${attempt.speechDefinition}`,
         tts: vocabularyTts,
       },
       "VOCABULARY_PROTECTED",

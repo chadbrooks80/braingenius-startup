@@ -121,7 +121,7 @@ test("an allowed current tier is granted with the resolved tier", async () => {
       resolveEffectiveTier: async () => tier,
     });
 
-    assert.deepEqual(result, { status: "granted", tier });
+    assert.deepEqual(result, { status: "granted", tier, userId: "user-1" });
   }
 });
 

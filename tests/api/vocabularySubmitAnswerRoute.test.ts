@@ -14,7 +14,7 @@ test("rejects malformed JSON without calling the answer lookup", async () => {
   let lookupCalls = 0;
   const response = await handleVocabularyAnswerRequest(
     requestWithBody("{"),
-    () => {
+    async () => {
       lookupCalls += 1;
       return { answerType: "definition", correctChoiceId: "a" };
     }
@@ -45,7 +45,7 @@ test("strictly rejects unknown, missing, and type-mismatched fields", async () =
   for (const body of invalidBodies) {
     const response = await handleVocabularyAnswerRequest(
       requestWithBody(JSON.stringify(body)),
-      () => ({ answerType: "definition", correctChoiceId: "a" })
+      async () => ({ answerType: "definition", correctChoiceId: "a" })
     );
 
     assert.equal(response.status, 400);
@@ -64,7 +64,7 @@ test("rejects attempts that the server lookup does not recognize", async () => {
         selectedChoiceId: "a",
       })
     ),
-    () => null
+    async () => null
   );
 
   assert.equal(response.status, 400);
@@ -82,7 +82,7 @@ test("returns minimal definition feedback for a valid submission", async () => {
         selectedChoiceId: "b",
       })
     ),
-    (submission) => {
+    async (submission) => {
       assert.deepEqual(submission, {
         answerType: "definition",
         attemptId: "attempt-1",
@@ -116,7 +116,7 @@ test("returns correct and incorrect spelling feedback", async () => {
           answer: " Brilliant ",
         })
       ),
-      (submission) => {
+      async (submission) => {
         assert.equal(submission.answerType, "spelling");
         return result;
       }

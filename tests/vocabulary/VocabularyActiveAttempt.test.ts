@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getVocabularyAnswer } from "../../src/learning-modules/vocabulary/data/getCorrectAnswer";
-import { getVocabularyContent } from "../../src/learning-modules/vocabulary/server/getVocabularyContent";
 import {
   beginVocabularySubmission,
   cancelVocabularySubmission,
@@ -10,19 +8,19 @@ import {
   requireVocabularyAttemptAnswered,
 } from "../../src/learning-modules/vocabulary/state/VocabularyActiveAttempt";
 
+// VocabularyActiveAttempt is a pure state machine independent of content
+// generation or grading, so these tests use synthetic attempt/choice IDs
+// rather than a real content-building or database pipeline.
 const WORD_ID = "word-01";
-const CONTENT = getVocabularyContent({
-  contentType: "definition-practice",
-  wordListId: "word_list_id",
-  wordId: WORD_ID,
-})!;
+const ATTEMPT_ID = "attempt-definition-01";
+const CHOICE_IDS = ["choice-a", "choice-b", "choice-c", "choice-d"];
 
 test("active-attempt guards reject stale, mismatched, invalid, and duplicate submissions", () => {
   const attempt = createVocabularyActiveAttempt({
     wordId: WORD_ID,
     answerType: "definition",
-    attemptId: CONTENT.attemptId,
-    validChoiceIds: CONTENT.choices.map((choice) => choice.id),
+    attemptId: ATTEMPT_ID,
+    validChoiceIds: CHOICE_IDS,
     review: false,
   });
 
@@ -31,7 +29,7 @@ test("active-attempt guards reject stale, mismatched, invalid, and duplicate sub
       beginVocabularySubmission(attempt, {
         answerType: "definition",
         attemptId: "stale-attempt",
-        selectedChoiceId: CONTENT.choices[0].id,
+        selectedChoiceId: CHOICE_IDS[0],
       }),
     /stale attemptId/
   );
@@ -39,7 +37,7 @@ test("active-attempt guards reject stale, mismatched, invalid, and duplicate sub
     () =>
       beginVocabularySubmission(attempt, {
         answerType: "spelling",
-        attemptId: CONTENT.attemptId,
+        attemptId: ATTEMPT_ID,
         answer: "brilliant",
       }),
     /does not accept a spelling answer/
@@ -48,7 +46,7 @@ test("active-attempt guards reject stale, mismatched, invalid, and duplicate sub
     () =>
       beginVocabularySubmission(attempt, {
         answerType: "definition",
-        attemptId: CONTENT.attemptId,
+        attemptId: ATTEMPT_ID,
         selectedChoiceId: "not-offered",
       }),
     /was not offered/
@@ -56,38 +54,32 @@ test("active-attempt guards reject stale, mismatched, invalid, and duplicate sub
 
   beginVocabularySubmission(attempt, {
     answerType: "definition",
-    attemptId: CONTENT.attemptId,
-    selectedChoiceId: CONTENT.choices[0].id,
+    attemptId: ATTEMPT_ID,
+    selectedChoiceId: CHOICE_IDS[0],
   });
   assert.throws(
     () =>
       beginVocabularySubmission(attempt, {
         answerType: "definition",
-        attemptId: CONTENT.attemptId,
-        selectedChoiceId: CONTENT.choices[0].id,
+        attemptId: ATTEMPT_ID,
+        selectedChoiceId: CHOICE_IDS[0],
       }),
     /already has an answer pending/
   );
 });
 
 test("cancellation permits retry and confirmed feedback completes the attempt", () => {
-  const serverResult = getVocabularyAnswer({
-    answerType: "definition",
-    attemptId: CONTENT.attemptId,
-    selectedChoiceId: CONTENT.choices[0].id,
-  });
-  assert.ok(serverResult && serverResult.answerType === "definition");
-  const correctChoiceId = serverResult.correctChoiceId;
+  const correctChoiceId = CHOICE_IDS[0];
   const attempt = createVocabularyActiveAttempt({
     wordId: WORD_ID,
     answerType: "definition",
-    attemptId: CONTENT.attemptId,
-    validChoiceIds: CONTENT.choices.map((choice) => choice.id),
+    attemptId: ATTEMPT_ID,
+    validChoiceIds: CHOICE_IDS,
     review: true,
   });
   const submission = {
     answerType: "definition" as const,
-    attemptId: CONTENT.attemptId,
+    attemptId: ATTEMPT_ID,
     selectedChoiceId: correctChoiceId,
   };
 

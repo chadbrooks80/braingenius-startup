@@ -81,6 +81,7 @@ function isValidContentResponse<Request extends VocabularyContentRequest>(
           "randomSeed",
           "nextCapability",
           "words",
+          "totalWordCount",
         ]) &&
         isOpaqueIdentifier(raw.lessonId) &&
         Number.isInteger(raw.randomSeed) &&
@@ -91,7 +92,15 @@ function isValidContentResponse<Request extends VocabularyContentRequest>(
         Array.isArray(raw.words) &&
         raw.words.length > 0 &&
         raw.words.every(isManifestWord) &&
-        new Set(raw.words.map((word) => word.id)).size === raw.words.length
+        new Set(raw.words.map((word) => word.id)).size === raw.words.length &&
+        Number.isInteger(raw.totalWordCount) &&
+        typeof raw.totalWordCount === "number" &&
+        raw.totalWordCount >= raw.words.length
+      );
+    case "word-refill":
+      return (
+        hasExactFields(raw, ["contentType", "wordId"]) &&
+        (raw.wordId === null || isOpaqueIdentifier(raw.wordId))
       );
     case "definition-display":
       return (

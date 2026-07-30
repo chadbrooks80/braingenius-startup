@@ -55,6 +55,10 @@ class Vocabulary implements ActiveModule {
   private nextCapability: string | null = null;
   private pendingStep: VocabularyLessonStep | null = null;
   private nextTransition: Promise<ScreenRequest> | null = null;
+  // The number of authorized refills already requested for this lesson.
+  // Compared against the lesson state's first-mastery count so a refill is
+  // requested exactly once per newly opened active-pool slot.
+  private refillsRequested = 0;
 
   constructor(
     moduleVariables: string[],
@@ -86,6 +90,7 @@ class Vocabulary implements ActiveModule {
 
     this.lessonState = new VocabularyLessonState(
       manifest.words,
+      manifest.totalWordCount,
       createVocabularyLessonRandom(manifest.randomSeed)
     );
     this.lessonId = manifest.lessonId;
@@ -122,6 +127,7 @@ class Vocabulary implements ActiveModule {
     try {
       const result = await this.api.submitAnswer(submission);
       lessonState.recordSubmission(result);
+      await this.refillActivePoolIfNeeded(lessonState);
       return createVocabularyWindowFeedback(result);
     } catch (error) {
       lessonState.cancelSubmission();
@@ -129,8 +135,56 @@ class Vocabulary implements ActiveModule {
     }
   }
 
+  /**
+   * After a confirmed full initial mastery opens one active-pool slot,
+   * makes exactly one authorized refill request for the next ordered
+   * database word and mirrors the result into the shared lesson-state
+   * contract. `refillsRequested` only advances on a settled request, so a
+   * failed/timed-out refill leaves the lesson state recoverable and the
+   * exact same refill can be retried on the next opportunity.
+   */
+  private async refillActivePoolIfNeeded(
+    lessonState: VocabularyLessonState
+  ): Promise<void> {
+    const due = lessonState.getFirstMasteryCount();
+    if (due <= this.refillsRequested) {
+      return;
+    }
+
+    const lessonId = this.lessonId;
+    if (!lessonId) {
+      return;
+    }
+
+    let refill;
+    try {
+      refill = await this.api.loadContent({
+        contentType: "word-refill",
+        lessonId,
+      });
+    } catch (error) {
+      // A failed/timed-out refill leaves refillsRequested unchanged so the
+      // exact same refill is retried the next time this is called, instead
+      // of inserting a placeholder or advancing the ordered cursor.
+      console.warn("vocabulary_refill_failure", error);
+      return;
+    }
+    if (!refill) {
+      return;
+    }
+
+    this.refillsRequested += 1;
+    if (refill.wordId) {
+      lessonState.appendWord({ id: refill.wordId });
+    }
+  }
+
   private async createNextScreenRequest(): Promise<ScreenRequest> {
     const lessonState = this.requireLessonState();
+    // A second, defensive retry point: if a prior refill attempt failed
+    // after grading, this gives the lesson another chance to catch up
+    // before computing the next step.
+    await this.refillActivePoolIfNeeded(lessonState);
     const step = this.pendingStep ?? lessonState.next();
     this.pendingStep = step;
 

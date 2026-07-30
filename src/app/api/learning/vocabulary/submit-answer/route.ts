@@ -24,10 +24,11 @@ export async function handleVocabularySubmitAnswerRouteRequest(
   const learnerId = getVocabularyLearnerId(request);
   return handleVocabularyAnswerRequest(request, (submission) => {
     if (!learnerId) {
-      return null;
+      return Promise.resolve(null);
     }
     return vocabularyContentCapabilityStore.resolveAnswer(
       learnerId,
+      access.userId,
       submission,
       getVocabularyAnswerForAttempt
     );

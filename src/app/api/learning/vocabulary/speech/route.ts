@@ -18,7 +18,7 @@ export async function handleVocabularySpeechRouteRequest(
     return learningModuleAccessDenialResponse(access);
   }
 
-  return handleVocabularySpeechRequest(request);
+  return handleVocabularySpeechRequest(request, access.userId);
 }
 
 export async function POST(request: Request): Promise<Response> {

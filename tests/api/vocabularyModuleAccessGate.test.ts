@@ -35,8 +35,16 @@ const ROUTES: Array<{
     handler: handleVocabularyContentRouteRequest,
     url: "http://local.test/api/learning/vocabulary/content",
     body: { contentType: "manifest", wordListId: "word_list_id" },
-    passThroughBody: { contentType: "manifest", wordListId: "word_list_id" },
-    passThroughStatus: 200,
+    // A non-manifest request with no learner cookie is rejected
+    // deterministically before any database access, proving the request
+    // passed the module-access gate and reached the real handler without
+    // depending on a real (unfaked) Prisma-backed list lookup.
+    passThroughBody: {
+      contentType: "definition-display",
+      lessonId: "00000000-0000-4000-8000-000000000001",
+      capability: "00000000-0000-4000-8000-000000000002",
+    },
+    passThroughStatus: 400,
   },
   {
     name: "submit-answer",

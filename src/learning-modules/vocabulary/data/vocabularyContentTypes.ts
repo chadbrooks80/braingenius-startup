@@ -25,6 +25,15 @@ export type VocabularyLessonManifestRequest = {
   wordListId: string;
 };
 
+// Authorized refill loading: retrieves exactly one next ordered database
+// word after one confirmed initial mastery opens one active-pool slot. The
+// browser supplies only the opaque lessonId; the server derives the single
+// valid next position from server-authoritative lesson state.
+export type VocabularyWordRefillRequest = {
+  contentType: "word-refill";
+  lessonId: string;
+};
+
 type VocabularyScreenContentRequest = {
   lessonId: string;
   capability: string;
@@ -57,6 +66,7 @@ export type VocabularyWordSearchCheckpointRequest = VocabularyScreenContentReque
 
 export type VocabularyContentRequest =
   | VocabularyLessonManifestRequest
+  | VocabularyWordRefillRequest
   | VocabularyDefinitionDisplayRequest
   | VocabularyDefinitionFunFactRequest
   | VocabularyDefinitionPracticeRequest
@@ -70,6 +80,17 @@ export type VocabularyLessonManifest = {
   randomSeed: number;
   nextCapability: string;
   words: Array<{ id: string }>;
+  // The authoritative total word count for the requested list, independent
+  // of how many complete word records are currently loaded, so lazy loading
+  // never changes lesson statistics or completion.
+  totalWordCount: number;
+};
+
+// `wordId: null` means the ordered database source is exhausted: no next
+// word remains to load. It is never a placeholder or fixture word.
+export type VocabularyWordRefillContent = {
+  contentType: "word-refill";
+  wordId: string | null;
 };
 
 export type VocabularyDefinitionDisplayContent = {
@@ -135,6 +156,7 @@ export type VocabularyWordSearchCheckpointContent = {
 
 export type VocabularyContentResponse =
   | VocabularyLessonManifest
+  | VocabularyWordRefillContent
   | VocabularyDefinitionDisplayContent
   | VocabularyDefinitionFunFactContent
   | VocabularyDefinitionPracticeContent

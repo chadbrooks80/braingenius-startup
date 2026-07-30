@@ -10,7 +10,7 @@ A `mustResetPassword` account is a further case: NextAuth still establishes a se
 
 ## Learning Module access
 
-`src/lib/auth/module-access.ts` exports `authorizeLearningModuleAccess(moduleName)`, the subject-neutral, server-only boundary shared by the learning route and every direct Vocabulary HTTP boundary. It loads and validates the requested module's settings first (an unregistered module or malformed settings resolves to `unregistered`/`unavailable` without ever revealing an access decision to the caller, deferring to the module's own existing "not found" error ownership), then resolves the authenticated session, then calls `resolveEffectiveSubscriptionTier()` (`src/lib/billing/effective-subscription-tier.ts`) and compares the result against the module's declared `settings.json` `subscriptionTier` array. Results are `unregistered`, `unauthenticated`, `forbidden`, `unavailable`, or `granted` with the resolved tier; every non-granted branch fails closed, including a database/session failure.
+`src/lib/auth/module-access.ts` exports `authorizeLearningModuleAccess(moduleName)`, the subject-neutral, server-only boundary shared by the learning route and every direct Vocabulary HTTP boundary. It loads and validates the requested module's settings first (an unregistered module or malformed settings resolves to `unregistered`/`unavailable` without ever revealing an access decision to the caller, deferring to the module's own existing "not found" error ownership), then resolves the authenticated session, then calls `resolveEffectiveSubscriptionTier()` (`src/lib/billing/effective-subscription-tier.ts`) and compares the result against the module's declared `settings.json` `subscriptionTier` array. Results are `unregistered`, `unauthenticated`, `forbidden`, `unavailable`, or `granted` with the resolved tier and the trusted session `userId` (so a route handler can authorize a browser-supplied resource ID -- e.g. a Vocabulary `ModVocabList.id` -- against its real database owner without re-deriving the session itself); every non-granted branch fails closed, including a database/session failure.
 
 `resolveEffectiveSubscriptionTier()` reuses the unchanged `evaluateSubscriptionEntitlement()` rules from `src/lib/billing/entitlement.ts` (the same evaluator `resolveTtsEntitlement()` uses) to resolve a direct current entitlement first, then a database `CHILD`'s first currently entitled linked parent in stable ascending `parentId` order, then `null`. It denies a reset-required or missing caller before either lookup. It is deliberately independent of `src/lib/billing/user-entitlement.ts` and the paid TTS usage service: neither manual TTS suspension, usage metering, nor provider/request-kind policy applies to general module authorization.
 
@@ -18,18 +18,20 @@ The learning route (`src/app/(app)/(learning)/learning/[...learning]/page.tsx`) 
 
 ## Vocabulary answer security
 
-Canonical fixture words, internal choice IDs, accepted spellings, and grading live in modules importing `server-only`. Before grading, browser projections contain only:
+Canonical words, internal choice IDs, accepted spellings, and grading live in modules importing `server-only` and are loaded from `ModVocabList`/`ModVocabListWord` through the module-owned `src/learning-modules/vocabulary/server/vocabularyListStore.ts` repository, never a hardcoded fixture. Before grading, browser projections contain only:
 
 - opaque lesson/word/capability/attempt identifiers;
 - the current teaching screen content;
 - a multiple-choice prompt and four public choice IDs/text values; or
 - a spelling definition and opaque speech/attempt reference.
 
-Public definition choice IDs are SHA-256-derived per opaque attempt. Strict parsers reject unknown, missing, or wrong-variant fields. The server binds a capability or attempt to the anonymous learner cookie, lesson, word, projection, screen occurrence, and answer type. Capabilities expire after 30 minutes by default, predecessors are retired as the chain advances, and protected responses use `Cache-Control: no-store`.
+Public definition choice IDs are SHA-256-derived per opaque attempt. Strict parsers reject unknown, missing, or wrong-variant fields. The server binds a capability or attempt to the anonymous learner cookie, lesson, word, projection, screen occurrence, and answer type, and additionally re-verifies `ModVocabList.ownerUserId` against the trusted session user ID at every content, answer, and speech boundary (not only the initial manifest request). Capabilities expire after 30 minutes by default, predecessors are retired as the chain advances, and protected responses use `Cache-Control: no-store`.
 
-The anonymous learner cookie is a random UUID with `HttpOnly`, `SameSite=Strict`, `Path=/`, and `Secure` for HTTPS. Identity is derived from the cookie, never a learner ID in the request body.
+The anonymous learner cookie is a random UUID with `HttpOnly`, `SameSite=Strict`, `Path=/`, and `Secure` for HTTPS. Identity is derived from the cookie, never a learner ID in the request body. List ownership authorization is derived only from the trusted NextAuth session user ID, never a browser-supplied user ID.
 
-The current store is an in-memory singleton. Its expiration and idempotency properties do not survive process restarts and are not safe across multiple application instances.
+At content-build time the server snapshots the graded truth (the correct public choice ID for a definition attempt, or the canonical spelling for a spelling attempt) into the server-only attempt record; grading reads only that snapshot and never re-queries the database or recomputes distractors during answer submission.
+
+The current store is an in-memory singleton; each lesson also caches only the small number of `ModVocabListWord` records it has actually loaded (bounded to the active pool plus any refills), never the complete list. Its expiration and idempotency properties do not survive process restarts and are not safe across multiple application instances.
 
 ## Protected speech
 

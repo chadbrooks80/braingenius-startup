@@ -6,7 +6,7 @@ import { parseVocabularyAnswerSubmission } from "@/learning-modules/vocabulary/v
 
 type VocabularyAnswerLookup = (
   submission: VocabularyAnswerSubmission
-) => VocabularyAnswerResult | null;
+) => Promise<VocabularyAnswerResult | null>;
 
 export async function handleVocabularyAnswerRequest(
   request: Request,
@@ -30,7 +30,16 @@ export async function handleVocabularyAnswerRequest(
     );
   }
 
-  const result = getVocabularyAnswer(submission);
+  let result: VocabularyAnswerResult | null;
+  try {
+    result = await getVocabularyAnswer(submission);
+  } catch (error) {
+    console.error("[vocabulary-submit-answer] grading unavailable", error);
+    return Response.json(
+      { error: "This learning module is temporarily unavailable." },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
+  }
   if (!result) {
     return Response.json(
       { error: "Invalid vocabulary answer submission." },

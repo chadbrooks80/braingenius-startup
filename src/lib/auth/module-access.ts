@@ -23,7 +23,7 @@ export type LearningModuleAccessResult =
   | { status: "unauthenticated" }
   | { status: "forbidden" }
   | { status: "unavailable" }
-  | { status: "granted"; tier: LearningSubscriptionTier };
+  | { status: "granted"; tier: LearningSubscriptionTier; userId: string };
 
 export type AuthorizeLearningModuleAccessDeps = {
   getSessionUserId?: () => Promise<string | null>;
@@ -96,7 +96,7 @@ export async function authorizeLearningModuleAccess(
     return { status: "forbidden" };
   }
 
-  return { status: "granted", tier };
+  return { status: "granted", tier, userId: callerUserId };
 }
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" } as const;

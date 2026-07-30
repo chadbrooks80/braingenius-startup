@@ -8,7 +8,6 @@ import {
   TtsUpstreamError,
 } from "../../src/lib/learning-engine/errors/TtsSynthesisError";
 import type { TtsSynthesisRequest } from "../../src/lib/learning-engine/speech/validation/parseTtsSynthesisRequest";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
 import { getVocabularyAnswerForAttempt } from "../../src/learning-modules/vocabulary/data/getCorrectAnswer";
 import type {
   VocabularyContentRequest,
@@ -19,16 +18,19 @@ import { handleVocabularySpeechRequest } from "../../src/learning-modules/vocabu
 import { handleVocabularyContentRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularyContentRequest";
 import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
 import { VOCABULARY_LEARNER_COOKIE } from "../../src/learning-modules/vocabulary/server/vocabularyLearnerSession";
+import { getServerCorrectChoiceId } from "../vocabulary/testVocabularyApi";
 import {
-  getServerCorrectChoiceId,
-} from "../vocabulary/testVocabularyApi";
+  createDefaultFakeVocabularyListSource,
+  TEST_LIST_ID,
+  TEST_OWNER_USER_ID,
+  TEST_WORD_SEEDS,
+} from "../vocabulary/fakeVocabularyListStore";
 import type { PaidTtsUsageDeps } from "../../src/lib/learning-engine/speech/ttsUsageService";
 import {
   ADMIN_SUBSCRIPTION,
   FakeTtsUsageStore,
 } from "../tts/testDoubles/fakeTtsUsageStore";
 
-const WORDS = getWordList("word_list_id")!;
 const FAKE_AUDIO = new Uint8Array([1, 2, 3, 4]);
 const CALLER = "user-caller";
 const NOW = new Date("2026-07-29T10:30:30Z");
@@ -63,7 +65,6 @@ function entitledAccess(overrides: PaidTtsUsageDeps = {}): {
 
 test("resolves an opaque spelling reference to audio without exposing the word", async () => {
   const authorization = await createSpellingAuthorization();
-  const word = WORDS.find((candidate) => candidate.id === authorization.wordId)!;
   const synthesized: TtsSynthesisRequest[] = [];
   const { accessDeps, usageStore } = entitledAccess();
 
@@ -72,6 +73,7 @@ test("resolves an opaque spelling reference to audio without exposing the word",
       { reference: authorization.attemptId },
       authorization.learnerId
     ),
+    TEST_OWNER_USER_ID,
     async (request) => {
       synthesized.push(request);
       return { bytes: FAKE_AUDIO, contentType: "audio/mpeg" };
@@ -86,8 +88,11 @@ test("resolves an opaque spelling reference to audio without exposing the word",
 
   // The canonical word reaches only the server-side TTS synthesis request.
   assert.equal(synthesized.length, 1);
-  assert.match(synthesized[0].text, new RegExp(`Spell the word: ${word.word}`));
-  assert.match(synthesized[0].text, new RegExp(word.definition));
+  assert.match(
+    synthesized[0].text,
+    new RegExp(`Spell the word: ${authorization.canonicalSpelling}`)
+  );
+  assert.match(synthesized[0].text, new RegExp(authorization.speechDefinition));
   assert.deepEqual(synthesized[0].tts, vocabularyTts);
 
   // The browser-visible response carries opaque audio bytes and headers only.
@@ -95,7 +100,9 @@ test("resolves an opaque spelling reference to audio without exposing the word",
   assert.deepEqual(body, FAKE_AUDIO);
   for (const [name, value] of response.headers.entries()) {
     assert.ok(
-      !`${name} ${value}`.toLocaleLowerCase("en-US").includes(word.word),
+      !`${name} ${value}`
+        .toLocaleLowerCase("en-US")
+        .includes(authorization.canonicalSpelling.toLocaleLowerCase("en-US")),
       `header ${name} leaks the word`
     );
   }
@@ -131,6 +138,7 @@ test("an anonymous protected speech request returns 401 without provider use or 
       { reference: authorization.attemptId },
       authorization.learnerId
     ),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for an anonymous caller");
     },
@@ -158,6 +166,7 @@ test("a non-entitled caller receives a generic 403 without provider use", async 
       { reference: authorization.attemptId },
       authorization.learnerId
     ),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for a non-entitled caller");
     },
@@ -194,6 +203,7 @@ test("a caller past the emergency burst boundary receives 429 with an integer Re
       { reference: authorization.attemptId },
       authorization.learnerId
     ),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run past the burst boundary");
     },
@@ -226,6 +236,7 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
   for (const body of rejectedBodies) {
     const response = await handleVocabularySpeechRequest(
       speechRequest(body, authorization.learnerId),
+      TEST_OWNER_USER_ID,
       async () => {
         throw new Error("synthesis must not run for a rejected reference");
       },
@@ -244,6 +255,7 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
       { reference: authorization.attemptId },
       "00000000-0000-4000-8000-000000000099"
     ),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for another learner");
     },
@@ -252,12 +264,27 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
   );
   assert.equal(otherLearner.status, 400);
 
+  const otherOwner = await handleVocabularySpeechRequest(
+    speechRequest(
+      { reference: authorization.attemptId },
+      authorization.learnerId
+    ),
+    "some-other-user",
+    async () => {
+      throw new Error("synthesis must not run for a non-owning user");
+    },
+    authorization.store,
+    accessDeps
+  );
+  assert.equal(otherOwner.status, 400);
+
   const malformed = await handleVocabularySpeechRequest(
     new Request("http://local.test/api/learning/vocabulary/speech", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "not-json",
     }),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for malformed JSON");
     },
@@ -278,6 +305,7 @@ test("provider failures return the generic learner-safe TTS errors without the w
 
   const upstream = await handleVocabularySpeechRequest(
     speechRequest({ reference }, authorization.learnerId),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new TtsUpstreamError("google", "provider raw failure detail");
     },
@@ -296,6 +324,7 @@ test("provider failures return the generic learner-safe TTS errors without the w
 
   const configuration = await handleVocabularySpeechRequest(
     speechRequest({ reference }, authorization.learnerId),
+    TEST_OWNER_USER_ID,
     async () => {
       throw new TtsConfigurationError("google", "missing credential detail");
     },
@@ -327,9 +356,13 @@ async function createSpellingAuthorization(): Promise<{
   store: VocabularyContentCapabilityStore;
   learnerId: string;
   attemptId: string;
-  wordId: string;
+  canonicalSpelling: string;
+  speechDefinition: string;
 }> {
-  const store = new VocabularyContentCapabilityStore({ seed: () => 0 });
+  const store = new VocabularyContentCapabilityStore({
+    seed: () => 0,
+    listSource: createDefaultFakeVocabularyListSource(),
+  });
   const learnerId = "00000000-0000-4000-8000-000000000001";
   const api: VocabularyModuleApi = {
     async loadContent<Request extends VocabularyContentRequest>(request: Request) {
@@ -342,14 +375,16 @@ async function createSpellingAuthorization(): Promise<{
           },
           body: JSON.stringify(request),
         }),
+        TEST_OWNER_USER_ID,
         store
       );
       assert.equal(response.status, 200);
       return (await response.json()) as VocabularyContentResponseFor<Request>;
     },
     async submitAnswer(submission) {
-      const result = store.resolveAnswer(
+      const result = await store.resolveAnswer(
         learnerId,
+        TEST_OWNER_USER_ID,
         submission,
         getVocabularyAnswerForAttempt
       );
@@ -357,7 +392,7 @@ async function createSpellingAuthorization(): Promise<{
       return result;
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let guard = 0; guard < 200; guard += 1) {
@@ -365,9 +400,19 @@ async function createSpellingAuthorization(): Promise<{
     assert.ok(screen);
     if (screen.windowName === "spelling") {
       const attemptId = String(screen.props.attemptId);
-      const attempt = store.getSpellingAttempt(learnerId, attemptId);
-      assert.ok(attempt);
-      return { store, learnerId, attemptId, wordId: attempt.wordId };
+      const attempt = await store.getSpellingAttempt(
+        learnerId,
+        TEST_OWNER_USER_ID,
+        attemptId
+      );
+      assert.ok(attempt?.canonicalSpelling && attempt.speechDefinition);
+      return {
+        store,
+        learnerId,
+        attemptId,
+        canonicalSpelling: attempt.canonicalSpelling,
+        speechDefinition: attempt.speechDefinition,
+      };
     }
     if (screen.windowName === "multiple-choice") {
       const choices = screen.props.choices as [
@@ -394,10 +439,10 @@ async function createSpellingAuthorization(): Promise<{
 
 function assertNoFixtureWord(serialized: string): void {
   const normalized = serialized.toLocaleLowerCase("en-US");
-  for (const word of WORDS) {
+  for (const seed of TEST_WORD_SEEDS) {
     assert.ok(
-      !normalized.includes(word.word.toLocaleLowerCase("en-US")),
-      `browser-visible speech response leaks "${word.word}"`
+      !normalized.includes(seed.word.toLocaleLowerCase("en-US")),
+      `browser-visible speech response leaks "${seed.word}"`
     );
   }
 }

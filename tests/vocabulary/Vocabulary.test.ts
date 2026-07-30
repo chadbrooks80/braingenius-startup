@@ -5,13 +5,13 @@ import Vocabulary, {
 } from "../../src/learning-modules/vocabulary/index";
 import type { ScreenRequest } from "../../src/types/learning";
 import type { VocabularyContentRequest } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
 import { LearningRouteError } from "../../src/lib/learning-engine/errors/LearningRouteError";
 import {
   createInProcessVocabularyApi,
   getServerCorrectChoiceId,
   getServerSpellingAnswer,
 } from "./testVocabularyApi";
+import { TEST_LIST_ID, TEST_WORD_SEEDS } from "./fakeVocabularyListStore";
 
 test("constructor rejects a route without a list ID using the module-owned error", () => {
   assert.throws(
@@ -69,7 +69,7 @@ test("real browser request bodies use only screen-specific capabilities for ever
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let guard = 0; guard < 500; guard += 1) {
@@ -105,8 +105,12 @@ test("real browser request bodies use only screen-specific capabilities for ever
       });
     }
 
+    // Mastering the first word's spelling also triggers exactly one
+    // authorized "word-refill" content request, so the target set now
+    // covers 7 distinct content types (the 5 screen types, manifest, and
+    // word-refill).
     if (
-      new Set(requests.map((request) => request.contentType)).size === 6
+      new Set(requests.map((request) => request.contentType)).size === 7
     ) {
       break;
     }
@@ -114,11 +118,26 @@ test("real browser request bodies use only screen-specific capabilities for ever
 
   assert.deepEqual(requests[0], {
     contentType: "manifest",
-    wordListId: "word_list_id",
+    wordListId: TEST_LIST_ID,
   });
+  const refillRequests = requests.filter(
+    (request): request is Extract<VocabularyContentRequest, { contentType: "word-refill" }> =>
+      request.contentType === "word-refill"
+  );
+  assert.equal(refillRequests.length, 1);
+  assert.deepEqual(Object.keys(refillRequests[0]).sort(), [
+    "contentType",
+    "lessonId",
+  ]);
+  assert.match(refillRequests[0].lessonId, /^[0-9a-f-]{36}$/i);
+
   const screenRequests = requests.filter(
-    (request): request is Exclude<VocabularyContentRequest, { contentType: "manifest" }> =>
-      request.contentType !== "manifest"
+    (
+      request
+    ): request is Exclude<
+      VocabularyContentRequest,
+      { contentType: "manifest" | "word-refill" }
+    > => request.contentType !== "manifest" && request.contentType !== "word-refill"
   );
   assert.deepEqual(
     new Set(screenRequests.map((request) => request.contentType)),
@@ -152,14 +171,14 @@ test("real browser request bodies use only screen-specific capabilities for ever
   }
 
   const serializedRequests = JSON.stringify(requests).toLocaleLowerCase("en-US");
-  for (const word of getWordList("word_list_id")!) {
-    assert.ok(!serializedRequests.includes(word.word.toLocaleLowerCase("en-US")));
+  for (const seed of TEST_WORD_SEEDS) {
+    assert.ok(!serializedRequests.includes(seed.word.toLocaleLowerCase("en-US")));
   }
 });
 
 test("routes the first five words through both introduction windows before practice", async () => {
   const vocabulary = new Vocabulary(
-    ["word_list_id"],
+    [TEST_LIST_ID],
     () => 0,
     createInProcessVocabularyApi()
   );
@@ -205,7 +224,7 @@ test("reaches an ungraded five-word Word Search checkpoint after five words firs
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   let checkpoint: ScreenRequest | null = null;
@@ -258,9 +277,7 @@ test("reaches an ungraded five-word Word Search checkpoint after five words firs
   assert.equal(words.length, 5);
   assert.equal(new Set(words.map((word) => word.toLocaleUpperCase("en-US"))).size, 5);
 
-  const fixtureWords = new Set(
-    getWordList("word_list_id")!.map((word) => word.word)
-  );
+  const fixtureWords = new Set(TEST_WORD_SEEDS.map((seed) => seed.word));
   for (const word of words) {
     assert.ok(fixtureWords.has(word));
   }
@@ -288,7 +305,7 @@ test("repeated checkpoint capability reads and duplicate next handling cannot re
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   const checkpoint = await advanceVocabularyToWordSearchCheckpoint(vocabulary);
@@ -329,7 +346,7 @@ test("network failure preserves the active attempt for a safe retry", async () =
       return baseApi.submitAnswer(submission);
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let index = 0; index < 10; index += 1) {
@@ -390,7 +407,7 @@ test("duplicate next actions and answer submissions cannot create duplicate prog
       return baseApi.submitAnswer(submission);
     },
   };
-  const vocabulary = new Vocabulary(["word_list_id"], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
   await vocabulary.initialize();
 
   const [firstDisplay, duplicateDisplay] = await Promise.all([

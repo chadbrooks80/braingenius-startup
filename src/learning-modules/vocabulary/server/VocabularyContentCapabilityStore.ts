@@ -1,12 +1,26 @@
 import "server-only";
 
-import { randomInt, randomUUID } from "node:crypto";
-import { getWordList } from "../data/getWordList";
+import { randomInt as secureRandomInt, randomUUID } from "node:crypto";
+import {
+  countVocabularyListWords,
+  findFirstVocabularyListWords,
+  findNextVocabularyListWord,
+  findVocabularyDistractorDefinitions,
+  isVocabularyListOwnedByUser,
+  type VocabularyDistractorRow,
+  type VocabularyListWordRow,
+} from "./vocabularyListStore";
+import {
+  getVocabularyContent,
+  type VocabularyContentBuildContext,
+  type VocabularyContentBuildResult,
+} from "./getVocabularyContent";
 import type {
   VocabularyContentResponse,
   VocabularyLessonManifest,
   VocabularyScreenContentType,
 } from "../data/vocabularyContentTypes";
+import { ACTIVE_POOL_SIZE } from "../state/VocabularyLessonTypes";
 import { VocabularyLessonState } from "../state/VocabularyLessonState";
 import type { VocabularyLessonStep } from "../state/VocabularyLessonTypes";
 import { createVocabularyLessonRandom } from "../state/createVocabularyLessonRandom";
@@ -19,12 +33,49 @@ const DEFAULT_LIFETIME_MS = 30 * 60 * 1_000;
 
 type ScreenStep = Exclude<VocabularyLessonStep, { kind: "lesson-complete" }>;
 
+// Injected boundary to the module-owned `ModVocabList`/`ModVocabListWord`
+// repository. Kept as a narrow interface (not the raw Prisma client or the
+// exported repository functions directly) so tests can supply a fully
+// deterministic in-memory double, matching the existing
+// ttsUsageService/effective-subscription-tier convention.
+export type VocabularyListSource = {
+  isOwned(userId: string, listId: string): Promise<boolean>;
+  countWords(listId: string): Promise<number>;
+  findFirst(listId: string, take: number): Promise<VocabularyListWordRow[]>;
+  findNext(
+    listId: string,
+    afterPosition: number
+  ): Promise<VocabularyListWordRow | null>;
+  findDistractors(
+    listId: string,
+    excludeIds: readonly string[],
+    take: number
+  ): Promise<VocabularyDistractorRow[]>;
+};
+
+const defaultVocabularyListSource: VocabularyListSource = {
+  isOwned: (userId, listId) => isVocabularyListOwnedByUser(userId, listId),
+  countWords: (listId) => countVocabularyListWords(listId),
+  findFirst: (listId, take) => findFirstVocabularyListWords(listId, take),
+  findNext: (listId, afterPosition) =>
+    findNextVocabularyListWord(listId, afterPosition),
+  findDistractors: (listId, excludeIds, take) =>
+    findVocabularyDistractorDefinitions(listId, excludeIds, take),
+};
+
+type RefillOutcome = { wordId: string | null };
+
 type LessonRecord = {
   learnerId: string;
   wordListId: string;
   expiresAt: number;
   state: VocabularyLessonState;
   canonicalWordIdByLessonWordId: Map<string, string>;
+  wordRecordCache: Map<string, VocabularyListWordRow>;
+  lastLoadedPosition: number;
+  refillsFulfilled: number;
+  lastRefillResult: RefillOutcome | null;
+  refillInFlight: Promise<RefillOutcome> | null;
 };
 
 type CapabilityRecord = {
@@ -39,7 +90,10 @@ type CapabilityRecord = {
   expiresAt: number;
 };
 
-type AttemptRecord = VocabularyAttemptAuthorization & {
+type AttemptRecord = VocabularyGradableAttempt & {
+  learnerId: string;
+  lessonId: string;
+  wordListId: string;
   lessonWordId: string;
   review: boolean;
   successorCapability: string;
@@ -52,6 +106,7 @@ type AttemptRecord = VocabularyAttemptAuthorization & {
 
 export type AuthorizedVocabularyContent = {
   capability: string;
+  lessonId: string;
   contentType: VocabularyScreenContentType;
   wordListId: string;
   // Empty for word-search-checkpoint, which projects wordIds instead.
@@ -61,19 +116,24 @@ export type AuthorizedVocabularyContent = {
   attemptId: string | null;
 };
 
-export type VocabularyAttemptAuthorization = {
-  learnerId: string;
-  lessonId: string;
-  wordListId: string;
-  wordId: string;
-  answerType: VocabularyAnswerSubmission["answerType"];
+// Everything a grading function needs, captured once at content-build time
+// from the server-owned attempt/capability record. Grading never re-queries
+// the database or recomputes distractors from a fresh request.
+export type VocabularyGradableAttempt = {
   attemptId: string;
+  answerType: VocabularyAnswerSubmission["answerType"];
+  validChoiceIds: readonly string[];
+  correctChoiceId: string | null;
+  canonicalSpelling: string | null;
+  speechDefinition: string | null;
 };
 
 type CapabilityStoreOptions = {
   now?: () => number;
   lifetimeMs?: number;
   seed?: () => number;
+  randomInt?: (maxExclusive: number) => number;
+  listSource?: VocabularyListSource;
 };
 
 export class VocabularyContentCapabilityStore {
@@ -83,42 +143,65 @@ export class VocabularyContentCapabilityStore {
   private readonly now: () => number;
   private readonly lifetimeMs: number;
   private readonly seed: () => number;
+  private readonly randomInt: (maxExclusive: number) => number;
+  private readonly listSource: VocabularyListSource;
 
   constructor(options: CapabilityStoreOptions = {}) {
     this.now = options.now ?? Date.now;
     this.lifetimeMs = options.lifetimeMs ?? DEFAULT_LIFETIME_MS;
-    this.seed = options.seed ?? (() => randomInt(4_294_967_296));
+    this.seed = options.seed ?? (() => secureRandomInt(4_294_967_296));
+    this.randomInt = options.randomInt ?? secureRandomInt;
+    this.listSource = options.listSource ?? defaultVocabularyListSource;
   }
 
-  createManifest(
+  async createManifest(
     learnerId: string,
+    userId: string,
     wordListId: string
-  ): VocabularyLessonManifest | null {
+  ): Promise<VocabularyLessonManifest | null> {
     this.removeExpiredRecords();
-    const words = getWordList(wordListId);
-    if (!words) {
+    const owned = await this.listSource.isOwned(userId, wordListId);
+    if (!owned) {
       return null;
     }
 
+    const totalWordCount = await this.listSource.countWords(wordListId);
+    const rows = await this.listSource.findFirst(wordListId, ACTIVE_POOL_SIZE);
+
     const lessonId = randomUUID();
     const randomSeed = this.seed() >>> 0;
-    const lessonWords = words.map(() => ({ id: randomUUID() }));
+    const canonicalWordIdByLessonWordId = new Map<string, string>();
+    const wordRecordCache = new Map<string, VocabularyListWordRow>();
+    const lessonWords = rows.map((row) => {
+      const lessonWordId = randomUUID();
+      canonicalWordIdByLessonWordId.set(lessonWordId, row.id);
+      wordRecordCache.set(row.id, row);
+      return { id: lessonWordId };
+    });
+    const lastLoadedPosition =
+      rows.length > 0 ? rows[rows.length - 1].position : 0;
+
     const lesson: LessonRecord = {
       learnerId,
       wordListId,
       expiresAt: this.expiry(),
       state: new VocabularyLessonState(
         lessonWords,
+        totalWordCount,
         createVocabularyLessonRandom(randomSeed)
       ),
-      canonicalWordIdByLessonWordId: new Map(
-        lessonWords.map((word, index) => [word.id, words[index].id])
-      ),
+      canonicalWordIdByLessonWordId,
+      wordRecordCache,
+      lastLoadedPosition,
+      refillsFulfilled: 0,
+      lastRefillResult: null,
+      refillInFlight: null,
     };
     this.lessons.set(lessonId, lesson);
 
     const firstStep = lesson.state.next();
     if (firstStep.kind === "lesson-complete") {
+      this.lessons.delete(lessonId);
       return null;
     }
     const nextCapability = this.issueCapability(
@@ -135,16 +218,18 @@ export class VocabularyContentCapabilityStore {
       randomSeed,
       nextCapability,
       words: lessonWords,
+      totalWordCount,
     };
   }
 
-  authorizeContent(
+  async authorizeContent(
     learnerId: string,
+    userId: string,
     lessonId: string,
     capability: string,
     contentType: VocabularyScreenContentType,
     exampleIndex?: number
-  ): AuthorizedVocabularyContent | null {
+  ): Promise<AuthorizedVocabularyContent | null> {
     this.removeExpiredRecords();
     const lesson = this.lessons.get(lessonId);
     const record = this.capabilities.get(capability);
@@ -160,6 +245,10 @@ export class VocabularyContentCapabilityStore {
       (record.step.kind === "answer-recap" &&
         record.step.exampleIndex !== exampleIndex)
     ) {
+      return null;
+    }
+
+    if (!(await this.listSource.isOwned(userId, lesson.wordListId))) {
       return null;
     }
 
@@ -182,7 +271,6 @@ export class VocabularyContentCapabilityStore {
           learnerId,
           lessonId,
           wordListId: record.wordListId,
-          wordId: this.requireCanonicalWordId(lesson, record.step.wordId),
           lessonWordId: record.step.wordId,
           answerType:
             record.step.kind === "definition-practice"
@@ -196,6 +284,10 @@ export class VocabularyContentCapabilityStore {
           submission: null,
           result: null,
           expiresAt: record.expiresAt,
+          validChoiceIds: [],
+          correctChoiceId: null,
+          canonicalSpelling: null,
+          speechDefinition: null,
         });
       } else {
         const nextStep = lesson.state.next();
@@ -212,6 +304,7 @@ export class VocabularyContentCapabilityStore {
     if (record.step.kind === "word-search-checkpoint") {
       return {
         capability,
+        lessonId,
         contentType,
         wordListId: record.wordListId,
         wordId: "",
@@ -225,6 +318,7 @@ export class VocabularyContentCapabilityStore {
 
     return {
       capability,
+      lessonId,
       contentType,
       wordListId: record.wordListId,
       wordId: this.requireCanonicalWordId(lesson, record.step.wordId),
@@ -241,18 +335,51 @@ export class VocabularyContentCapabilityStore {
     );
   }
 
+  async buildContent(
+    authorization: AuthorizedVocabularyContent,
+    exampleIndex?: number
+  ): Promise<VocabularyContentBuildResult | null> {
+    const lesson = this.lessons.get(authorization.lessonId);
+    if (!lesson) {
+      return null;
+    }
+
+    const context: VocabularyContentBuildContext = {
+      getWord: (wordId) => lesson.wordRecordCache.get(wordId),
+      getActiveDistractorCandidates: (excludeWordId) => {
+        const canonicalIds = lesson.state
+          .getActivePoolWordIds()
+          .map((lessonWordId) =>
+            lesson.canonicalWordIdByLessonWordId.get(lessonWordId)
+          )
+          .filter(
+            (id): id is string => typeof id === "string" && id !== excludeWordId
+          );
+        return canonicalIds
+          .map((id) => lesson.wordRecordCache.get(id))
+          .filter((word): word is VocabularyListWordRow => Boolean(word));
+      },
+      findMoreDistractors: (excludeIds, count) =>
+        this.listSource.findDistractors(lesson.wordListId, excludeIds, count),
+    };
+
+    return getVocabularyContent(
+      { ...authorization, exampleIndex },
+      context,
+      this.randomInt
+    );
+  }
+
   recordContentResponse(
     authorization: AuthorizedVocabularyContent,
-    content: VocabularyContentResponse
+    built: VocabularyContentBuildResult
   ): void {
     const record = this.capabilities.get(authorization.capability);
-    const lesson = this.lessons.get(
-      record?.lessonId ?? ""
-    );
+    const lesson = this.lessons.get(record?.lessonId ?? "");
     if (!record || !lesson || record.contentResponse) {
       return;
     }
-    record.contentResponse = content;
+    record.contentResponse = built.content;
 
     if (!record.attemptId) {
       return;
@@ -261,10 +388,19 @@ export class VocabularyContentCapabilityStore {
     if (!attempt || attempt.activated) {
       return;
     }
+
+    if (built.answerSnapshot?.answerType === "definition") {
+      attempt.correctChoiceId = built.answerSnapshot.correctChoiceId;
+    } else if (built.answerSnapshot?.answerType === "spelling") {
+      attempt.canonicalSpelling = built.answerSnapshot.canonicalSpelling;
+      attempt.speechDefinition = built.answerSnapshot.speechDefinition;
+    }
+
     const validChoiceIds =
-      content.contentType === "definition-practice"
-        ? content.choices.map((choice) => choice.id)
+      built.content.contentType === "definition-practice"
+        ? built.content.choices.map((choice) => choice.id)
         : [];
+    attempt.validChoiceIds = validChoiceIds;
     lesson.state.activateAttempt({
       wordId: attempt.lessonWordId,
       answerType: attempt.answerType,
@@ -275,14 +411,73 @@ export class VocabularyContentCapabilityStore {
     attempt.activated = true;
   }
 
-  resolveAnswer(
+  /**
+   * Authorized refill loading: fetches exactly one next ordered database
+   * word once server-authoritative lesson state confirms a slot is due.
+   * Concurrent/repeated calls for the same due slot share one in-flight
+   * fetch, and a call with nothing newly due replays the last recorded
+   * outcome instead of advancing the ordered cursor again.
+   */
+  async refillNextWord(
     learnerId: string,
+    userId: string,
+    lessonId: string
+  ): Promise<RefillOutcome | null> {
+    this.removeExpiredRecords();
+    const lesson = this.lessons.get(lessonId);
+    if (!lesson || lesson.learnerId !== learnerId) {
+      return null;
+    }
+    if (!(await this.listSource.isOwned(userId, lesson.wordListId))) {
+      return null;
+    }
+
+    if (lesson.refillInFlight) {
+      return lesson.refillInFlight;
+    }
+
+    const due = lesson.state.getFirstMasteryCount();
+    if (lesson.refillsFulfilled >= due) {
+      return lesson.lastRefillResult ?? { wordId: null };
+    }
+
+    const task = (async (): Promise<RefillOutcome> => {
+      try {
+        const row = await this.listSource.findNext(
+          lesson.wordListId,
+          lesson.lastLoadedPosition
+        );
+        if (!row) {
+          lesson.refillsFulfilled += 1;
+          lesson.lastRefillResult = { wordId: null };
+          return lesson.lastRefillResult;
+        }
+
+        const lessonWordId = randomUUID();
+        lesson.canonicalWordIdByLessonWordId.set(lessonWordId, row.id);
+        lesson.wordRecordCache.set(row.id, row);
+        lesson.state.appendWord({ id: lessonWordId });
+        lesson.lastLoadedPosition = row.position;
+        lesson.refillsFulfilled += 1;
+        lesson.lastRefillResult = { wordId: lessonWordId };
+        return lesson.lastRefillResult;
+      } finally {
+        lesson.refillInFlight = null;
+      }
+    })();
+    lesson.refillInFlight = task;
+    return task;
+  }
+
+  async resolveAnswer(
+    learnerId: string,
+    userId: string,
     submission: VocabularyAnswerSubmission,
     grade: (
-      attempt: VocabularyAttemptAuthorization,
+      attempt: VocabularyGradableAttempt,
       submission: VocabularyAnswerSubmission
     ) => VocabularyAnswerResult | null
-  ): VocabularyAnswerResult | null {
+  ): Promise<VocabularyAnswerResult | null> {
     this.removeExpiredRecords();
     const attempt = this.attempts.get(submission.attemptId);
     if (
@@ -291,6 +486,10 @@ export class VocabularyContentCapabilityStore {
       attempt.answerType !== submission.answerType ||
       !attempt.activated
     ) {
+      return null;
+    }
+
+    if (!(await this.listSource.isOwned(userId, attempt.wordListId))) {
       return null;
     }
 
@@ -320,28 +519,11 @@ export class VocabularyContentCapabilityStore {
     return result;
   }
 
-  getAttempt(
+  async getSpellingAttempt(
     learnerId: string,
-    submission: VocabularyAnswerSubmission
-  ): VocabularyAttemptAuthorization | null {
-    this.removeExpiredRecords();
-    const attempt = this.attempts.get(submission.attemptId);
-    if (
-      !attempt ||
-      attempt.status !== "active" ||
-      !attempt.activated ||
-      attempt.learnerId !== learnerId ||
-      attempt.answerType !== submission.answerType
-    ) {
-      return null;
-    }
-    return attempt;
-  }
-
-  getSpellingAttempt(
-    learnerId: string,
+    userId: string,
     reference: string
-  ): VocabularyAttemptAuthorization | null {
+  ): Promise<VocabularyGradableAttempt | null> {
     this.removeExpiredRecords();
     const attempt = this.attempts.get(reference);
     if (
@@ -351,6 +533,9 @@ export class VocabularyContentCapabilityStore {
       attempt.learnerId !== learnerId ||
       attempt.answerType !== "spelling"
     ) {
+      return null;
+    }
+    if (!(await this.listSource.isOwned(userId, attempt.wordListId))) {
       return null;
     }
     return attempt;

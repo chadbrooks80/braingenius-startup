@@ -81,3 +81,11 @@ Use this only after the feature is fully implemented, verified, and approved by 
    - that `context/current-feature.md` has been emptied;
    - that `context/history.md` has been appended;
    - the exact entry that was appended to `context/history.md`.
+
+
+
+## `/feature audit`
+- run /audit feature
+
+## `/feature commit`
+- run /commit feature

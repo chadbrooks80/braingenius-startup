@@ -15,29 +15,82 @@ import { createDefinitionFunFactScreenRequest } from "../../src/learning-modules
 import { createSpellingScreenRequest } from "../../src/learning-modules/vocabulary/screens/spellingScreen";
 import { createAnswerRecapScreenRequest } from "../../src/learning-modules/vocabulary/screens/answerRecapScreen";
 import { createWordSearchCheckpointScreenRequest } from "../../src/learning-modules/vocabulary/screens/wordSearchCheckpointScreen";
+import type {
+  VocabularyAnswerRecapContent,
+  VocabularyDefinitionDisplayContent,
+  VocabularyDefinitionFunFactContent,
+  VocabularySpellingPracticeContent,
+} from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
 import type { ActiveScreen, AnswerFeedback } from "../../src/types/learning";
+import {
+  createFakeContentBuildContext,
+  createFakeVocabularyList,
+  TEST_LIST_ID,
+  TEST_OWNER_USER_ID,
+  TEST_WORD_SEEDS,
+} from "../vocabulary/fakeVocabularyListStore";
 
-const DISPLAY = getVocabularyContent({
-  contentType: "definition-display",
-  wordListId: "word_list_id",
-  wordId: "word-01",
-})!;
-const FACT = getVocabularyContent({
-  contentType: "definition-fun-fact",
-  wordListId: "word_list_id",
-  wordId: "word-01",
-})!;
-const SPELLING = getVocabularyContent({
-  contentType: "spelling-practice",
-  wordListId: "word_list_id",
-  wordId: "word-01",
-})!;
-const RECAP = getVocabularyContent({
-  contentType: "answer-recap",
-  wordListId: "word_list_id",
-  wordId: "word-01",
-  exampleIndex: 1,
-})!;
+const LIST = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, TEST_WORD_SEEDS);
+const CONTEXT = createFakeContentBuildContext(LIST.words);
+const WORD_ID = LIST.words[0].id;
+
+const DISPLAY = (
+  await getVocabularyContent(
+    {
+      capability: "cap",
+      lessonId: "lesson",
+      contentType: "definition-display",
+      wordListId: TEST_LIST_ID,
+      wordId: WORD_ID,
+      nextCapability: "next",
+      attemptId: null,
+    },
+    CONTEXT
+  )
+)!.content as VocabularyDefinitionDisplayContent;
+const FACT = (
+  await getVocabularyContent(
+    {
+      capability: "cap",
+      lessonId: "lesson",
+      contentType: "definition-fun-fact",
+      wordListId: TEST_LIST_ID,
+      wordId: WORD_ID,
+      nextCapability: "next",
+      attemptId: null,
+    },
+    CONTEXT
+  )
+)!.content as VocabularyDefinitionFunFactContent;
+const SPELLING = (
+  await getVocabularyContent(
+    {
+      capability: "cap",
+      lessonId: "lesson",
+      contentType: "spelling-practice",
+      wordListId: TEST_LIST_ID,
+      wordId: WORD_ID,
+      nextCapability: "next",
+      attemptId: "00000000-0000-4000-8000-000000000003",
+    },
+    CONTEXT
+  )
+)!.content as VocabularySpellingPracticeContent;
+const RECAP = (
+  await getVocabularyContent(
+    {
+      capability: "cap",
+      lessonId: "lesson",
+      contentType: "answer-recap",
+      wordListId: TEST_LIST_ID,
+      wordId: WORD_ID,
+      nextCapability: "next",
+      attemptId: null,
+      exampleIndex: 1,
+    },
+    CONTEXT
+  )
+)!.content as VocabularyAnswerRecapContent;
 
 test("all vocabulary Learning Window keys resolve", () => {
   for (const windowName of [

@@ -9,7 +9,6 @@ import type {
   VocabularyContentResponseFor,
   VocabularyLessonManifest,
 } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
 import { handleVocabularyContentRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularyContentRequest";
 import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
 import { VOCABULARY_LEARNER_COOKIE } from "../../src/learning-modules/vocabulary/server/vocabularyLearnerSession";
@@ -21,15 +20,30 @@ import {
   getServerCorrectChoiceId,
   getServerSpellingAnswer,
 } from "../vocabulary/testVocabularyApi";
+import {
+  createDefaultFakeVocabularyListSource,
+  TEST_LIST_ID,
+  TEST_OWNER_USER_ID,
+  TEST_WORD_SEEDS,
+} from "../vocabulary/fakeVocabularyListStore";
 
 const LEARNER_ID = "00000000-0000-4000-8000-000000000001";
 const OTHER_LEARNER_ID = "00000000-0000-4000-8000-000000000099";
+
+function createStore(
+  options: ConstructorParameters<typeof VocabularyContentCapabilityStore>[0] = {}
+): VocabularyContentCapabilityStore {
+  return new VocabularyContentCapabilityStore({
+    listSource: createDefaultFakeVocabularyListSource(),
+    ...options,
+  });
+}
 
 test("returns an opaque single-step lesson chain and narrow projections", async () => {
   const client = createContentClient();
   const manifestResult = await client.post({
     contentType: "manifest",
-    wordListId: "word_list_id",
+    wordListId: TEST_LIST_ID,
   });
   assert.equal(manifestResult.response.status, 200);
   assert.deepEqual(Object.keys(manifestResult.body).sort(), [
@@ -37,13 +51,15 @@ test("returns an opaque single-step lesson chain and narrow projections", async 
     "lessonId",
     "nextCapability",
     "randomSeed",
+    "totalWordCount",
     "words",
   ]);
   assert.match(manifestResult.response.headers.get("set-cookie") ?? "", /HttpOnly/);
 
   const lesson = manifestResult.body as VocabularyLessonManifest;
-  assert.equal(lesson.words.length, 20);
-  assert.equal(new Set(lesson.words.map((word) => word.id)).size, 20);
+  assert.equal(lesson.totalWordCount, TEST_WORD_SEEDS.length);
+  assert.equal(lesson.words.length, 5);
+  assert.equal(new Set(lesson.words.map((word) => word.id)).size, 5);
   assert.ok(lesson.words.every((word) => Object.keys(word).length === 1));
   assert.ok(isOpaqueIdentifier(lesson.nextCapability));
 
@@ -65,11 +81,11 @@ test("returns an opaque single-step lesson chain and narrow projections", async 
 });
 
 test("a spelling capability cannot cross projection, screen, attempt, lesson, learner, or lifecycle boundaries", async () => {
-  const store = new VocabularyContentCapabilityStore({ seed: () => 0 });
+  const store = createStore({ seed: () => 0 });
   const learner = createContentClient(store, LEARNER_ID);
   const requests: VocabularyContentRequest[] = [];
   const vocabulary = new Vocabulary(
-    ["word_list_id"],
+    [TEST_LIST_ID],
     () => 0,
     createModuleApi(learner, requests)
   );
@@ -144,28 +160,34 @@ test("a spelling capability cannot cross projection, screen, attempt, lesson, le
     ...spellingWindowPayload,
   };
   assert.deepEqual(firstResult, { correct: true });
-  assert.deepEqual(learner.answer(spellingSubmission), {
+  assert.deepEqual(await learner.answer(spellingSubmission), {
     answerType: "spelling",
     correct: true,
   });
   assert.equal(
-    store.resolveAnswer(
+    await store.resolveAnswer(
       LEARNER_ID,
+      TEST_OWNER_USER_ID,
       { ...spellingSubmission, answer: "different" },
       getVocabularyAnswerForAttempt
     ),
     null
   );
   assert.equal(
-    store.getSpellingAttempt(LEARNER_ID, spellingSubmission.attemptId),
+    await store.getSpellingAttempt(
+      LEARNER_ID,
+      TEST_OWNER_USER_ID,
+      spellingSubmission.attemptId
+    ),
     null,
     "speech references become stale as soon as grading completes"
   );
   assert.equal((await vocabulary.next())?.windowName, "answer-recap");
   assert.equal((await learner.post(spellingRequest)).response.status, 400);
   assert.equal(
-    store.resolveAnswer(
+    await store.resolveAnswer(
       LEARNER_ID,
+      TEST_OWNER_USER_ID,
       spellingSubmission,
       getVocabularyAnswerForAttempt
     ),
@@ -177,17 +199,17 @@ test("a spelling capability cannot cross projection, screen, attempt, lesson, le
     requests,
     spellingResponse: retry.body,
   }).toLocaleLowerCase("en-US");
-  for (const word of getWordList("word_list_id")!) {
+  for (const seed of TEST_WORD_SEEDS) {
     assert.ok(
-      !browserVisible.includes(word.word.toLocaleLowerCase("en-US")),
-      `browser-visible capability data leaks ${word.word}`
+      !browserVisible.includes(seed.word.toLocaleLowerCase("en-US")),
+      `browser-visible capability data leaks ${seed.word}`
     );
   }
 });
 
 test("expires lesson capabilities and attempts", async () => {
   let now = 10_000;
-  const store = new VocabularyContentCapabilityStore({
+  const store = createStore({
     now: () => now,
     lifetimeMs: 100,
     seed: () => 0,
@@ -212,11 +234,11 @@ test("strictly rejects malformed, unknown, and legacy reusable-handle requests",
   const manifest = await manifestFor(client);
 
   for (const body of [
-    { contentType: "manifest", wordListId: "word_list_id", extra: true },
+    { contentType: "manifest", wordListId: TEST_LIST_ID, extra: true },
     { contentType: "definition-display", lessonId: manifest.lessonId },
     {
       contentType: "definition-practice",
-      wordListId: "word_list_id",
+      wordListId: TEST_LIST_ID,
       wordId: "word-01",
     },
     {
@@ -253,8 +275,9 @@ test("returns 404 for an unknown list", async () => {
 type ContentClient = ReturnType<typeof createContentClient>;
 
 function createContentClient(
-  store = new VocabularyContentCapabilityStore(),
-  learnerId?: string
+  store = createStore(),
+  learnerId?: string,
+  userId: string = TEST_OWNER_USER_ID
 ) {
   let cookie: string | null = learnerId
     ? `${VOCABULARY_LEARNER_COOKIE}=${learnerId}`
@@ -275,6 +298,7 @@ function createContentClient(
           headers,
           body: JSON.stringify(body),
         }),
+        userId,
         store
       );
       cookie = response.headers.get("set-cookie")?.split(";", 1)[0] ?? cookie;
@@ -283,10 +307,13 @@ function createContentClient(
         body: (await response.json()) as Record<string, unknown>,
       };
     },
-    answer(submission: VocabularyAnswerSubmission): VocabularyAnswerResult {
+    async answer(
+      submission: VocabularyAnswerSubmission
+    ): Promise<VocabularyAnswerResult> {
       assert.ok(learnerId);
-      const result = store.resolveAnswer(
+      const result = await store.resolveAnswer(
         learnerId,
+        userId,
         submission,
         getVocabularyAnswerForAttempt
       );
@@ -345,7 +372,7 @@ async function advanceToSpelling(vocabulary: Vocabulary) {
 async function manifestFor(client: ContentClient): Promise<VocabularyLessonManifest> {
   const result = await client.post({
     contentType: "manifest",
-    wordListId: "word_list_id",
+    wordListId: TEST_LIST_ID,
   });
   assert.equal(result.response.status, 200);
   return result.body as VocabularyLessonManifest;

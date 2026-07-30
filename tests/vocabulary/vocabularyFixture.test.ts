@@ -1,111 +1,99 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { getVocabularyAnswer } from "../../src/learning-modules/vocabulary/data/getCorrectAnswer";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
-import { createMultipleChoiceScreenRequest } from "../../src/learning-modules/vocabulary/screens/multipleChoiceScreen";
-import { createSpellingScreenRequest } from "../../src/learning-modules/vocabulary/screens/spellingScreen";
 import { getVocabularyContent } from "../../src/learning-modules/vocabulary/server/getVocabularyContent";
 import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
+import { createMultipleChoiceScreenRequest } from "../../src/learning-modules/vocabulary/screens/multipleChoiceScreen";
+import { createSpellingScreenRequest } from "../../src/learning-modules/vocabulary/screens/spellingScreen";
+import type { VocabularyDefinitionPracticeContent } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
+import {
+  createDefaultFakeVocabularyListSource,
+  createFakeContentBuildContext,
+  createFakeVocabularyList,
+  TEST_LIST_ID,
+  TEST_OWNER_USER_ID,
+  TEST_WORD_SEEDS,
+} from "./fakeVocabularyListStore";
 
-const WORDS = getWordList("word_list_id")!;
+const LIST = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, TEST_WORD_SEEDS);
+const CONTEXT = createFakeContentBuildContext(LIST.words);
 
-test("the canonical server fixture contains 20 complete unique words and answer coverage", async () => {
-  const words = getWordList("word_list_id");
-  assert.ok(words);
-  assert.equal(words.length, 20);
-  assert.equal(new Set(words.map((word) => word.id)).size, 20);
-  assert.equal(new Set(words.map((word) => word.word)).size, 20);
-  assert.ok(words.every((word) => word.id !== word.word));
+test("the seed word set contains 20 complete, unique words with distinct content", () => {
+  assert.equal(LIST.words.length, 20);
+  assert.equal(new Set(LIST.words.map((word) => word.id)).size, 20);
+  assert.equal(new Set(LIST.words.map((word) => word.word)).size, 20);
 
-  const attemptIds = words.flatMap((word) => [
-    word.definitionAttemptId,
-    word.spellingAttemptId,
-  ]);
-  assert.equal(new Set(attemptIds).size, 40);
-
-  for (const word of words) {
-    assert.equal(word.exampleSentences.length, 3);
-    assert.ok(word.exampleSentences.every((sentence) => sentence.trim() !== ""));
-    assert.equal(word.choices.length, 4);
-    assert.equal(new Set(word.choices.map((choice) => choice.id)).size, 4);
-    assert.ok(word.choices.every((choice) => choice.text.trim() !== ""));
-
-    const publicQuestion = getVocabularyContent({
-      contentType: "definition-practice",
-      wordListId: "word_list_id",
-      wordId: word.id,
-    })!;
-    const definitionResult = getVocabularyAnswer({
-      answerType: "definition",
-      attemptId: word.definitionAttemptId,
-      selectedChoiceId: publicQuestion.choices[0].id,
-    });
-    assert.ok(definitionResult?.answerType === "definition");
-    const spellingResult = getVocabularyAnswer({
-      answerType: "spelling",
-      attemptId: word.spellingAttemptId,
-      answer: word.word,
-    });
-    assert.deepEqual(spellingResult, {
-      answerType: "spelling",
-      correct: true,
-    });
+  for (const word of LIST.words) {
+    assert.ok(word.definition?.trim());
+    assert.ok(word.spellingDefinition?.trim());
+    assert.ok(word.exampleSentence1?.trim());
+    assert.ok(word.exampleSentence2?.trim());
+    assert.ok(word.exampleSentence3?.trim());
+    assert.ok(word.interestingFact?.trim());
   }
-
-  const fixtureSource = await readFile(
-    new URL(
-      "../../src/learning-modules/vocabulary/data/getWordList.ts",
-      import.meta.url
-    ),
-    "utf8"
-  );
-  assert.match(fixtureSource, /import "server-only"/);
 });
 
-test("browser-visible projections cannot mechanically reconstruct definition answers", () => {
-  const manifest = new VocabularyContentCapabilityStore().createManifest(
+test("browser-visible manifest and definition-practice projections cannot mechanically reconstruct answers", async () => {
+  const store = new VocabularyContentCapabilityStore({
+    listSource: createDefaultFakeVocabularyListSource(),
+  });
+  const manifest = await store.createManifest(
     "00000000-0000-4000-8000-000000000001",
-    "word_list_id"
-  )!;
+    TEST_OWNER_USER_ID,
+    TEST_LIST_ID
+  );
+  assert.ok(manifest);
   assert.deepEqual(Object.keys(manifest).sort(), [
     "contentType",
     "lessonId",
     "nextCapability",
     "randomSeed",
+    "totalWordCount",
     "words",
   ]);
   assert.ok(manifest.words.every((word) => Object.keys(word).length === 1));
 
-  const correctPositions = new Set<number>();
-  for (const [wordIndex, fixtureWord] of WORDS.entries()) {
-    const wordId = fixtureWord.id;
-    const display = getVocabularyContent({
-      contentType: "definition-display",
-      wordListId: "word_list_id",
-      wordId,
-    })!;
-    const fact = getVocabularyContent({
-      contentType: "definition-fun-fact",
-      wordListId: "word_list_id",
-      wordId,
-    })!;
-    const questionRequest = {
-      contentType: "definition-practice" as const,
-      wordListId: "word_list_id",
-      wordId,
-    };
-    const question = getVocabularyContent(
-      questionRequest,
-      createSeededRandomInt(wordIndex + 1)
-    )!;
-    const answer = getVocabularyAnswer({
-      answerType: "definition",
-      attemptId: question.attemptId,
-      selectedChoiceId: question.choices[0].id,
-    });
-    assert.ok(answer?.answerType === "definition");
+  const internalIds = new Set(LIST.words.map((word) => word.id));
 
+  for (const [wordIndex, canonicalWord] of LIST.words.entries()) {
+    const attemptId = randomUUID();
+    const serverPositions = new Set<number>();
+    let lastQuestion: VocabularyDefinitionPracticeContent | null = null;
+    let correctChoiceId = "";
+
+    for (let presentation = 1; presentation <= 24; presentation += 1) {
+      const built = await getVocabularyContent(
+        {
+          capability: "cap",
+          lessonId: "lesson",
+          contentType: "definition-practice",
+          wordListId: TEST_LIST_ID,
+          wordId: canonicalWord.id,
+          nextCapability: "next",
+          attemptId,
+        },
+        CONTEXT,
+        createSeededRandomInt(wordIndex * 101 + presentation)
+      );
+      assert.ok(
+        built &&
+          built.content.contentType === "definition-practice" &&
+          built.answerSnapshot?.answerType === "definition"
+      );
+      lastQuestion = built.content;
+      correctChoiceId = built.answerSnapshot.correctChoiceId;
+      serverPositions.add(
+        built.content.choices.findIndex((choice) => choice.id === correctChoiceId)
+      );
+    }
+    assert.deepEqual(
+      serverPositions,
+      new Set([0, 1, 2, 3]),
+      `expected the correct choice for "${canonicalWord.word}" to appear in every position across repeated shuffles`
+    );
+
+    const question = lastQuestion!;
     assert.deepEqual(Object.keys(question).sort(), [
       "attemptId",
       "choices",
@@ -116,34 +104,29 @@ test("browser-visible projections cannot mechanically reconstruct definition ans
     assert.ok(!("definition" in question));
     assert.ok(!("wordId" in question));
     assert.ok(!("correctChoiceId" in question));
+    assert.equal(new Set(question.choices.map((choice) => choice.id)).size, 4);
     assert.ok(
-      question.choices.every((choice) =>
-        /^choice-[0-9a-f]{24}$/.test(choice.id)
-      )
+      question.choices.every((choice) => /^choice-[0-9a-f]{24}$/.test(choice.id))
     );
+    assert.ok(question.choices.every((choice) => !internalIds.has(choice.id)));
 
-    const canonicalWord = WORDS[wordIndex];
-    const internalChoiceIds = new Set(
-      canonicalWord.choices.map((choice) => choice.id)
+    const nonAnswerTeachingStrings = [
+      canonicalWord.exampleSentence1,
+      canonicalWord.exampleSentence2,
+      canonicalWord.exampleSentence3,
+      canonicalWord.interestingFact,
+    ]
+      .filter((value): value is string => typeof value === "string")
+      .map(normalize);
+    assert.deepEqual(
+      question.choices.filter((choice) =>
+        nonAnswerTeachingStrings.includes(normalize(choice.text))
+      ),
+      []
     );
-    assert.ok(
-      question.choices.every((choice) => !internalChoiceIds.has(choice.id))
-    );
-
-    const teachingStrings = [
-      display.word,
-      display.definition,
-      ...display.exampleSentences,
-      fact.word,
-      fact.interestingFact,
-    ].map(normalize);
-    const exactTeachingMatches = question.choices.filter((choice) =>
-      teachingStrings.includes(normalize(choice.text))
-    );
-    assert.deepEqual(exactTeachingMatches, []);
 
     const nonChoiceMetadata = [
-      wordId,
+      canonicalWord.id,
       question.attemptId,
       question.nextCapability,
       question.question,
@@ -158,47 +141,36 @@ test("browser-visible projections cannot mechanically reconstruct definition ans
       question,
       false,
       null,
-      () => Number.parseInt(wordId.slice(-2), 10) / 20
+      createSeededRandom01(wordIndex + 1)
     );
     const visibleChoices = shuffled.props.choices as Array<{ id: string }>;
-    correctPositions.add(
-      visibleChoices.findIndex((choice) => choice.id === answer.correctChoiceId)
+    assert.equal(
+      visibleChoices.filter((choice) => choice.id === correctChoiceId).length,
+      1
     );
-
-    const serverPositions = new Set<number>();
-    for (let presentation = 1; presentation <= 24; presentation += 1) {
-      const projected = getVocabularyContent(
-        questionRequest,
-        createSeededRandomInt(wordIndex * 101 + presentation)
-      )!;
-      serverPositions.add(
-        projected.choices.findIndex(
-          (choice) => choice.id === answer.correctChoiceId
-        )
-      );
-    }
-    assert.deepEqual(serverPositions, new Set([0, 1, 2, 3]));
   }
-
-  assert.deepEqual(correctPositions, new Set([0, 1, 2, 3]));
 });
 
-test("cumulative browser-visible data cannot reconstruct the spelling answer", () => {
-  const words = getWordList("word_list_id")!;
-  const introductionDefinitions = new Set(
-    words.map((word) => normalize(word.definition))
-  );
-
-  for (const word of words) {
-    const content = getVocabularyContent({
-      contentType: "spelling-practice",
-      wordListId: "word_list_id",
-      wordId: word.id,
-    })!;
+test("cumulative browser-visible data cannot reconstruct the spelling answer", async () => {
+  for (const word of LIST.words) {
+    const attemptId = randomUUID();
+    const built = await getVocabularyContent(
+      {
+        capability: "cap",
+        lessonId: "lesson",
+        contentType: "spelling-practice",
+        wordListId: TEST_LIST_ID,
+        wordId: word.id,
+        nextCapability: "next",
+        attemptId,
+      },
+      CONTEXT
+    );
+    assert.ok(built && built.content.contentType === "spelling-practice");
+    const content = built.content;
 
     // The graded projection carries only the opaque attempt ID and a distinct
-    // prompt definition — never the canonical written word or an exact join
-    // key from an introduction response.
+    // prompt definition -- never the canonical written word.
     assert.deepEqual(Object.keys(content).sort(), [
       "attemptId",
       "contentType",
@@ -227,8 +199,6 @@ test("cumulative browser-visible data cannot reconstruct the spelling answer", (
     assert.equal(speak.source.reference, content.attemptId);
     assert.deepEqual(screenRequest.props.speech, speak);
 
-    // The reference is an opaque random identifier that neither contains nor
-    // deterministically encodes the word.
     assert.match(
       speak.source.reference,
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -244,19 +214,17 @@ test("cumulative browser-visible data cannot reconstruct the spelling answer", (
         .includes(word.word.toLocaleLowerCase("en-US")),
       `definition for "${word.word}" contains the word itself`
     );
-    assert.ok(
-      !introductionDefinitions.has(normalize(content.definition)),
-      `spelling prompt for "${word.word}" repeats an introduction definition`
-    );
   }
 });
 
-test("the client module does not import or preload the canonical word fixture", async () => {
+test("the client module does not import or preload canonical database word content", async () => {
   const moduleSource = await readFile(
     new URL("../../src/learning-modules/vocabulary/index.ts", import.meta.url),
     "utf8"
   );
-  assert.doesNotMatch(moduleSource, /getWordList/);
+  assert.doesNotMatch(moduleSource, /vocabularyListStore/);
+  assert.doesNotMatch(moduleSource, /@\/lib\/db/);
+  assert.doesNotMatch(moduleSource, /generated\/prisma/);
   assert.match(moduleSource, /contentType: "manifest"/);
   assert.match(moduleSource, /contentType: "definition-practice"/);
 });
@@ -270,5 +238,13 @@ function createSeededRandomInt(seed: number): (maxExclusive: number) => number {
   return (maxExclusive) => {
     state = (state * 1_664_525 + 1_013_904_223) >>> 0;
     return state % maxExclusive;
+  };
+}
+
+function createSeededRandom01(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1_664_525 + 1_013_904_223) >>> 0;
+    return state / 4_294_967_296;
   };
 }

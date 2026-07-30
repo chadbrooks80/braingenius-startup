@@ -49,20 +49,22 @@ Every route in this section first calls the shared `authorizeLearningModuleAcces
 ### `POST /api/learning/vocabulary/content`
 
 - Source: `src/app/api/learning/vocabulary/content/route.ts`, delegating to `src/learning-modules/vocabulary/server/handleVocabularyContentRequest.ts`.
-- Request: strict discriminated JSON. Manifest is exactly `{ contentType: "manifest", wordListId }`; screen requests contain exact opaque lesson/capability fields, with `exampleIndex` for recap.
+- Request: strict discriminated JSON. Manifest is exactly `{ contentType: "manifest", wordListId }`, where `wordListId` is a real `ModVocabList.id`; refill is exactly `{ contentType: "word-refill", lessonId }`; screen requests contain exact opaque lesson/capability fields, with `exampleIndex` for recap.
+- Ownership: the manifest and every later request re-verify `ModVocabList.ownerUserId` against the trusted NextAuth session user ID (from the module-access grant, never the browser) through the module-owned `src/learning-modules/vocabulary/server/vocabularyListStore.ts` repository. A missing list and another user's list return the identical `404`.
 - Learner binding: manifest creates/reuses the `brain-genius-learner` HttpOnly cookie. Later requests bind cookie, lesson, capability, projection type, screen step, and recap index.
-- Success: `200` narrow projection with `Cache-Control: no-store`. A manifest includes opaque word IDs, seed, lesson, and next capability. Screen responses include only current-screen content and a rotated capability.
-- Errors: module access `401`/`403`/`503` (see above); malformed JSON/input `400`; invalid capability `400`; unknown list/content `404`.
-- Side effects: process-local lesson/capability/attempt state; bounded cached replay of the same content capability.
-- Tests: `tests/api/vocabularyContentRoute.test.ts`, `tests/api/vocabularyLearnerSession.test.ts`, `tests/vocabulary/Vocabulary.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, and the route integration/E2E tests.
+- Bounded loading: the manifest loads at most the first five complete `ModVocabListWord` records (ordered by `position`) plus the authoritative `totalWordCount`; a `word-refill` request returns exactly one next ordered word (or `wordId: null` at the end of the list) once server-side lesson state confirms a mastered word opened an active-pool slot. Refills are idempotent: a repeated or concurrent request for the same due slot returns the same result without advancing the cursor.
+- Success: `200` narrow projection with `Cache-Control: no-store`. A manifest includes opaque word IDs, seed, lesson, next capability, and `totalWordCount`. Screen responses include only current-screen content and a rotated capability. A refill response is `{ contentType: "word-refill", wordId }`.
+- Errors: module access `401`/`403`/`503` (see above); malformed JSON/input `400`; invalid capability `400`; unknown/unowned list or unavailable content `404`; a database failure (not a missing list) `503`.
+- Side effects: process-local lesson/capability/attempt state; bounded cached replay of the same content capability; each lesson caches only the small number of `ModVocabListWord` records it has actually loaded.
+- Tests: `tests/api/vocabularyContentRoute.test.ts`, `tests/api/vocabularyLearnerSession.test.ts`, `tests/vocabulary/Vocabulary.test.ts`, `tests/vocabulary/vocabularyDatabaseLoading.test.ts`, `tests/vocabulary/vocabularyListStore.integration.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, and the route integration/E2E tests.
 
 ### `POST /api/learning/vocabulary/submit-answer`
 
 - Source: `src/app/api/learning/vocabulary/submit-answer/route.ts` plus `src/app/api/learning/vocabulary/submit-answer/handleVocabularyAnswerRequest.ts`.
 - Request: strict definition `{ answerType, attemptId, selectedChoiceId }` or spelling `{ answerType, attemptId, answer }`; no unknown fields.
-- Learner binding: anonymous learner cookie plus active process-local attempt, lesson, word, and answer type.
+- Learner binding: anonymous learner cookie plus active process-local attempt, lesson, word, and answer type. Grading re-verifies `ModVocabList` ownership for the attempt's list against the trusted session user ID before grading against the attempt's stored server-only snapshot (never a fresh database/distractor query).
 - Success: definition returns only `{ answerType, correctChoiceId }`; spelling returns `{ answerType, correct }` and includes `correctAnswer` only after an incorrect grade.
-- Errors: module access `401`/`403`/`503` (see above); malformed JSON, invalid shape, unknown/stale/cross-boundary attempt, changed duplicate, or failed grading all return the same `400` style.
+- Errors: module access `401`/`403`/`503` (see above); malformed JSON, invalid shape, unknown/stale/cross-boundary attempt, changed duplicate, or failed grading all return the same `400` style; a database failure during the ownership re-check returns `503`.
 - Side effects/cache: records confirmed progress and exact duplicate result in memory; no explicit cache header.
 - Tests: `tests/api/vocabularySubmitAnswerRoute.test.ts`, `tests/api/evaluateVocabularyAnswer.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, parser/module tests, integration, and E2E.
 
@@ -71,7 +73,7 @@ Every route in this section first calls the shared `authorizeLearningModuleAcces
 - Source: `src/app/api/learning/vocabulary/speech/route.ts`, delegating to `src/learning-modules/vocabulary/server/handleVocabularySpeechRequest.ts`.
 - Auth: current Vocabulary module access (see above), then an authenticated NextAuth session plus current Stage 1 entitlement (direct or child-inherited) through the shared paid TTS usage policy in `src/lib/learning-engine/speech/ttsUsageService.ts`; requests are classified `VOCABULARY_PROTECTED`. These are two independent checks with different tier rules: module access requires `MONTHLY`/`LIFETIME`/`ADMIN`, while the downstream TTS entitlement also allows an active `FREE_TRIAL`.
 - Request: exactly `{ reference: non-empty string }`; reference is an opaque spelling attempt.
-- Learner binding: requires the matching learner cookie and active spelling attempt, then resolves canonical text on the server. Text metrics are computed only after server-side resolution; the text itself is never persisted.
+- Learner binding: requires the matching learner cookie and active spelling attempt, re-verifies `ModVocabList` ownership against the trusted session user ID, then resolves canonical text from the stored attempt snapshot (never a fresh database scan). Text metrics are computed only after server-side resolution; the text itself is never persisted.
 - Success: `200 audio/mpeg`, `Cache-Control: no-store`.
 - Errors: module access `401`/`403`/`503` (see above); JSON/shape/reference errors `400`; missing session `401`; missing user, no entitlement, or manual TTS suspension `403`; burst/concurrency/ten-hour emergency limits `429` with integer `Retry-After`; provider configuration `500`; upstream provider `502`; usage-accounting or auth/entitlement database boundary unavailable `503`. All error responses are generic, carry `Cache-Control: no-store`, and never contain canonical text or usage state.
 - Tests: `tests/api/vocabularySpeechRoute.test.ts`, `tests/api/vocabularyModuleAccessGate.test.ts`, and speech-controller tests.

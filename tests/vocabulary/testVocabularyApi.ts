@@ -14,10 +14,18 @@ import type {
 import { handleVocabularyContentRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularyContentRequest";
 import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
 import { getVocabularyLearnerId } from "../../src/learning-modules/vocabulary/server/vocabularyLearnerSession";
-import { getWordList } from "../../src/learning-modules/vocabulary/data/getWordList";
+import {
+  createDefaultFakeVocabularyListSource,
+  TEST_OWNER_USER_ID,
+  TEST_WORD_SEEDS,
+} from "./fakeVocabularyListStore";
 
-export function createInProcessVocabularyApi(): VocabularyModuleApi {
-  const capabilityStore = new VocabularyContentCapabilityStore();
+export function createInProcessVocabularyApi(
+  userId: string = TEST_OWNER_USER_ID,
+  capabilityStore: VocabularyContentCapabilityStore = new VocabularyContentCapabilityStore(
+    { listSource: createDefaultFakeVocabularyListSource() }
+  )
+): VocabularyModuleApi {
   let cookie: string | null = null;
 
   return {
@@ -30,6 +38,7 @@ export function createInProcessVocabularyApi(): VocabularyModuleApi {
           request,
           cookie
         ),
+        userId,
         capabilityStore
       );
       cookie = response.headers.get("set-cookie")?.split(";", 1)[0] ?? cookie;
@@ -57,10 +66,11 @@ export function createInProcessVocabularyApi(): VocabularyModuleApi {
             jsonRequest("http://local.test", {}, cookie)
           );
           if (!learnerId) {
-            return null;
+            return Promise.resolve(null);
           }
           return capabilityStore.resolveAnswer(
             learnerId,
+            userId,
             parsedSubmission,
             getVocabularyAnswerForAttempt
           );
@@ -76,46 +86,37 @@ export function createInProcessVocabularyApi(): VocabularyModuleApi {
   };
 }
 
+// The correct answer is never fetched from a server-only lookup: the
+// definition CHOICE TEXT is already public in the content response, so
+// tests discover the correct public choice ID the same way a legitimate
+// learner effectively could not (by knowing the seeded definition), without
+// requiring any test-only production export of canonical grading data.
 export function getServerCorrectChoiceId(
   content: VocabularyDefinitionPracticeContent
 ): string {
-  const word = getWordList("word_list_id")?.find(
-    (candidate) => candidate.word === content.question
-  );
-  if (!word) {
-    throw new Error(`No fixture word exists for ${content.question}.`);
+  const seed = TEST_WORD_SEEDS.find((candidate) => candidate.word === content.question);
+  if (!seed) {
+    throw new Error(`No seed word exists for ${content.question}.`);
   }
-  const result = getVocabularyAnswerForAttempt(
-    {
-      learnerId: "00000000-0000-4000-8000-000000000001",
-      lessonId: "00000000-0000-4000-8000-000000000002",
-      wordListId: "word_list_id",
-      wordId: word.id,
-      answerType: "definition",
-      attemptId: content.attemptId,
-    },
-    {
-      answerType: "definition",
-      attemptId: content.attemptId,
-      selectedChoiceId: content.choices[0].id,
-    }
+  const correctChoice = content.choices.find(
+    (choice) => choice.text === seed.definition
   );
-  if (!result || result.answerType !== "definition") {
-    throw new Error(`No server answer exists for ${content.attemptId}.`);
+  if (!correctChoice) {
+    throw new Error(`No matching choice exists for ${content.attemptId}.`);
   }
-  return result.correctChoiceId;
+  return correctChoice.id;
 }
 
 export function getServerSpellingAnswer(
   content: VocabularySpellingPracticeContent
 ): string {
-  const word = getWordList("word_list_id")?.find(
+  const seed = TEST_WORD_SEEDS.find(
     (candidate) => candidate.spellingDefinition === content.definition
   );
-  if (!word) {
-    throw new Error(`No fixture spelling exists for ${content.attemptId}.`);
+  if (!seed) {
+    throw new Error(`No seed spelling exists for ${content.attemptId}.`);
   }
-  return word.word;
+  return seed.word;
 }
 
 function jsonRequest(

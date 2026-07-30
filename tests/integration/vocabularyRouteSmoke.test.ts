@@ -17,8 +17,9 @@ import {
   getServerCorrectChoiceId,
   getServerSpellingAnswer,
 } from "../vocabulary/testVocabularyApi";
+import { TEST_LIST_ID } from "../vocabulary/fakeVocabularyListStore";
 
-const ROUTE = "/learning/vocabulary/word_list_id";
+const ROUTE = `/learning/vocabulary/${TEST_LIST_ID}`;
 
 test("real Vocabulary route/module flow reaches completion through real content and answer handlers", async (context) => {
   const originalWarn = console.warn;

@@ -2,10 +2,10 @@
 
 Phase 1 of `mod-vocab-database-tables` adds the Prisma/PostgreSQL persistence
 structure for the Vocabulary learning module: eight tables, six enums, their
-indexes, constraints, and foreign keys. It does not seed data, connect the
-running Vocabulary module to Prisma, or create the separate Dictionary
-database. `VocabularyLessonState` and the current fixture (`getWordList.ts`)
-are unchanged and remain memory-only.
+indexes, constraints, and foreign keys. It does not seed data or create the
+separate Dictionary database. See "What this phase does not do" below for
+how a later feature connects `ModVocabList`/`ModVocabListWord` to the
+running Vocabulary module.
 
 ## Tables and ownership
 
@@ -135,8 +135,16 @@ verifies their exact text is present in `migration.sql`.
 Phase 1 creates persistence structure only. It does not seed a list,
 learning record, word, progress row, session, attempt, or daily-practice
 row; does not create the separate Dictionary database or a second Prisma
-datasource/client; does not implement Dictionary lookup or field-merge
-logic; and does not connect `VocabularyLessonState`, the Vocabulary API
-routes, or the current `getWordList.ts` fixture to Prisma. Those remain
-memory-only, exactly as described in the "Persistence and limitations"
-section of [`vocabulary.md`](./vocabulary.md).
+datasource/client; and does not implement Dictionary lookup or field-merge
+logic.
+
+A later feature (`database-backed-vocabulary-word-loading`) connects
+`ModVocabList`/`ModVocabListWord` to the runtime Vocabulary module through
+`src/learning-modules/vocabulary/server/vocabularyListStore.ts`, replacing
+the former hardcoded fixture for bounded initial loading, active-pool
+refill, and canonical content/answer resolution. `ModVocabLearning`,
+`ModVocabWordProgress`, `ModVocabSession`, `ModVocabAttempt`,
+`ModVocabAttemptChoice`, and `ModVocabDailyPractice` remain unconnected:
+lesson/capability/attempt state is still memory-only, exactly as described
+in the "Persistence and limitations" section of
+[`vocabulary.md`](./vocabulary.md).

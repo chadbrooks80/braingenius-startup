@@ -101,10 +101,12 @@ test("the module parser and the answer endpoint accept and reject identical subm
 
   const lookup = (
     submission: VocabularyAnswerSubmission
-  ): VocabularyAnswerResult =>
-    submission.answerType === "definition"
-      ? { answerType: "definition", correctChoiceId: "choice-a" }
-      : { answerType: "spelling", correct: true };
+  ): Promise<VocabularyAnswerResult> =>
+    Promise.resolve(
+      submission.answerType === "definition"
+        ? { answerType: "definition", correctChoiceId: "choice-a" }
+        : { answerType: "spelling", correct: true }
+    );
 
   for (const { body, accepted } of parityCases) {
     const parserAccepted = parseVocabularyAnswerSubmission(body) !== null;
