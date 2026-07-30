@@ -4,7 +4,7 @@
 
 Every feature, fix, or task must follow this process unless the user explicitly says otherwise.
 
-The current task being worked on is stored in Google Drive at `dev-instructions/brain-genius-startup/current-feature.md`. Access it using the Google Drive MCP.
+The current task being worked on is stored locally at `./context/current-feature.md`. Access it by reading the file directly.
 
 When a feature or fix is fully approved, a timestamped summary of the completed work must be added to `@context/history.md`.
 
@@ -12,7 +12,7 @@ When a feature or fix is fully approved, a timestamped summary of the completed 
 
 ## Standard Workflow (only when /feature implement skill is performed)
 
-1. Use the Google Drive MCP to read `dev-instructions/brain-genius-startup/current-feature.md`
+1. Read `./context/current-feature.md`
 2. Create a branch for the current feature
 3. Implement the requested change
 4. Run self-checks and testing
@@ -28,10 +28,10 @@ When a feature or fix is fully approved, a timestamped summary of the completed 
 
 ### 1. Read Current Feature
 
-* Always begin by using the Google Drive MCP to read `dev-instructions/brain-genius-startup/current-feature.md`
+* Always begin by reading `./context/current-feature.md`
 * Treat it as the source of truth for the current task
 * Do not work on a different feature unless the user explicitly updates it
-* Use the contents of `dev-instructions/brain-genius-startup/current-feature.md` from Google Drive to determine:
+* Use the contents of `./context/current-feature.md` to determine:
 
   * the branch name
   * the scope of work
@@ -41,7 +41,7 @@ When a feature or fix is fully approved, a timestamped summary of the completed 
 ### 2. Create Branch
 
 * Create a new branch for every feature, fix, or task
-* Base the branch name on the feature described in `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
+* Base the branch name on the feature described in `./context/current-feature.md`
 * Use a clear descriptive branch name
 * Examples:
 
@@ -52,7 +52,7 @@ When a feature or fix is fully approved, a timestamped summary of the completed 
 
 ### 3. Implement
 
-* Build only the requested feature or fix from `dev-instructions/brain-genius-startup/current-feature.md` on Google Drive
+* Build only the requested feature or fix from `./context/current-feature.md`
 * Follow all rules in `docs/coding-rules.md`
 * Keep the scope tightly focused
 * Do not make unrelated changes

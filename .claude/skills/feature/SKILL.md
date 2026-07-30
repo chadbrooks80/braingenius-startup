@@ -14,12 +14,10 @@ If no valid command is provided, show these commands with a short description.
 
 ## `/feature implement`
 
-1. Resolve and read the exact Google Drive path:
+1. Read the exact file path:
 
-   `dev-instructions/brain-genius-startup/current-feature.md`
+   `./context/current-feature.md`
 
-   - Traverse the complete folder path live.
-   - Do not search by filename alone or reuse a stored Drive ID.
    - Stop if the file cannot be resolved, read, or is empty.
 
 2. Read:

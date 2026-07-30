@@ -53,12 +53,10 @@ If `.claude/rules/` is missing, contains no Markdown rules, or any discovered ru
 
 ### 1. Resolve the feature specification
 
-Use Google Drive and traverse the exact folder path:
+Read the exact file path:
 
-`dev-instructions/brain-genius-startup/current-feature.md`
+`./context/current-feature.md`
 
-- Resolve the path from its folders on every audit.
-- Do not cache, store, infer, or reuse a prior Drive file ID.
 - Stop and report `NOT FULLY VERIFIABLE` if the exact file cannot be resolved or read.
 
 ### 2. Establish the complete change set
