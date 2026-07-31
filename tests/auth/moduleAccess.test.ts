@@ -9,7 +9,6 @@ import { createLearningModuleNotFoundError } from "../../src/lib/learning-engine
 
 const VOCABULARY_SETTINGS: ModuleSettings = {
   showHeader: true,
-  showSidebar: true,
   subscriptionTier: ["MONTHLY", "LIFETIME", "ADMIN"],
 };
 

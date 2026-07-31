@@ -7,12 +7,13 @@ import type {
   ActiveScreen,
   AnswerFeedback,
   LearningEngineStateSetters,
+  ModuleLayoutComponent,
 } from "../../src/types/learning";
 
 type EngineStateCapture = {
   readonly setters: LearningEngineStateSetters;
   readonly showHeaderValues: boolean[];
-  readonly showSidebarValues: boolean[];
+  readonly moduleLayoutValues: Array<ModuleLayoutComponent | null>;
   readonly answerFeedbackValues: Array<AnswerFeedback | null>;
   readonly isSpeakingValues: boolean[];
   requireActiveScreen(): ActiveScreen;
@@ -43,7 +44,7 @@ test("unknown modules render only the engine-owned safe presentation and log neu
   }
 
   assert.deepEqual(capture.showHeaderValues, [false]);
-  assert.deepEqual(capture.showSidebarValues, [false]);
+  assert.deepEqual(capture.moduleLayoutValues, [null]);
   assert.deepEqual(capture.answerFeedbackValues, [null]);
   assert.deepEqual(capture.isSpeakingValues, [false]);
 
@@ -111,7 +112,9 @@ test("Vocabulary missing-list errors retain module-owned safe presentation", asy
 
   assert.equal(result, "route-error");
   assert.deepEqual(capture.showHeaderValues, [true, false]);
-  assert.deepEqual(capture.showSidebarValues, [true, false]);
+  assert.equal(capture.moduleLayoutValues.length, 2);
+  assert.equal(typeof capture.moduleLayoutValues[0], "function");
+  assert.equal(capture.moduleLayoutValues[1], null);
   assertSafeErrorScreen(capture.requireActiveScreen(), {
     title: "Vocabulary List Not Found",
     message: "This lesson link does not include a vocabulary list.",
@@ -132,7 +135,9 @@ test("Vocabulary invalid routes retain module-owned safe presentation", async ()
 
   assert.equal(result, "route-error");
   assert.deepEqual(capture.showHeaderValues, [true, false]);
-  assert.deepEqual(capture.showSidebarValues, [true, false]);
+  assert.equal(capture.moduleLayoutValues.length, 2);
+  assert.equal(typeof capture.moduleLayoutValues[0], "function");
+  assert.equal(capture.moduleLayoutValues[1], null);
   assertSafeErrorScreen(capture.requireActiveScreen(), {
     title: "Invalid Lesson Link",
     message: "This lesson link has an invalid format.",
@@ -155,7 +160,7 @@ test("aborted route-error initialization remains stale without terminal renderin
   assert.equal(result, "stale");
   assert.equal(capture.hasActiveScreen(), false);
   assert.deepEqual(capture.showHeaderValues, []);
-  assert.deepEqual(capture.showSidebarValues, []);
+  assert.deepEqual(capture.moduleLayoutValues, []);
 });
 
 test("ordinary initialization errors escape unchanged as unexpected failures", async () => {
@@ -196,7 +201,7 @@ test("ordinary initialization errors escape unchanged as unexpected failures", a
 function createEngineStateCapture(): EngineStateCapture {
   let activeScreen: ActiveScreen | null = null;
   const showHeaderValues: boolean[] = [];
-  const showSidebarValues: boolean[] = [];
+  const moduleLayoutValues: Array<ModuleLayoutComponent | null> = [];
   const answerFeedbackValues: Array<AnswerFeedback | null> = [];
   const isSpeakingValues: boolean[] = [];
 
@@ -206,13 +211,13 @@ function createEngineStateCapture(): EngineStateCapture {
         activeScreen = screen;
       },
       setShowHeader: (show) => showHeaderValues.push(show),
-      setShowSidebar: (show) => showSidebarValues.push(show),
+      setModuleLayout: (ModuleLayout) => moduleLayoutValues.push(ModuleLayout),
       setAnswerFeedback: (feedback) => answerFeedbackValues.push(feedback),
       setIsSpeaking: (isSpeaking) => isSpeakingValues.push(isSpeaking),
       setSpeechFailureNotice: () => {},
     },
     showHeaderValues,
-    showSidebarValues,
+    moduleLayoutValues,
     answerFeedbackValues,
     isSpeakingValues,
     requireActiveScreen() {

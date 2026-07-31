@@ -51,7 +51,7 @@ function createSetters(): {
     setters: {
       setActiveScreen: () => {},
       setShowHeader: () => {},
-      setShowSidebar: () => {},
+      setModuleLayout: () => {},
       setAnswerFeedback: () => {},
       setIsSpeaking: (isSpeaking) => isSpeakingValues.push(isSpeaking),
       setSpeechFailureNotice: (notice) => noticeValues.push(notice),

@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScreenRenderer } from "@/components/learning-engine/ScreenRenderer";
 import { LearningHeader } from "@/components/learning-engine/layout/LearningHeader";
-import { LearningSidebar } from "@/components/learning-engine/layout/LearningSidebar";
 import { SpeechPlaybackFailureBanner } from "@/components/learning-engine/SpeechPlaybackFailureBanner";
 import LearningEngine from "@/lib/learning-engine/LearningEngine";
 import { cancelSpeech } from "@/lib/learning-engine/speech/speechPlaybackService";
 import type {
   ActiveScreen,
   AnswerFeedback,
+  ModuleLayoutComponent,
   SpeechFailureNotice,
 } from "@/types/learning";
 
@@ -37,7 +37,8 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
     null
   );
   const [showHeader, setShowHeader] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [ModuleLayout, setModuleLayoutState] =
+    useState<ModuleLayoutComponent | null>(null);
   const [answerFeedback, setAnswerFeedback] = useState<AnswerFeedback | null>(
     null
   );
@@ -52,6 +53,16 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
       current && current.requestId === requestId ? null : current
     );
   }, []);
+
+  const setModuleLayout = useCallback(
+    (nextModuleLayout: ModuleLayoutComponent | null) => {
+      // A React component is itself a function; passing it straight to
+      // setState would be misread as a functional updater instead of the
+      // next value, so it must be wrapped.
+      setModuleLayoutState(() => nextModuleLayout);
+    },
+    []
+  );
 
   useEffect(() => {
     const [moduleName, ...moduleVariables] = learning;
@@ -68,7 +79,7 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
         {
           setActiveScreen,
           setShowHeader,
-          setShowSidebar,
+          setModuleLayout,
           setAnswerFeedback,
           setIsSpeaking,
           setSpeechFailureNotice,
@@ -113,14 +124,23 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
         />
       )}
       {showHeader && <LearningHeader />}
-      <div className="flex flex-1">
-        {showSidebar && <LearningSidebar />}
-        <ScreenRenderer
-          screen={activeScreen}
-          answerFeedback={answerFeedback}
-          isSpeaking={isSpeaking}
-        />
-      </div>
+      {ModuleLayout ? (
+        <ModuleLayout>
+          <ScreenRenderer
+            screen={activeScreen}
+            answerFeedback={answerFeedback}
+            isSpeaking={isSpeaking}
+          />
+        </ModuleLayout>
+      ) : (
+        <div className="flex flex-1">
+          <ScreenRenderer
+            screen={activeScreen}
+            answerFeedback={answerFeedback}
+            isSpeaking={isSpeaking}
+          />
+        </div>
+      )}
     </>
   );
 }

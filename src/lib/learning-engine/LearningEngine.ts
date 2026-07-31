@@ -29,7 +29,7 @@ class LearningEngine {
     this.learningEngineStateSetters = learningEngineStateSetters;
 
     try {
-      const { ModuleConstructor, settings } = await loadLearningModule(
+      const { ModuleConstructor, settings, ModuleLayout } = await loadLearningModule(
         moduleName
       );
 
@@ -40,7 +40,7 @@ class LearningEngine {
       }
 
       learningEngineStateSetters.setShowHeader(settings.showHeader);
-      learningEngineStateSetters.setShowSidebar(settings.showSidebar);
+      learningEngineStateSetters.setModuleLayout(ModuleLayout);
 
       this.activeModule = new ModuleConstructor(moduleVariables);
       await this.activeModule.initialize();
@@ -87,7 +87,7 @@ class LearningEngine {
     const setters = this.requireLearningEngineStateSetters();
 
     setters.setShowHeader(false);
-    setters.setShowSidebar(false);
+    setters.setModuleLayout(null);
 
     changeLearningEngineScreen(
       { windowName: "error", props: error.presentation },

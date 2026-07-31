@@ -1,3 +1,15 @@
+## 2026-07-31 10:32
+
+- Completed module-owned learning layout on `feature/module-owned-learning-layout`, moving the Vocabulary status panel out of the shared Learning Engine and introducing a required module-owned `ModuleLayout.tsx` contract
+- Moved `src/components/learning-engine/layout/LearningSidebar.tsx` into `src/learning-modules/vocabulary/module-panels/VocabularyStatusPanel.tsx` (renamed, markup/styling/static values preserved) and deleted the old engine-owned file
+- Added `src/learning-modules/vocabulary/ModuleLayout.tsx`, rendering `VocabularyStatusPanel` first and the engine-supplied `children` second in the same `flex flex-1` left-panel/main-window arrangement as before
+- Added a subject-neutral module-layout contract in `src/types/learning.ts`; `loadLearningModule.ts` now returns each registered module's `ModuleLayout` alongside its constructor and settings via the existing allowlisted loader, keeping the settings-only loader independent from client-facing imports
+- `LearningRouteClient.tsx` now stores and wraps `ScreenRenderer` with the active module's `ModuleLayout` (removed the direct `LearningSidebar` import/render and `showSidebar` state), preserving header/speech-banner ownership, stale-initialization protection, and clearing the module layout on terminal route errors
+- Removed `showSidebar`/`setShowSidebar` from `ModuleSettings`, `validateModuleSettings()`, `LearningEngineStateSetters`, required-setter validation, and Vocabulary's `settings.json`, with no replacement flag added
+- Updated `tests/learning-engine/{validateModuleSettings,LearningEngineRouteErrors,createLearningEngineActionHandlers,vocabularyWindowFlow}.test.ts`, `tests/integration/vocabularyRouteSmoke.test.ts`, `tests/tts/runSpeakRequest.test.ts`, `tests/auth/moduleAccess.test.ts`; added `tests/learning-engine/moduleLayout.test.tsx`
+- Updated docs: `docs/README.md`, `docs/architecture/{learning-engine-and-module-boundaries,system-overview}.md`, `docs/modules/vocabulary.md`; removed `docs/components/learning-engine/layout/LearningSidebar.md`
+- Verification and user approval passed
+
 ## 2026-07-30 12:00
 
 - Completed authenticated database-backed Vocabulary word loading on `feature/database-backed-vocabulary-word-loading`, replacing the hardcoded 20-word `getWordList.ts` fixture with bounded, authorized Prisma reads from `ModVocabList`/`ModVocabListWord`, then closed the five audit findings from the Phase 2 repair pass

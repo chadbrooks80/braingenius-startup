@@ -28,7 +28,7 @@ test("submitAnswer forwards an opaque non-vocabulary payload without interpretin
   const setters: LearningEngineStateSetters = {
     setActiveScreen() {},
     setShowHeader() {},
-    setShowSidebar() {},
+    setModuleLayout() {},
     setAnswerFeedback(value) {
       feedbackChanges.push(value);
     },

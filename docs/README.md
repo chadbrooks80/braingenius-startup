@@ -43,7 +43,6 @@ This directory describes the application implemented in the current repository. 
 - [LearningWindowShell](components/learning-engine/LearningWindowShell.md)
 - [ScreenRenderer](components/learning-engine/ScreenRenderer.md)
 - [LearningHeader](components/learning-engine/layout/LearningHeader.md)
-- [LearningSidebar](components/learning-engine/layout/LearningSidebar.md)
 - [AnswerRecapWindow](components/learning-engine/windows/AnswerRecapWindow.md)
 - [DefinitionDisplay](components/learning-engine/windows/DefinitionDisplay.md)
 - [DefinitionFunFact](components/learning-engine/windows/DefinitionFunFact.md)

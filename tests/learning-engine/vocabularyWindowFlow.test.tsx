@@ -248,7 +248,7 @@ test("screen changes clear feedback and speech failure state without injecting t
         activeScreens.push(screen);
       },
       setShowHeader: () => {},
-      setShowSidebar: () => {},
+      setModuleLayout: () => {},
       setAnswerFeedback: (feedback) => feedbackChanges.push(feedback),
       setIsSpeaking: () => {},
       setSpeechFailureNotice: (notice) =>

@@ -7,10 +7,6 @@ export function validateModuleSettings(settings: ModuleSettings): void {
     throw new Error("Invalid settings.json: showHeader must be a boolean.");
   }
 
-  if (typeof settings.showSidebar !== "boolean") {
-    throw new Error("Invalid settings.json: showSidebar must be a boolean.");
-  }
-
   if (!Array.isArray(settings.subscriptionTier)) {
     throw new Error("Invalid settings.json: subscriptionTier must be an array.");
   }

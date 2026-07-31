@@ -6,14 +6,16 @@ The current ownership rule is: the route hosts, the Learning Engine coordinates,
 
 `src/app/(app)/(learning)/learning/[...learning]/page.tsx` is a Server Component that owns the pre-initialization authorization boundary: it calls the host-owned `authorizeLearningModuleAccess()` (see [Security and Server Boundaries](../architecture/security-and-server-boundaries.md#learning-module-access)) before any client engine work, and renders `src/components/learning-engine/LearningRouteClient.tsx` only once access is granted (or the module is unregistered, deferring to the engine's own existing "not found" ownership).
 
-`LearningRouteClient` reads the catch-all segments passed as a prop, remounts by joined route key, and owns React state for the active screen, header/sidebar visibility, answer feedback, speech status, and the one current speech-failure notice. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, renders the shared failure banner above the learning header/content, aborts stale route work, and cancels shared speech on teardown. Notice dismissal is request-ID guarded so an old timer or X callback cannot clear a newer failure.
+`LearningRouteClient` reads the catch-all segments passed as a prop, remounts by joined route key, and owns React state for the active screen, header visibility, the active module's `ModuleLayout` component, answer feedback, speech status, and the one current speech-failure notice. It creates one `LearningEngine`, passes its setters, shows the startup screen after successful initialization, renders the shared failure banner above the learning header/content, aborts stale route work, and cancels shared speech on teardown. Notice dismissal is request-ID guarded so an old timer or X callback cannot clear a newer failure.
+
+The route renders `<ModuleLayout><ScreenRenderer .../></ModuleLayout>` once the active module's `ModuleLayout` is known, wrapping only the engine-provided learning window; it holds no opinion about what a module places around that window. Because a React component is itself a function, the route's `setModuleLayout` wraps the raw `useState` setter (`setState(() => ModuleLayout)`) so a received component is stored as the next state value rather than misread as a functional updater. A `null` `ModuleLayout` (before assignment, or after a terminal route error clears it) falls back to a bare `flex flex-1` wrapper around `ScreenRenderer` so a route error never renders a module's layout or panels.
 
 ## Engine-owned work
 
 `src/lib/learning-engine/` owns:
 
 - the `LearningEngine` lifecycle;
-- the allowlisted module loader and settings validation;
+- the allowlisted module loader, settings validation, and the module's `ModuleLayout` component;
 - generic `next`, `submitAnswer`, and `speak` action routing;
 - the typed `LearningWindowRegistry`;
 - converting `ScreenRequest` into an `ActiveScreen`;
@@ -48,9 +50,10 @@ Every registered module's `settings.json` must declare a required, non-empty `su
 - the active five-word pool, introductions, attempt activation, mastery streaks, recaps, delayed reviews, and completion;
 - the subject screen builders;
 - browser clients for the content and answer endpoints;
-- the module server handlers, capability/attempt bindings, canonical fixture, answer evaluation, and protected speech resolution.
+- the module server handlers, capability/attempt bindings, canonical fixture, answer evaluation, and protected speech resolution;
+- its module layout and panel placement: `ModuleLayout.tsx` (required, generically named for every module) renders `module-panels/VocabularyStatusPanel.tsx` to the left of the engine-supplied learning window inside a `flex flex-1` container it owns.
 
-The module returns registered window names and public props. It does not import window implementations, mutate route React state, or own speech-failure diagnostics, notice state, learner copy, or timers. Every current and future module receives the same failure behavior by emitting the generic `speak` action.
+The module returns registered window names and public props. It does not import window implementations, mutate route React state, or own speech-failure diagnostics, notice state, learner copy, or timers. Every current and future module receives the same failure behavior by emitting the generic `speak` action. The engine must not import `VocabularyStatusPanel` or contain Vocabulary-specific layout branches; it only ever renders the module's registered `ModuleLayout`.
 
 ## Window-owned work
 
@@ -65,7 +68,8 @@ The shared engine implementation is divided by responsibility:
 - Lifecycle and registry: `src/lib/learning-engine/LearningEngine.ts`, `src/lib/learning-engine/LearningWindowRegistry.ts`.
 - Generic actions: `src/lib/learning-engine/actions/createLearningEngineActionHandlers.ts`.
 - Route and synthesis errors: `src/lib/learning-engine/errors/LearningRouteError.ts`, `src/lib/learning-engine/errors/learningEngineRouteErrors.ts`, `src/lib/learning-engine/errors/TtsSynthesisError.ts`, `src/lib/learning-engine/errors/logLearningRouteError.ts`, `src/lib/learning-engine/errors/logTtsSynthesisError.ts`.
-- Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts` (also exports `loadLearningModuleSettings`, a settings-only loader reused by the host-owned Learning Module access boundary so it never needs to import a module's client-facing implementation), `src/lib/learning-engine/initialization/validateModuleSettings.ts` (also validates the required, non-empty, deduplicated `subscriptionTier` array against the shared `LearningSubscriptionTier` contract in `src/types/learning.ts`).
+- Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts` (the client-facing loader also returns each registered module's `ModuleLayout` component alongside its `ModuleConstructor` and settings; it also exports `loadLearningModuleSettings`, a settings-only loader reused by the host-owned Learning Module access boundary so it never needs to import a module's client-facing implementation or layout), `src/lib/learning-engine/initialization/validateModuleSettings.ts` (also validates the required, non-empty, deduplicated `subscriptionTier` array against the shared `LearningSubscriptionTier` contract in `src/types/learning.ts`).
+- Module layout contract: the subject-neutral `ModuleLayoutProps`/`ModuleLayoutComponent` types in `src/types/learning.ts` describe only what the engine needs to render a module's layout around `children`; they carry no subject-specific fields.
 - Screen application: `src/lib/learning-engine/screens/changeLearningEngineScreen.ts`, `src/lib/learning-engine/screens/withSharedScreenProps.ts`.
 - State-setter validation: `src/lib/learning-engine/validation/requiredLearningEngineStateSetterKeys.ts`, `src/lib/learning-engine/validation/validateLearningEngineStateSetters.ts`.
 - Playback and client orchestration: `src/lib/learning-engine/speech/SpeechPlaybackController.ts`, `src/lib/learning-engine/speech/normalizeSpeechQueue.ts`, `src/lib/learning-engine/speech/runSpeakRequest.ts`, `src/lib/learning-engine/speech/silentAudioDataUri.ts`, `src/lib/learning-engine/speech/speechPlaybackService.ts`.

@@ -232,7 +232,7 @@ function createEngineHarness(module: ActiveModule): {
       activeScreen = screen;
     },
     setShowHeader: () => {},
-    setShowSidebar: () => {},
+    setModuleLayout: () => {},
     setAnswerFeedback: (feedback) => {
       answerFeedback = feedback;
     },

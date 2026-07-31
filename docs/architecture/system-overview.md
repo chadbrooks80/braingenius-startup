@@ -56,6 +56,6 @@ The host application owns authentication, accounts, onboarding, subscriptions, d
 - The proxy matcher covers `/dashboard` and `/getting-started`, not `/learning/**`. It also lets requests without a token continue, so the dashboard is not proven protected by the current proxy/page source; both paid TTS routes independently authenticate and check entitlement at their own server boundary rather than relying on the proxy.
 - `/api/tts` and `/api/learning/vocabulary/speech` require an authenticated, currently entitled (direct or child-inherited) caller and share one server-owned paid-usage policy (`src/lib/learning-engine/speech/ttsUsageService.ts`) with durable PostgreSQL accounting, five-hour warning / ten-hour daily cutoff enforcement, burst/concurrency leases, and manual suspension. Long public teaching passages are chunked client-side to the 5,000-byte provider boundary via `chunkSpeechText.ts`.
 - Billing has no durable webhook event ledger or full stale/out-of-order reconciliation architecture; audit #27 remains deferred.
-- The dashboard and blog pages are placeholders, and learning header/sidebar values are static presentation data.
+- The dashboard and blog pages are placeholders, and the learning header and Vocabulary's status panel show static presentation data.
 
 See [Application and Route Map](application-and-route-map.md), [Learning Engine and Module Boundaries](learning-engine-and-module-boundaries.md), and [Security and Server Boundaries](security-and-server-boundaries.md).

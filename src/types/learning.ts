@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from "react";
+import type { ComponentType, ElementType, ReactNode } from "react";
 import type { LearningWindowName } from "@/lib/learning-engine/LearningWindowRegistry";
 
 // Client-safe, dependency-free Learning Module access tiers. Deliberately
@@ -17,9 +17,18 @@ export type LearningSubscriptionTier = (typeof LEARNING_SUBSCRIPTION_TIERS)[numb
 
 export type ModuleSettings = {
   showHeader: boolean;
-  showSidebar: boolean;
   subscriptionTier: LearningSubscriptionTier[];
 };
+
+// Subject-neutral module-owned placement boundary: a module's ModuleLayout
+// receives only the engine-provided learning window as children and controls
+// where its own panels sit around it. The engine must not add subject fields
+// here.
+export type ModuleLayoutProps = {
+  children: ReactNode;
+};
+
+export type ModuleLayoutComponent = ComponentType<ModuleLayoutProps>;
 
 export type StartupButtonVariant = "primary" | "secondary" | "ghost";
 
@@ -57,7 +66,7 @@ export type SpeechFailureNotice = {
 export type LearningEngineStateSetters = {
   setActiveScreen: (screen: ActiveScreen) => void;
   setShowHeader: (show: boolean) => void;
-  setShowSidebar: (show: boolean) => void;
+  setModuleLayout: (ModuleLayout: ModuleLayoutComponent | null) => void;
   setAnswerFeedback: (answerFeedback: AnswerFeedback | null) => void;
   setIsSpeaking: (isSpeaking: boolean) => void;
   setSpeechFailureNotice: (notice: SpeechFailureNotice | null) => void;

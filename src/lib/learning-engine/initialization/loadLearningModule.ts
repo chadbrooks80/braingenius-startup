@@ -1,5 +1,6 @@
 import type {
   LearningModuleConstructor,
+  ModuleLayoutComponent,
   ModuleSettings,
 } from "@/types/learning";
 import { createLearningModuleNotFoundError } from "@/lib/learning-engine/errors/learningEngineRouteErrors";
@@ -7,6 +8,7 @@ import { createLearningModuleNotFoundError } from "@/lib/learning-engine/errors/
 type LearningModuleImport = {
   ModuleConstructor: LearningModuleConstructor;
   settings: ModuleSettings;
+  ModuleLayout: ModuleLayoutComponent;
 };
 
 // Single source of truth for registered modules' settings, shared by the
@@ -33,11 +35,15 @@ const SUPPORTED_LEARNING_MODULE_LOADERS: Record<
   vocabulary: async () => {
     const importedModule = await import("@/learning-modules/vocabulary");
     const settings = await SUPPORTED_LEARNING_MODULE_SETTINGS_LOADERS.vocabulary();
+    const importedModuleLayout = await import(
+      "@/learning-modules/vocabulary/ModuleLayout"
+    );
 
     return {
       ModuleConstructor:
         importedModule.default as LearningModuleConstructor,
       settings,
+      ModuleLayout: importedModuleLayout.ModuleLayout,
     };
   },
 };

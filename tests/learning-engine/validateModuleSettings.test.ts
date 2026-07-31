@@ -7,7 +7,6 @@ import type { ModuleSettings } from "../../src/types/learning";
 function baseSettings(overrides: Partial<ModuleSettings> = {}): ModuleSettings {
   return {
     showHeader: true,
-    showSidebar: true,
     subscriptionTier: ["MONTHLY"],
     ...overrides,
   };
@@ -67,14 +66,18 @@ test("rejects duplicate subscriptionTier entries", () => {
 test("preserves the existing boolean validation", () => {
   // @ts-expect-error -- deliberately invalid type.
   assert.throws(() => validateModuleSettings(baseSettings({ showHeader: "yes" })), /showHeader/);
-  // @ts-expect-error -- deliberately invalid type.
-  assert.throws(() => validateModuleSettings(baseSettings({ showSidebar: "yes" })), /showSidebar/);
 });
 
 test("loadLearningModuleSettings returns Vocabulary's exact approved tier list", async () => {
   const settings = await loadLearningModuleSettings("vocabulary");
   assert.doesNotThrow(() => validateModuleSettings(settings));
   assert.deepEqual(settings.subscriptionTier, ["MONTHLY", "LIFETIME", "ADMIN"]);
+});
+
+test("Vocabulary settings are valid without showSidebar", async () => {
+  const settings = await loadLearningModuleSettings("vocabulary");
+  assert.equal("showSidebar" in settings, false);
+  assert.doesNotThrow(() => validateModuleSettings(settings));
 });
 
 test("loadLearningModuleSettings rejects an unregistered module name", async () => {
