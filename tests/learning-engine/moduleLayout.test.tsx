@@ -17,7 +17,7 @@ test("the client-facing Vocabulary module loader returns the module's ModuleLayo
 
 test("the Vocabulary ModuleLayout renders its status panel before the supplied children, in the current left-panel/main-window order", () => {
   const markup = renderToStaticMarkup(
-    <VocabularyModuleLayout>
+    <VocabularyModuleLayout registerModulePanelSetters={() => () => {}}>
       <span>main window content</span>
     </VocabularyModuleLayout>
   );

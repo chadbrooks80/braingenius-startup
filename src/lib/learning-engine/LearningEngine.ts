@@ -4,6 +4,7 @@ import type {
   ActiveModule,
   LearningEngineInitializeResult,
   LearningEngineStateSetters,
+  ModulePanelRegistration,
 } from "@/types/learning";
 import { loadLearningModule } from "@/lib/learning-engine/initialization/loadLearningModule";
 import { validateModuleSettings } from "@/lib/learning-engine/initialization/validateModuleSettings";
@@ -17,6 +18,8 @@ class LearningEngine {
   private activeModule: ActiveModule | null = null;
   private learningEngineStateSetters: LearningEngineStateSetters | null = null;
   private actionHandlers: ActionHandlers | null = null;
+  private modulePanelSetters: ModulePanelRegistration | null = null;
+  private modulePanelSettersToken = 0;
 
   async initialize(
     moduleName: string,
@@ -94,6 +97,28 @@ class LearningEngine {
       setters,
       (actionId, payload = {}) => this.action(actionId, payload)
     );
+  }
+
+  // Generic current-module-panel registration bridge: stores exactly one
+  // opaque setter object per active panel without ever inspecting its keys.
+  // The returned disposer is tied to the token issued at registration time,
+  // so an old (e.g. Strict Mode) cleanup can never erase a newer
+  // registration that has since replaced it.
+  registerModulePanelSetters(
+    setters: ModulePanelRegistration
+  ): () => void {
+    const token = ++this.modulePanelSettersToken;
+    this.modulePanelSetters = setters;
+
+    return () => {
+      if (this.modulePanelSettersToken === token) {
+        this.modulePanelSetters = null;
+      }
+    };
+  }
+
+  getModulePanelSetters(): ModulePanelRegistration | null {
+    return this.modulePanelSetters;
   }
 
   showStartupScreen() {

@@ -10,6 +10,7 @@ import type {
   ActiveScreen,
   AnswerFeedback,
   ModuleLayoutComponent,
+  ModulePanelRegistration,
   SpeechFailureNotice,
 } from "@/types/learning";
 
@@ -60,6 +61,22 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
       // setState would be misread as a functional updater instead of the
       // next value, so it must be wrapped.
       setModuleLayoutState(() => nextModuleLayout);
+    },
+    []
+  );
+
+  // Stable across the route's lifetime; delegates to whichever LearningEngine
+  // instance currently owns this route so the module layout never receives
+  // the engine instance itself, only this narrow registration capability.
+  const registerModulePanelSetters = useCallback(
+    (setters: ModulePanelRegistration) => {
+      const learningEngine = learningEngineRef.current;
+
+      if (!learningEngine) {
+        return () => {};
+      }
+
+      return learningEngine.registerModulePanelSetters(setters);
     },
     []
   );
@@ -125,7 +142,7 @@ function LearningRoute({ learning, routeKey }: LearningRouteProps) {
       )}
       {showHeader && <LearningHeader />}
       {ModuleLayout ? (
-        <ModuleLayout>
+        <ModuleLayout registerModulePanelSetters={registerModulePanelSetters}>
           <ScreenRenderer
             screen={activeScreen}
             answerFeedback={answerFeedback}

@@ -20,12 +20,23 @@ export type ModuleSettings = {
   subscriptionTier: LearningSubscriptionTier[];
 };
 
+// Subject-neutral, opaque module-panel registration bridge: a module's panel
+// hands the engine one opaque object of its own React setters and gets back
+// a disposer for that exact registration. The engine stores and replaces
+// this value without ever inspecting its keys.
+export type ModulePanelRegistration = Readonly<Record<string, unknown>>;
+
+export type RegisterModulePanelSetters = (
+  setters: ModulePanelRegistration
+) => () => void;
+
 // Subject-neutral module-owned placement boundary: a module's ModuleLayout
-// receives only the engine-provided learning window as children and controls
-// where its own panels sit around it. The engine must not add subject fields
-// here.
+// receives only the engine-provided learning window as children and the
+// generic panel-registration capability, and controls where its own panels
+// sit around it. The engine must not add subject fields here.
 export type ModuleLayoutProps = {
   children: ReactNode;
+  registerModulePanelSetters: RegisterModulePanelSetters;
 };
 
 export type ModuleLayoutComponent = ComponentType<ModuleLayoutProps>;

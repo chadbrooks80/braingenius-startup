@@ -1,3 +1,13 @@
+## 2026-07-31 16:12
+
+- Completed Phase 1 of generic module panel setter registration on `feature/vocabulary-status-panel-setters`, giving `VocabularyStatusPanel` three real React states/setters and a subject-neutral Learning Engine registration bridge, without wiring any production Vocabulary logic to call the setters yet
+- Added `src/learning-modules/vocabulary/module-panels/vocabularyPanelTypes.ts` (Vocabulary-owned `VocabularyPanelDisplayWord`, `VocabularyPanelSpellingWord`, `VocabularyStatusPanelSetters`, and `createVocabularyStatusPanelSetters`); `VocabularyStatusPanel.tsx` now owns `wordList`/`spellingWords`/`masteredWords` state, derives all three counts from array length, renders spelling as masked ID-only rows, and registers one setter object via a `useEffect` after render, releasing it on unmount
+- Added `ModulePanelRegistration`/`RegisterModulePanelSetters` to `src/types/learning.ts` as an opaque `Readonly<Record<string, unknown>>` contract; `LearningEngine.ts` gained a private `modulePanelSetters` field plus a token-guarded register/cleanup function so an older registration's disposer can never erase a newer one
+- `LearningRouteClient.tsx` passes a stable `registerModulePanelSetters` callback (bound to the current engine) through `ModuleLayout` instead of any Vocabulary instance; Vocabulary's `ModuleLayout.tsx` forwards it to `VocabularyStatusPanel` unchanged otherwise
+- Updated `tests/learning-engine/moduleLayout.test.tsx`; added `tests/learning-engine/modulePanelRegistration.test.ts` and `tests/learning-engine/vocabularyStatusPanel.test.tsx` covering registration/cleanup identity, Strict-Mode-style stale cleanup, and setter-to-state wiring
+- Updated docs: `docs/architecture/learning-engine-and-module-boundaries.md`, `docs/modules/vocabulary.md`
+- Verification and user approval passed
+
 ## 2026-07-31 10:32
 
 - Completed module-owned learning layout on `feature/module-owned-learning-layout`, moving the Vocabulary status panel out of the shared Learning Engine and introducing a required module-owned `ModuleLayout.tsx` contract
