@@ -1,3 +1,13 @@
+## 2026-08-01 13:00
+
+- Completed Simple Dashboard Learning List Links on `feature/dashboard-learning-list-links`, replacing the hardcoded external `click me` link on `/dashboard` with a database-driven list of the signed-in user's assigned Vocabulary lists
+- `src/app/(app)/dashboard/page.tsx` is now an async Server Component: reads the signed-in user ID from the existing NextAuth session (defensively redirecting to `/sign-in` if absent, without touching the layout-level auth gate), then queries non-archived `ModVocabLearning` records scoped by `learnerUserId: userId` (via the existing `src/lib/db.ts` singleton), including each record's `ModVocabList.name`
+- Each list renders as a `next/link` to `/learning/vocabulary/<ModVocabLearning.id>` (the learner-specific learning ID, not the shared list ID), with an empty-state message when no lists are assigned; styling uses only existing theme tokens
+- Included the required `TEMPORARY DASHBOARD BRIDGE` comment immediately above the direct Prisma query, marking the direct-Prisma access as an intentional, temporary, pre-approved exception pending the future dashboard rebuild
+- Change was scoped to exactly one file; no Learning Engine, Vocabulary module, API routes, schema, auth, or layout code touched
+- Verification: `npx eslint`, `npx tsc --noEmit`, and `npm run build` all clean; read-only DB check confirmed Dylan and Braylynn each have two `ACTIVE` `ModVocabLearning` records with distinct IDs and the expected list names; feature audit found no HIGH/MEDIUM issues (verdict: READY FOR REVIEW)
+- Verification and user approval passed
+
 ## 2026-08-01 12:00
 
 - Completed database-backed Vocabulary runtime security state on `feature/database-backed-vocabulary-runtime-security-state`, replacing `VocabularyContentCapabilityStore`'s three process-local `lessons`/`capabilities`/`attempts` Maps with shared PostgreSQL/Neon persistence so a lesson created by one running server process continues correctly when a later content, answer, refill, or protected-speech request lands on a different process
