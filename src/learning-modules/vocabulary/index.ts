@@ -2,6 +2,7 @@ import type {
   ActionPayload,
   ActiveModule,
   AnswerFeedback,
+  LearningModuleRuntime,
   ScreenRequest,
 } from "@/types/learning";
 import {
@@ -60,9 +61,16 @@ class Vocabulary implements ActiveModule {
   // requested exactly once per newly opened active-pool slot.
   private refillsRequested = 0;
 
+  // The second constructor parameter is widened to also accept the Learning
+  // Engine's generic `LearningModuleRuntime` only so this class still
+  // satisfies the shared `LearningModuleConstructor` contract (the engine
+  // always passes a runtime object here, not a random source). Vocabulary
+  // does not consume the runtime in this feature; existing direct
+  // instantiation with an injected `random` function keeps its current
+  // behavior unchanged.
   constructor(
     moduleVariables: string[],
-    random: () => number = Math.random,
+    random: (() => number) | LearningModuleRuntime = Math.random,
     api: VocabularyModuleApi = DEFAULT_VOCABULARY_API
   ) {
     if (moduleVariables.length === 0) {
@@ -74,7 +82,7 @@ class Vocabulary implements ActiveModule {
     }
 
     this.wordListId = moduleVariables[0];
-    this.random = random;
+    this.random = typeof random === "function" ? random : Math.random;
     this.api = api;
   }
 

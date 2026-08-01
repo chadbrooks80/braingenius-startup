@@ -4,6 +4,7 @@ import type {
   ActiveModule,
   LearningEngineInitializeResult,
   LearningEngineStateSetters,
+  LearningModuleRuntime,
   ModulePanelRegistration,
 } from "@/types/learning";
 import { loadLearningModule } from "@/lib/learning-engine/initialization/loadLearningModule";
@@ -14,12 +15,30 @@ import { changeLearningEngineScreen } from "@/lib/learning-engine/screens/change
 import { LearningRouteError } from "@/lib/learning-engine/errors/LearningRouteError";
 import { logLearningRouteError } from "@/lib/learning-engine/errors/logLearningRouteError";
 
+// Narrow callable shape for one opaque registered panel setter, used only at
+// the point of invocation so calling it never requires the bare `Function`
+// type.
+type ModulePanelSetter = (value: unknown) => void;
+
+// Builds the one narrow, subject-neutral runtime object a module receives at
+// construction time. Exported so its shape (exactly `runPanelSetter`, frozen)
+// is directly testable without depending on module loading.
+export function createLearningModuleRuntime(
+  runPanelSetter: (setterName: string, value: unknown) => void
+): LearningModuleRuntime {
+  return Object.freeze({ runPanelSetter });
+}
+
 class LearningEngine {
   private activeModule: ActiveModule | null = null;
   private learningEngineStateSetters: LearningEngineStateSetters | null = null;
   private actionHandlers: ActionHandlers | null = null;
   private modulePanelSetters: ModulePanelRegistration | null = null;
   private modulePanelSettersToken = 0;
+  // Latest route-local value published per setter name, kept so a module
+  // publication made before its panel registers is not lost, and so a
+  // replacement/remounted panel can reconstruct its current display.
+  private modulePanelSetterValues: Map<string, unknown> = new Map();
 
   async initialize(
     moduleName: string,
@@ -30,6 +49,12 @@ class LearningEngine {
   ): Promise<LearningEngineInitializeResult> {
     validateLearningEngineStateSetters(learningEngineStateSetters);
     this.learningEngineStateSetters = learningEngineStateSetters;
+
+    // A fresh module/route must never see a previous module's registered
+    // panel setters or retained panel values.
+    this.modulePanelSetters = null;
+    this.modulePanelSettersToken++;
+    this.modulePanelSetterValues = new Map();
 
     try {
       const { ModuleConstructor, settings, ModuleLayout } = await loadLearningModule(
@@ -45,7 +70,11 @@ class LearningEngine {
       learningEngineStateSetters.setShowHeader(settings.showHeader);
       learningEngineStateSetters.setModuleLayout(ModuleLayout);
 
-      this.activeModule = new ModuleConstructor(moduleVariables);
+      const runtime = createLearningModuleRuntime((setterName, value) => {
+        this.runModulePanelSetter(setterName, value);
+      });
+
+      this.activeModule = new ModuleConstructor(moduleVariables, runtime);
       await this.activeModule.initialize();
 
       if (initializationSignal.aborted) {
@@ -110,11 +139,48 @@ class LearningEngine {
     const token = ++this.modulePanelSettersToken;
     this.modulePanelSetters = setters;
 
+    // Replay every retained latest value so a panel that registers after the
+    // module already published (or a replacement panel remounting) starts
+    // from the module's current values instead of blank state.
+    for (const [setterName, value] of this.modulePanelSetterValues) {
+      this.invokeModulePanelSetter(setters, setterName, value);
+    }
+
     return () => {
       if (this.modulePanelSettersToken === token) {
         this.modulePanelSetters = null;
       }
     };
+  }
+
+  // Generic module-to-engine panel bridge: records the latest route-local
+  // value per setter name so an early call (before the panel registers) is
+  // never lost, then invokes the matching registered setter immediately when
+  // one is already present.
+  private runModulePanelSetter(setterName: string, value: unknown): void {
+    this.modulePanelSetterValues.set(setterName, value);
+
+    if (!this.modulePanelSetters) {
+      return;
+    }
+
+    this.invokeModulePanelSetter(this.modulePanelSetters, setterName, value);
+  }
+
+  private invokeModulePanelSetter(
+    setters: ModulePanelRegistration,
+    setterName: string,
+    value: unknown
+  ): void {
+    const setter = setters[setterName];
+
+    if (typeof setter !== "function") {
+      throw new Error(
+        `No registered module panel setter named "${setterName}".`
+      );
+    }
+
+    (setter as ModulePanelSetter)(value);
   }
 
   getModulePanelSetters(): ModulePanelRegistration | null {

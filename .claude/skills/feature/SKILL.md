@@ -61,9 +61,9 @@ Do not automatically audit, approve, commit, merge, complete, close the feature,
 
 ## `/feature complete`
 
-Use this only after the feature is fully implemented, verified, and approved by the user.
+This is being ran because the implementation of current-feature has been completed and verified by the user, even if it says to be implemented in the `context/current-feature.md` file. 
 
-1. Append a concise entry to `context/history.md`:
+1. Append a concise entry to `context/history.md` based on what has been implemented on `context/current-feature.md`:
 
 ```markdown
 ## YYYY-MM-DD HH:MM

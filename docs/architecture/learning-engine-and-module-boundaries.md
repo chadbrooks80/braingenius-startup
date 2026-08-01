@@ -22,6 +22,7 @@ The route renders `<ModuleLayout registerModulePanelSetters={...}><ScreenRendere
 - resetting feedback, speech, and any old speech-failure notice when screens change;
 - injecting live `onAction`, feedback, and speech state;
 - a generic current-module-panel registration slot (`registerModulePanelSetters()`/`getModulePanelSetters()` on `LearningEngine`) that stores exactly one opaque object per active panel and replaces/clears it by an internal token, never by inspecting its keys;
+- the module-to-engine return path: at construction, the engine passes every active module the one narrow `LearningModuleRuntime` object (`{ runPanelSetter(setterName, value) }`), created fresh per `initialize()` call and bound only to that engine instance;
 - the subject-neutral route-error envelope, structured logging, terminal
   rendering, recovery, and engine-generic safe presentations;
 - shared speech parsing, playback, typed client-failure classification, bounded
@@ -66,11 +67,12 @@ Registry keys are `startup`, `multiple-choice`, `definition-display`, `definitio
 
 The shared engine implementation is divided by responsibility:
 
-- Lifecycle and registry: `src/lib/learning-engine/LearningEngine.ts`, `src/lib/learning-engine/LearningWindowRegistry.ts`.
+- Lifecycle and registry: `src/lib/learning-engine/LearningEngine.ts` (also exports `createLearningModuleRuntime()`, the pure factory for the frozen `LearningModuleRuntime` object), `src/lib/learning-engine/LearningWindowRegistry.ts`.
 - Generic actions: `src/lib/learning-engine/actions/createLearningEngineActionHandlers.ts`.
 - Route and synthesis errors: `src/lib/learning-engine/errors/LearningRouteError.ts`, `src/lib/learning-engine/errors/learningEngineRouteErrors.ts`, `src/lib/learning-engine/errors/TtsSynthesisError.ts`, `src/lib/learning-engine/errors/logLearningRouteError.ts`, `src/lib/learning-engine/errors/logTtsSynthesisError.ts`.
 - Module loading/settings: `src/lib/learning-engine/initialization/loadLearningModule.ts` (the client-facing loader also returns each registered module's `ModuleLayout` component alongside its `ModuleConstructor` and settings; it also exports `loadLearningModuleSettings`, a settings-only loader reused by the host-owned Learning Module access boundary so it never needs to import a module's client-facing implementation or layout), `src/lib/learning-engine/initialization/validateModuleSettings.ts` (also validates the required, non-empty, deduplicated `subscriptionTier` array against the shared `LearningSubscriptionTier` contract in `src/types/learning.ts`).
 - Module layout contract: the subject-neutral `ModuleLayoutProps`/`ModuleLayoutComponent` types in `src/types/learning.ts` describe only what the engine needs to render a module's layout around `children`; they carry no subject-specific fields. `ModuleLayoutProps` also carries `registerModulePanelSetters: RegisterModulePanelSetters`, the generic panel-registration capability; `ModulePanelRegistration` (`Readonly<Record<string, unknown>>`) is the opaque object type the engine stores, and `RegisterModulePanelSetters` is `(setters: ModulePanelRegistration) => () => void`, the registration function's contract, returning a disposer tied to that exact registration.
+- Module runtime contract: `LearningModuleConstructor` (`src/types/learning.ts`) is `new (moduleVariables: string[], runtime: LearningModuleRuntime) => ActiveModule`. `LearningModuleRuntime` is `Readonly<{ runPanelSetter: (setterName: string, value: unknown) => void }>` — the module's only return path into the engine, using the same opaque `string`/`unknown` key/value shape as `ModulePanelRegistration`. `LearningEngine.initialize()` builds this object via the exported `createLearningModuleRuntime()` helper in `LearningEngine.ts`, bound by closure to that engine instance's private `runModulePanelSetter()`, and passes it as the module constructor's second argument. The module never receives the engine instance, `modulePanelSetters`, `getModulePanelSetters()`, screen setters, or action handlers.
 - Screen application: `src/lib/learning-engine/screens/changeLearningEngineScreen.ts`, `src/lib/learning-engine/screens/withSharedScreenProps.ts`.
 - State-setter validation: `src/lib/learning-engine/validation/requiredLearningEngineStateSetterKeys.ts`, `src/lib/learning-engine/validation/validateLearningEngineStateSetters.ts`.
 - Playback and client orchestration: `src/lib/learning-engine/speech/SpeechPlaybackController.ts`, `src/lib/learning-engine/speech/normalizeSpeechQueue.ts`, `src/lib/learning-engine/speech/runSpeakRequest.ts`, `src/lib/learning-engine/speech/silentAudioDataUri.ts`, `src/lib/learning-engine/speech/speechPlaybackService.ts`.
@@ -97,6 +99,20 @@ Window barrel files and local mechanics remain inside the window boundary:
 4. A module transition returns a `ScreenRequest`.
 5. The engine cancels old speech, clears feedback and the old speech-failure notice, resolves the window, injects `onAction`, sets the screen, and starts any declarative speech.
 6. `ScreenRenderer` spreads stored props first, then injects current `feedback` and `isSpeaking`, so live engine state wins.
+
+## Module panel setter bridge (two-way)
+
+The registration bridge (`registerModulePanelSetters()`) and the runtime return path (`runtime.runPanelSetter()`) together form one two-way bridge, both owned by `LearningEngine` and both generic:
+
+1. A rendered module panel calls `registerModulePanelSetters(setters)`, handing the engine one opaque object of its own React setters.
+2. The active module calls `runtime.runPanelSetter(setterName, value)` whenever it has new state to publish (immediately at construction, or later after module-owned or server-driven changes).
+3. `LearningEngine` always records the latest value per `setterName` in a private map, independent of registration timing, so a module publication made before its panel mounts is never lost.
+4. If a setter is already registered when `runPanelSetter` is called, the engine invokes it immediately with the given value.
+5. Every `registerModulePanelSetters()` call (including a replacement registration from a remounted panel) replays the latest retained value for every setter name it can satisfy, so a panel that (re)registers late or after remounting reconstructs its current display.
+6. Calling `runPanelSetter` or registering setters with a name that the currently registered object does not expose as a function throws (an internal Learning Engine invariant error, never surfaced through a learner-facing route error) instead of silently doing nothing or calling a different setter.
+7. Each `LearningEngine.initialize()` call resets the registered setters, the token, and the retained-value map before loading the requested module, so a new route/module never inherits a previous module's panel setters or values.
+
+No module currently consumes `runtime.runPanelSetter` in production; Vocabulary's constructor accepts the runtime only to satisfy the shared `LearningModuleConstructor` contract and does not yet call it. A later module-specific feature is expected to use it to publish authoritative panel state without further Learning Engine changes.
 
 ## Vocabulary content and attempt flow
 

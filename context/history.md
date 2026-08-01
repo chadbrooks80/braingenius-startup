@@ -1,3 +1,14 @@
+## 2026-08-01 00:15
+
+- Completed the generic module-to-engine panel setter bridge on `feature/generic-module-panel-setter-bridge`, giving the active learning module a controlled return path to request its own previously registered panel setters after initialization or a later server response
+- Added `LearningModuleRuntime` (`src/types/learning.ts`), a frozen subject-neutral runtime exposing exactly `runPanelSetter(setterName, value)`; widened `LearningModuleConstructor` to accept it as the required second constructor argument
+- `LearningEngine.ts` now builds one frozen runtime per `initialize()` call via the new `createLearningModuleRuntime()` and passes it to `new ModuleConstructor(moduleVariables, runtime)`; added a private `modulePanelSetterValues` map that records the latest value per setter name, invokes an already-registered setter immediately, and replays retained values on registration/re-registration so early publications and remounted panels are never lost; an invalid/missing setter name throws instead of failing silently; a fresh `initialize()` call resets setters, the replay token, and retained values so no route/module leaks state into the next
+- `Vocabulary`'s constructor second parameter was widened to `(() => number) | LearningModuleRuntime` (defaulting to `Math.random` when not a function) only so it still satisfies the shared constructor contract; Vocabulary does not consume the runtime in this feature, and its production behavior is unchanged
+- Added `tests/learning-engine/modulePanelSetterRuntime.test.ts` covering runtime shape, constructor injection, immediate/early/replay/replacement calls, per-name isolation, invalid setter names, and cross-instance isolation
+- Updated docs: `docs/architecture/learning-engine-and-module-boundaries.md`, `docs/modules/vocabulary.md`
+- Verification: focused Learning Engine test suite (54/54 passing), `tsc --noEmit` clean, `npm run lint` clean, `npm run build` clean, `git diff --check` clean
+- Verification and user approval passed
+
 ## 2026-07-31 16:12
 
 - Completed Phase 1 of generic module panel setter registration on `feature/vocabulary-status-panel-setters`, giving `VocabularyStatusPanel` three real React states/setters and a subject-neutral Learning Engine registration bridge, without wiring any production Vocabulary logic to call the setters yet

@@ -41,6 +41,15 @@ export type ModuleLayoutProps = {
 
 export type ModuleLayoutComponent = ComponentType<ModuleLayoutProps>;
 
+// Subject-neutral module runtime: the one generic capability the engine
+// passes into a module at construction time. `setterName`/`value` share the
+// same opaque key/value shape as `ModulePanelRegistration` above, so a module
+// can request one of its own previously registered panel setters without the
+// engine ever needing a subject-specific type for either side.
+export type LearningModuleRuntime = Readonly<{
+  runPanelSetter: (setterName: string, value: unknown) => void;
+}>;
+
 export type StartupButtonVariant = "primary" | "secondary" | "ghost";
 
 export type StartupButtonConfig = {
@@ -113,7 +122,8 @@ export type ActiveModule = {
 };
 
 export type LearningModuleConstructor = new (
-  moduleVariables: string[]
+  moduleVariables: string[],
+  runtime: LearningModuleRuntime
 ) => ActiveModule;
 
 export type GoogleTtsConfiguration = {
