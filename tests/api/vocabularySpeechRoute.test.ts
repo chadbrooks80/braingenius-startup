@@ -112,7 +112,7 @@ test("resolves an opaque spelling reference to audio without exposing the word",
     scope: "CALLER_DAY",
     windowStart: new Date("2026-07-29T00:00:00Z"),
     provider: vocabularyTts.provider === "google" ? "GOOGLE" : "LEMONFOX",
-    requestKind: "VOCABULARY_PROTECTED",
+    requestKind: "PROTECTED_TEXT",
   });
   assert.ok(dayBucket);
   assert.equal(dayBucket.acceptedRequests, 1);
@@ -183,7 +183,7 @@ test("a caller past the emergency burst boundary receives 429 with an integer Re
           scope: "CALLER_MINUTE",
           windowStart: new Date("2026-07-29T10:30:00Z"),
           provider: "GOOGLE",
-          requestKind: "VOCABULARY_PROTECTED",
+          requestKind: "PROTECTED_TEXT",
         },
         { utf8Bytes: 1, characters: 1, words: 1 }
       );

@@ -39,7 +39,7 @@ function jsonError(status: number, message: string): Response {
  * responses carry audio bytes or a generic error message, never the word.
  * Every request passes the same authenticated/entitled/suspension-checked
  * shared usage policy as public teaching speech, classified as
- * VOCABULARY_PROTECTED.
+ * PROTECTED_TEXT.
  */
 export async function handleVocabularySpeechRequest(
   request: Request,
@@ -82,7 +82,7 @@ export async function handleVocabularySpeechRequest(
         text: `Spell the word: ${attempt.canonicalSpelling}. ${attempt.speechDefinition}`,
         tts: vocabularyTts,
       },
-      "VOCABULARY_PROTECTED",
+      "PROTECTED_TEXT",
       authorization.access,
       { ...accessDeps, synthesize }
     );

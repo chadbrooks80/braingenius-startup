@@ -45,7 +45,7 @@ enum TtsUsageScope {
 
 enum TtsRequestKind {
   PUBLIC_TEXT
-  VOCABULARY_PROTECTED
+  PROTECTED_TEXT
 }
 
 enum TtsProvider {

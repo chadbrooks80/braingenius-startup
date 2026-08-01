@@ -18,7 +18,7 @@ export type FakeBucketRow = {
   scope: "CALLER_MINUTE" | "CALLER_DAY" | "ENTITLEMENT_DAY";
   windowStart: Date;
   provider: "GOOGLE" | "LEMONFOX";
-  requestKind: "PUBLIC_TEXT" | "VOCABULARY_PROTECTED";
+  requestKind: "PUBLIC_TEXT" | "PROTECTED_TEXT";
   acceptedRequests: number;
   acceptedInputBytes: number;
   acceptedInputCharacters: number;

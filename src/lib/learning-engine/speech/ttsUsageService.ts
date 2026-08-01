@@ -41,7 +41,7 @@ import {
 // never used for usage, alerts, suspension, concurrency, or enforcement.
 
 export type TtsUsageProviderName = "GOOGLE" | "LEMONFOX";
-export type TtsUsageRequestKind = "PUBLIC_TEXT" | "VOCABULARY_PROTECTED";
+export type TtsUsageRequestKind = "PUBLIC_TEXT" | "PROTECTED_TEXT";
 export type TtsUsageScopeName = "CALLER_MINUTE" | "CALLER_DAY" | "ENTITLEMENT_DAY";
 export type TtsUsageAlertKindName = "FIVE_HOUR_WARNING" | "TEN_HOUR_CUTOFF";
 export type TtsRejectionCategory = "burst" | "concurrency" | "extreme";

@@ -54,7 +54,7 @@ Cancellation, replacement, and route teardown increment the controller generatio
 
 Durable state lives in three Prisma models (`TtsUsageBucket`, `TtsUsageAlert`, `TtsRequestLease`) plus narrow `ttsSuspendedAt`/`ttsSuspensionReasonCode` fields on `User` — see [Database Schema](../reference/database-schema.md). `src/lib/learning-engine/speech/ttsUsagePolicy.ts` holds the fixed numeric policy and injectable-time UTC window math; `src/lib/learning-engine/speech/ttsUsageReport.ts` is a server-only (non-browser) authorized aggregation query for operator review; `src/lib/learning-engine/speech/ttsAccessSuspension.ts` is the narrow manual suspend/lift boundary.
 
-Both `/api/tts` (`handleTtsSynthesisRequest.ts`) and the Vocabulary speech handler classify their requests as `PUBLIC_TEXT` or `VOCABULARY_PROTECTED` respectively and share identical HTTP status/typed-denial translation (`ttsDenialResponse`, `paidTtsFailureResponse`).
+Both `/api/tts` (`handleTtsSynthesisRequest.ts`) and the Vocabulary speech handler classify their requests as `PUBLIC_TEXT` or `PROTECTED_TEXT` respectively and share identical HTTP status/typed-denial translation (`ttsDenialResponse`, `paidTtsFailureResponse`).
 
 ## Validation and providers
 

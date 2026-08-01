@@ -10,7 +10,7 @@
 | `SubscriptionTier` | `FREE_TRIAL`, `MONTHLY`, `LIFETIME`, `ADMIN`, `CANCELED` | Billing/access record |
 | `OnboardingStep` | `VERIFY_EMAIL`, `WELCOME_VIDEO`, `PROFILE`, `PLAN`, `CHILDREN`, `COMPLETE` | Account funnel |
 | `TtsUsageScope` | `CALLER_MINUTE`, `CALLER_DAY`, `ENTITLEMENT_DAY` | Paid TTS usage window |
-| `TtsRequestKind` | `PUBLIC_TEXT`, `VOCABULARY_PROTECTED` | Paid TTS request classification |
+| `TtsRequestKind` | `PUBLIC_TEXT`, `PROTECTED_TEXT` | Paid TTS request classification |
 | `TtsProvider` | `GOOGLE`, `LEMONFOX` | Paid TTS provider |
 | `TtsUsageAlertKind` | `FIVE_HOUR_WARNING`, `TEN_HOUR_CUTOFF` | Paid TTS abuse alert |
 

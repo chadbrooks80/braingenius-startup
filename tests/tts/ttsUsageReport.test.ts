@@ -58,7 +58,7 @@ test("the report aggregates provider and request-kind rows into caller and princ
       bucket({ provider: "GOOGLE", requestKind: "PUBLIC_TEXT", acceptedWords: 30_000 }),
       bucket({
         provider: "LEMONFOX",
-        requestKind: "VOCABULARY_PROTECTED",
+        requestKind: "PROTECTED_TEXT",
         acceptedWords: 15_000,
         rejectedBurst: 2,
       }),
@@ -216,7 +216,7 @@ test("the report exposes only authorized identifiers and numeric/temporal aggreg
         typeof value === "boolean" ||
         value instanceof Date ||
         (typeof value === "string" &&
-          /^(user-[a-z-]+|CALLER_DAY|ENTITLEMENT_DAY|GOOGLE|LEMONFOX|PUBLIC_TEXT|VOCABULARY_PROTECTED|FIVE_HOUR_WARNING|TEN_HOUR_CUTOFF)$/.test(
+          /^(user-[a-z-]+|CALLER_DAY|ENTITLEMENT_DAY|GOOGLE|LEMONFOX|PUBLIC_TEXT|PROTECTED_TEXT|FIVE_HOUR_WARNING|TEN_HOUR_CUTOFF)$/.test(
             value
           )),
       `unexpected report value: ${String(value)}`

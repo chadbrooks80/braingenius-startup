@@ -84,7 +84,7 @@ async function seedAcceptedWords(
   options: {
     access?: PaidTtsAccess;
     provider?: "GOOGLE" | "LEMONFOX";
-    requestKind?: "PUBLIC_TEXT" | "VOCABULARY_PROTECTED";
+    requestKind?: "PUBLIC_TEXT" | "PROTECTED_TEXT";
     now?: Date;
   } = {}
 ): Promise<string> {
@@ -227,14 +227,14 @@ test("provider and public/protected usage sum into the same caller-day word tota
   await seedAcceptedWords(store, 60_000, { provider: "GOOGLE", requestKind: "PUBLIC_TEXT" });
   await seedAcceptedWords(store, 30_000, {
     provider: "LEMONFOX",
-    requestKind: "VOCABULARY_PROTECTED",
+    requestKind: "PROTECTED_TEXT",
   });
 
   const rejected = await acquirePaidTtsAttempt(
     {
       access: selfAccess(),
       provider: "GOOGLE",
-      requestKind: "VOCABULARY_PROTECTED",
+      requestKind: "PROTECTED_TEXT",
       metrics: metricsOfWords(1),
     },
     acquireDeps(store)
@@ -1049,7 +1049,7 @@ test("a server-resolved protected text over 5,000 UTF-8 bytes fails as an intern
     () =>
       runMeteredTtsSynthesis(
         { text: "long ".repeat(1_500), tts: { provider: "lemonfox", voice: "sarah" } },
-        "VOCABULARY_PROTECTED",
+        "PROTECTED_TEXT",
         selfAccess(),
         {
           ...acquireDeps(store),
