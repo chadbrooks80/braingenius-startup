@@ -3,10 +3,6 @@ import {
   vocabularyContentCapabilityStore,
   type VocabularyContentCapabilityStore,
 } from "./VocabularyContentCapabilityStore";
-import {
-  getOrCreateVocabularyLearner,
-  getVocabularyLearnerId,
-} from "./vocabularyLearnerSession";
 
 function unavailableResponse(): Response {
   return Response.json(
@@ -54,13 +50,11 @@ export async function handleVocabularyContentRequest(
   }
 
   if (contentRequest.contentType === "manifest") {
-    const { learnerId, setCookie } = getOrCreateVocabularyLearner(request);
     let manifest;
     try {
       manifest = await capabilityStore.createManifest(
-        learnerId,
         userId,
-        contentRequest.wordListId
+        contentRequest.learningId
       );
     } catch (error) {
       console.error("[vocabulary-content] manifest creation unavailable", error);
@@ -70,23 +64,15 @@ export async function handleVocabularyContentRequest(
       return notFoundResponse();
     }
 
-    const headers = new Headers({ "Cache-Control": "no-store" });
-    if (setCookie) {
-      headers.set("Set-Cookie", setCookie);
-    }
-    return Response.json(manifest, { headers });
-  }
-
-  const learnerId = getVocabularyLearnerId(request);
-  if (!learnerId) {
-    return invalidCapabilityResponse();
+    return Response.json(manifest, {
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   if (contentRequest.contentType === "word-refill") {
     let outcome;
     try {
       outcome = await capabilityStore.refillNextWord(
-        learnerId,
         userId,
         contentRequest.lessonId
       );
@@ -106,7 +92,6 @@ export async function handleVocabularyContentRequest(
   let authorization;
   try {
     authorization = await capabilityStore.authorizeContent(
-      learnerId,
       userId,
       contentRequest.lessonId,
       contentRequest.capability,
@@ -126,7 +111,7 @@ export async function handleVocabularyContentRequest(
   const cachedContent = capabilityStore.getCachedContent(authorization);
   let built;
   if (cachedContent) {
-    built = { content: cachedContent, answerSnapshot: null };
+    built = { content: cachedContent };
   } else {
     try {
       built = await capabilityStore.buildContent(

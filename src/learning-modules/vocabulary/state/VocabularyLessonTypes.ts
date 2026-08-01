@@ -1,8 +1,8 @@
 import { WORD_SEARCH_CHECKPOINT_GROUP_SIZE } from "../data/vocabularyContentTypes";
 
 export const ACTIVE_POOL_SIZE = 5;
-export const DEFINITION_MASTERY_STREAK = 1;
-export const SPELLING_MASTERY_STREAK = 1;
+export const DEFINITION_MASTERY_STREAK = 3;
+export const SPELLING_MASTERY_STREAK = 3;
 export const DELAYED_REVIEW_ANSWER_COUNT = 30;
 export { WORD_SEARCH_CHECKPOINT_GROUP_SIZE };
 

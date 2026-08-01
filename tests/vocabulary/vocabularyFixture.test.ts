@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { getVocabularyContent } from "../../src/learning-modules/vocabulary/server/getVocabularyContent";
@@ -15,6 +14,7 @@ import {
   TEST_OWNER_USER_ID,
   TEST_WORD_SEEDS,
 } from "./fakeVocabularyListStore";
+import { createDefaultFakeVocabularyLearningSource } from "./testVocabularyApi";
 
 const LIST = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, TEST_WORD_SEEDS);
 const CONTEXT = createFakeContentBuildContext(LIST.words);
@@ -37,18 +37,22 @@ test("the seed word set contains 20 complete, unique words with distinct content
 test("browser-visible manifest and definition-practice projections cannot mechanically reconstruct answers", async () => {
   const store = new VocabularyContentCapabilityStore({
     listSource: createDefaultFakeVocabularyListSource(),
+    learningSource: createDefaultFakeVocabularyLearningSource(),
   });
   const manifest = await store.createManifest(
-    "00000000-0000-4000-8000-000000000001",
     TEST_OWNER_USER_ID,
-    TEST_LIST_ID
+    "test-learning-chads-starter-words"
   );
   assert.ok(manifest);
   assert.deepEqual(Object.keys(manifest).sort(), [
+    "checkpointEligibleWordIdOrder",
     "contentType",
+    "hydratedProgressByWordId",
     "lessonId",
     "nextCapability",
+    "progress",
     "randomSeed",
+    "servedCheckpointGroupCount",
     "totalWordCount",
     "words",
   ]);
@@ -57,32 +61,30 @@ test("browser-visible manifest and definition-practice projections cannot mechan
   const internalIds = new Set(LIST.words.map((word) => word.id));
 
   for (const [wordIndex, canonicalWord] of LIST.words.entries()) {
-    const attemptId = randomUUID();
     const serverPositions = new Set<number>();
     let lastQuestion: VocabularyDefinitionPracticeContent | null = null;
     let correctChoiceId = "";
 
     for (let presentation = 1; presentation <= 24; presentation += 1) {
+      let capturedCorrectChoiceId = "";
+      const context = createFakeContentBuildContext(LIST.words, (_attemptId, choiceId) => {
+        capturedCorrectChoiceId = choiceId;
+      });
       const built = await getVocabularyContent(
         {
           capability: "cap",
           lessonId: "lesson",
           contentType: "definition-practice",
-          wordListId: TEST_LIST_ID,
+          listId: TEST_LIST_ID,
           wordId: canonicalWord.id,
           nextCapability: "next",
-          attemptId,
         },
-        CONTEXT,
+        context,
         createSeededRandomInt(wordIndex * 101 + presentation)
       );
-      assert.ok(
-        built &&
-          built.content.contentType === "definition-practice" &&
-          built.answerSnapshot?.answerType === "definition"
-      );
+      assert.ok(built && built.content.contentType === "definition-practice");
       lastQuestion = built.content;
-      correctChoiceId = built.answerSnapshot.correctChoiceId;
+      correctChoiceId = capturedCorrectChoiceId;
       serverPositions.add(
         built.content.choices.findIndex((choice) => choice.id === correctChoiceId)
       );
@@ -106,7 +108,9 @@ test("browser-visible manifest and definition-practice projections cannot mechan
     assert.ok(!("correctChoiceId" in question));
     assert.equal(new Set(question.choices.map((choice) => choice.id)).size, 4);
     assert.ok(
-      question.choices.every((choice) => /^choice-[0-9a-f]{24}$/.test(choice.id))
+      question.choices.every((choice) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(choice.id)
+      )
     );
     assert.ok(question.choices.every((choice) => !internalIds.has(choice.id)));
 
@@ -153,16 +157,14 @@ test("browser-visible manifest and definition-practice projections cannot mechan
 
 test("cumulative browser-visible data cannot reconstruct the spelling answer", async () => {
   for (const word of LIST.words) {
-    const attemptId = randomUUID();
     const built = await getVocabularyContent(
       {
         capability: "cap",
         lessonId: "lesson",
         contentType: "spelling-practice",
-        wordListId: TEST_LIST_ID,
+        listId: TEST_LIST_ID,
         wordId: word.id,
         nextCapability: "next",
-        attemptId,
       },
       CONTEXT
     );

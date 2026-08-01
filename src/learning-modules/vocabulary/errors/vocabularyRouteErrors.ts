@@ -1,17 +1,17 @@
 import { LearningRouteError } from "@/lib/learning-engine/errors/LearningRouteError";
 
 const VOCABULARY_ROUTE_ERROR_CODES = {
-  LIST_ID_MISSING: "VOCABULARY_LIST_ID_MISSING",
-  LIST_NOT_FOUND: "VOCABULARY_LIST_NOT_FOUND",
+  LEARNING_ID_MISSING: "VOCABULARY_LEARNING_ID_MISSING",
+  LEARNING_NOT_FOUND: "VOCABULARY_LEARNING_NOT_FOUND",
   ROUTE_INVALID: "VOCABULARY_ROUTE_INVALID",
 } as const;
 
-export function createVocabularyListIdMissingError(): LearningRouteError {
+export function createVocabularyLearningIdMissingError(): LearningRouteError {
   return new LearningRouteError({
     source: "module",
     kind: "MODULE_RESOURCE_MISSING",
-    code: VOCABULARY_ROUTE_ERROR_CODES.LIST_ID_MISSING,
-    technicalMessage: "Vocabulary route omitted the required word-list ID.",
+    code: VOCABULARY_ROUTE_ERROR_CODES.LEARNING_ID_MISSING,
+    technicalMessage: "Vocabulary route omitted the required learning ID.",
     presentation: {
       title: "Vocabulary List Not Found",
       message: "This lesson link does not include a vocabulary list.",
@@ -19,14 +19,14 @@ export function createVocabularyListIdMissingError(): LearningRouteError {
   });
 }
 
-export function createVocabularyListNotFoundError(
-  wordListId: string
+export function createVocabularyLearningNotFoundError(
+  learningId: string
 ): LearningRouteError {
   return new LearningRouteError({
     source: "module",
     kind: "MODULE_RESOURCE_NOT_FOUND",
-    code: VOCABULARY_ROUTE_ERROR_CODES.LIST_NOT_FOUND,
-    technicalMessage: `Vocabulary word list not found: ${wordListId}`,
+    code: VOCABULARY_ROUTE_ERROR_CODES.LEARNING_NOT_FOUND,
+    technicalMessage: `Vocabulary learning not found or not authorized: ${learningId}`,
     presentation: {
       title: "Vocabulary List Not Found",
       message: "We could not find the vocabulary list requested by this link.",

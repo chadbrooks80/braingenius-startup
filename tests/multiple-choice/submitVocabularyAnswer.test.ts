@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { submitVocabularyAnswer } from "../../src/learning-modules/vocabulary/data/submitVocabularyAnswer";
+import type { VocabularyProgressSnapshot } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
 
 const DEFINITION_PAYLOAD = {
   answerType: "definition" as const,
@@ -12,22 +13,34 @@ const SPELLING_PAYLOAD = {
   attemptId: "attempt-2",
   answer: "brilliant",
 };
+const FAKE_PROGRESS: VocabularyProgressSnapshot = {
+  learningStatus: "ACTIVE",
+  gradedAnswerCount: 1,
+  correctAnswerCount: 1,
+  incorrectAnswerCount: 0,
+  stateVersion: 1,
+  panel: { wordList: [], spellingWords: [], masteredWords: [] },
+};
 
 test("returns validated definition and spelling results", async () => {
   assert.deepEqual(
     await submitVocabularyAnswer(DEFINITION_PAYLOAD, {
       fetchImpl: async () =>
-        Response.json({ answerType: "definition", correctChoiceId: "b" }),
+        Response.json({
+          answerType: "definition",
+          correctChoiceId: "b",
+          progress: FAKE_PROGRESS,
+        }),
     }),
-    { answerType: "definition", correctChoiceId: "b" }
+    { answerType: "definition", correctChoiceId: "b", progress: FAKE_PROGRESS }
   );
 
   assert.deepEqual(
     await submitVocabularyAnswer(SPELLING_PAYLOAD, {
       fetchImpl: async () =>
-        Response.json({ answerType: "spelling", correct: true }),
+        Response.json({ answerType: "spelling", correct: true, progress: FAKE_PROGRESS }),
     }),
-    { answerType: "spelling", correct: true }
+    { answerType: "spelling", correct: true, progress: FAKE_PROGRESS }
   );
 
   assert.deepEqual(
@@ -37,12 +50,14 @@ test("returns validated definition and spelling results", async () => {
           answerType: "spelling",
           correct: false,
           correctAnswer: "brilliant",
+          progress: FAKE_PROGRESS,
         }),
     }),
     {
       answerType: "spelling",
       correct: false,
       correctAnswer: "brilliant",
+      progress: FAKE_PROGRESS,
     }
   );
 });

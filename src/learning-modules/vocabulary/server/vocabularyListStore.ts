@@ -55,6 +55,10 @@ export type VocabularyListStoreDb = {
     excludeWordIds: readonly string[],
     take: number
   ): Promise<VocabularyDistractorRow[]>;
+  findListWordsByIds(
+    listId: string,
+    listWordIds: readonly string[]
+  ): Promise<VocabularyListWordRow[]>;
 };
 
 const prismaVocabularyListStoreDb: VocabularyListStoreDb = {
@@ -100,6 +104,15 @@ const prismaVocabularyListStoreDb: VocabularyListStoreDb = {
       (row): row is VocabularyDistractorRow =>
         typeof row.definition === "string" && row.definition.trim() !== ""
     );
+  },
+  findListWordsByIds(listId, listWordIds) {
+    if (listWordIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    return prisma.modVocabListWord.findMany({
+      where: { listId, id: { in: [...listWordIds] } },
+      select: LIST_WORD_SELECT,
+    });
   },
 };
 
@@ -160,4 +173,13 @@ export async function findVocabularyDistractorDefinitions(
   }
   const db = deps.db ?? prismaVocabularyListStoreDb;
   return db.findDistractorDefinitions(listId, excludeWordIds, take);
+}
+
+export async function findVocabularyListWordsByIds(
+  listId: string,
+  listWordIds: readonly string[],
+  deps: VocabularyListStoreDeps = {}
+): Promise<VocabularyListWordRow[]> {
+  const db = deps.db ?? prismaVocabularyListStoreDb;
+  return db.findListWordsByIds(listId, listWordIds);
 }

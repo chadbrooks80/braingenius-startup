@@ -1,6 +1,6 @@
 import type { VocabularyContentRequest } from "../data/vocabularyContentTypes";
 
-const MANIFEST_FIELDS = ["contentType", "wordListId"] as const;
+const MANIFEST_FIELDS = ["contentType", "learningId"] as const;
 const REFILL_FIELDS = ["contentType", "lessonId"] as const;
 const SCREEN_CONTENT_FIELDS = [
   "contentType",
@@ -24,9 +24,9 @@ export function parseVocabularyContentRequest(
   if (
     raw.contentType === "manifest" &&
     hasExactFields(raw, MANIFEST_FIELDS) &&
-    isNonBlankString(raw.wordListId)
+    isNonBlankString(raw.learningId)
   ) {
-    return { contentType: "manifest", wordListId: raw.wordListId };
+    return { contentType: "manifest", learningId: raw.learningId };
   }
 
   if (

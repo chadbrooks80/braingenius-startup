@@ -8,7 +8,6 @@ import {
   TtsUpstreamError,
 } from "../../src/lib/learning-engine/errors/TtsSynthesisError";
 import type { TtsSynthesisRequest } from "../../src/lib/learning-engine/speech/validation/parseTtsSynthesisRequest";
-import { getVocabularyAnswerForAttempt } from "../../src/learning-modules/vocabulary/data/getCorrectAnswer";
 import type {
   VocabularyContentRequest,
   VocabularyContentResponseFor,
@@ -17,11 +16,13 @@ import { vocabularyTts } from "../../src/learning-modules/vocabulary/data/vocabu
 import { handleVocabularySpeechRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularySpeechRequest";
 import { handleVocabularyContentRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularyContentRequest";
 import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
-import { VOCABULARY_LEARNER_COOKIE } from "../../src/learning-modules/vocabulary/server/vocabularyLearnerSession";
-import { getServerCorrectChoiceId } from "../vocabulary/testVocabularyApi";
+import {
+  getServerCorrectChoiceId,
+  TEST_LEARNING_ID,
+  createDefaultFakeVocabularyLearningSource,
+} from "../vocabulary/testVocabularyApi";
 import {
   createDefaultFakeVocabularyListSource,
-  TEST_LIST_ID,
   TEST_OWNER_USER_ID,
   TEST_WORD_SEEDS,
 } from "../vocabulary/fakeVocabularyListStore";
@@ -69,16 +70,13 @@ test("resolves an opaque spelling reference to audio without exposing the word",
   const { accessDeps, usageStore } = entitledAccess();
 
   const response = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      authorization.learnerId
-    ),
+    speechRequest({ reference: authorization.attemptId }),
     TEST_OWNER_USER_ID,
     async (request) => {
       synthesized.push(request);
       return { bytes: FAKE_AUDIO, contentType: "audio/mpeg" };
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
 
@@ -134,15 +132,12 @@ test("an anonymous protected speech request returns 401 without provider use or 
   });
 
   const response = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      authorization.learnerId
-    ),
+    speechRequest({ reference: authorization.attemptId }),
     TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for an anonymous caller");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
 
@@ -162,15 +157,12 @@ test("a non-entitled caller receives a generic 403 without provider use", async 
   });
 
   const response = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      authorization.learnerId
-    ),
+    speechRequest({ reference: authorization.attemptId }),
     TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run for a non-entitled caller");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
 
@@ -199,15 +191,12 @@ test("a caller past the emergency burst boundary receives 429 with an integer Re
   });
 
   const response = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      authorization.learnerId
-    ),
+    speechRequest({ reference: authorization.attemptId }),
     TEST_OWNER_USER_ID,
     async () => {
       throw new Error("synthesis must not run past the burst boundary");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
 
@@ -235,12 +224,12 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
 
   for (const body of rejectedBodies) {
     const response = await handleVocabularySpeechRequest(
-      speechRequest(body, authorization.learnerId),
+      speechRequest(body),
       TEST_OWNER_USER_ID,
       async () => {
         throw new Error("synthesis must not run for a rejected reference");
       },
-      authorization.store,
+      authorization.findAttempt,
       accessDeps
     );
     assert.equal(response.status, 400, `expected 400 for ${JSON.stringify(body)}`);
@@ -250,33 +239,16 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
     assertNoFixtureWord(JSON.stringify(errorBody));
   }
 
-  const otherLearner = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      "00000000-0000-4000-8000-000000000099"
-    ),
-    TEST_OWNER_USER_ID,
-    async () => {
-      throw new Error("synthesis must not run for another learner");
-    },
-    authorization.store,
-    accessDeps
-  );
-  assert.equal(otherLearner.status, 400);
-
-  const otherOwner = await handleVocabularySpeechRequest(
-    speechRequest(
-      { reference: authorization.attemptId },
-      authorization.learnerId
-    ),
+  const otherUser = await handleVocabularySpeechRequest(
+    speechRequest({ reference: authorization.attemptId }),
     "some-other-user",
     async () => {
       throw new Error("synthesis must not run for a non-owning user");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
-  assert.equal(otherOwner.status, 400);
+  assert.equal(otherUser.status, 400);
 
   const malformed = await handleVocabularySpeechRequest(
     new Request("http://local.test/api/learning/vocabulary/speech", {
@@ -288,7 +260,7 @@ test("rejects invalid, mismatched, and unsupported speech references with one ge
     async () => {
       throw new Error("synthesis must not run for malformed JSON");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
   assert.equal(malformed.status, 400);
@@ -304,12 +276,12 @@ test("provider failures return the generic learner-safe TTS errors without the w
   const { accessDeps, usageStore } = entitledAccess();
 
   const upstream = await handleVocabularySpeechRequest(
-    speechRequest({ reference }, authorization.learnerId),
+    speechRequest({ reference }),
     TEST_OWNER_USER_ID,
     async () => {
       throw new TtsUpstreamError("google", "provider raw failure detail");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
   assert.equal(upstream.status, 502);
@@ -323,12 +295,12 @@ test("provider failures return the generic learner-safe TTS errors without the w
   assert.ok(buckets.some((row) => row.failedRequests === 1));
 
   const configuration = await handleVocabularySpeechRequest(
-    speechRequest({ reference }, authorization.learnerId),
+    speechRequest({ reference }),
     TEST_OWNER_USER_ID,
     async () => {
       throw new TtsConfigurationError("google", "missing credential detail");
     },
-    authorization.store,
+    authorization.findAttempt,
     accessDeps
   );
   assert.equal(configuration.status, 500);
@@ -340,39 +312,35 @@ test("provider failures return the generic learner-safe TTS errors without the w
   assertNoFixtureWord(JSON.stringify(configurationBody));
 });
 
-function speechRequest(body: unknown, learnerId?: string): Request {
-  const headers = new Headers({ "Content-Type": "application/json" });
-  if (learnerId) {
-    headers.set("Cookie", `${VOCABULARY_LEARNER_COOKIE}=${learnerId}`);
-  }
+function speechRequest(body: unknown): Request {
   return new Request("http://local.test/api/learning/vocabulary/speech", {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
 
 async function createSpellingAuthorization(): Promise<{
-  store: VocabularyContentCapabilityStore;
-  learnerId: string;
+  findAttempt: (
+    userId: string,
+    reference: string
+  ) => Promise<{ canonicalSpelling: string; speechDefinition: string } | null>;
   attemptId: string;
   canonicalSpelling: string;
   speechDefinition: string;
 }> {
+  const learningSource = createDefaultFakeVocabularyLearningSource();
   const store = new VocabularyContentCapabilityStore({
     seed: () => 0,
     listSource: createDefaultFakeVocabularyListSource(),
+    learningSource,
   });
-  const learnerId = "00000000-0000-4000-8000-000000000001";
   const api: VocabularyModuleApi = {
     async loadContent<Request extends VocabularyContentRequest>(request: Request) {
       const response = await handleVocabularyContentRequest(
         new Request("http://local.test/api/learning/vocabulary/content", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Cookie: `${VOCABULARY_LEARNER_COOKIE}=${learnerId}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(request),
         }),
         TEST_OWNER_USER_ID,
@@ -382,17 +350,12 @@ async function createSpellingAuthorization(): Promise<{
       return (await response.json()) as VocabularyContentResponseFor<Request>;
     },
     async submitAnswer(submission) {
-      const result = await store.resolveAnswer(
-        learnerId,
-        TEST_OWNER_USER_ID,
-        submission,
-        getVocabularyAnswerForAttempt
-      );
+      const result = await store.resolveAnswer(TEST_OWNER_USER_ID, submission);
       assert.ok(result);
       return result;
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let guard = 0; guard < 200; guard += 1) {
@@ -400,15 +363,13 @@ async function createSpellingAuthorization(): Promise<{
     assert.ok(screen);
     if (screen.windowName === "spelling") {
       const attemptId = String(screen.props.attemptId);
-      const attempt = await store.getSpellingAttempt(
-        learnerId,
+      const attempt = await learningSource.findSpellingAttemptForSpeech(
         TEST_OWNER_USER_ID,
         attemptId
       );
       assert.ok(attempt?.canonicalSpelling && attempt.speechDefinition);
       return {
-        store,
-        learnerId,
+        findAttempt: learningSource.findSpellingAttemptForSpeech,
         attemptId,
         canonicalSpelling: attempt.canonicalSpelling,
         speechDefinition: attempt.speechDefinition,

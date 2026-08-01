@@ -1,3 +1,5 @@
+import type { VocabularyProgressSnapshot } from "./data/vocabularyContentTypes";
+
 export type VocabularyDefinitionAnswerSubmission = {
   answerType: "definition";
   attemptId: string;
@@ -34,3 +36,11 @@ export type VocabularyAnswerResult =
   | VocabularyDefinitionAnswerResult
   | VocabularyCorrectSpellingAnswerResult
   | VocabularyIncorrectSpellingAnswerResult;
+
+// The durable HTTP response contract: the existing grade shape plus the
+// authoritative progress/panel snapshot. Kept separate from
+// `VocabularyAnswerResult` so pure grading/mirroring code (which never sees
+// the database projection) keeps its original, narrower contract.
+export type VocabularyAnswerApiResult = VocabularyAnswerResult & {
+  progress: VocabularyProgressSnapshot;
+};

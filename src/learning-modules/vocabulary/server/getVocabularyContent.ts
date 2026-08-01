@@ -1,7 +1,6 @@
 import "server-only";
 
 import { randomInt as secureRandomInt } from "node:crypto";
-import { getVocabularyPublicChoiceId } from "../data/getVocabularyPublicChoiceId";
 import type {
   VocabularyChoice,
   VocabularyContentResponse,
@@ -34,29 +33,20 @@ export type VocabularyDistractorCandidate = {
   definition: string;
 };
 
-export type VocabularyAnswerSnapshot =
-  | {
-      answerType: "definition";
-      correctChoiceId: string;
-      validChoiceIds: string[];
-    }
-  | {
-      answerType: "spelling";
-      canonicalSpelling: string;
-      speechDefinition: string;
-    };
-
 export type VocabularyContentBuildResult = {
   content: VocabularyContentResponse;
-  answerSnapshot: VocabularyAnswerSnapshot | null;
 };
 
 /**
- * Everything the content builder needs to resolve canonical fields, supplied
- * by the capability store from its own bounded per-lesson word cache so this
- * module never queries Prisma directly. `findMoreDistractors` is the only
- * operation that may reach the database, and only when the currently active
- * pool cannot supply three eligible distractors on its own.
+ * Everything the content builder needs to resolve canonical fields and
+ * create the durable attempt(s) required before a graded screen is
+ * returned, supplied by the capability store from its own bounded per-lesson
+ * word cache so this module never queries Prisma directly. `findMoreDistractors`
+ * is the only content-lookup operation that may reach the database, and only
+ * when the currently active pool cannot supply three eligible distractors on
+ * its own; `createDefinitionAttempt`/`createSpellingAttempt` durably persist
+ * the offered question via `vocabularyLearningStore` and return the real
+ * database-row IDs used as the public opaque attempt/choice identity.
  */
 export type VocabularyContentBuildContext = {
   getWord(wordId: string): VocabularyWordRecord | undefined;
@@ -67,6 +57,21 @@ export type VocabularyContentBuildContext = {
     excludeWordIds: readonly string[],
     count: number
   ): Promise<VocabularyDistractorCandidate[]>;
+  createDefinitionAttempt(
+    listWordId: string,
+    review: boolean,
+    choices: ReadonlyArray<{
+      sourceListWordId: string | null;
+      position: number;
+      textSnapshot: string;
+      isCorrect: boolean;
+    }>
+  ): Promise<{ attemptId: string; choiceIds: string[] }>;
+  createSpellingAttempt(
+    listWordId: string,
+    review: boolean,
+    canonicalSpelling: string
+  ): Promise<{ attemptId: string }>;
 };
 
 export async function getVocabularyContent(
@@ -91,7 +96,7 @@ export async function getVocabularyContent(
     case "definition-practice":
       return buildDefinitionPracticeContent(request, word, context, randomInt);
     case "spelling-practice":
-      return buildSpellingPracticeContent(request, word);
+      return buildSpellingPracticeContent(request, word, context);
     case "answer-recap":
       return buildAnswerRecapContent(request, word);
   }
@@ -113,7 +118,6 @@ function buildDefinitionDisplayContent(
       definition: word.definition,
       exampleSentences,
     },
-    answerSnapshot: null,
   };
 }
 
@@ -131,7 +135,6 @@ function buildDefinitionFunFactContent(
       word: word.word,
       interestingFact: word.interestingFact,
     },
-    answerSnapshot: null,
   };
 }
 
@@ -141,8 +144,7 @@ async function buildDefinitionPracticeContent(
   context: VocabularyContentBuildContext,
   randomInt: (maxExclusive: number) => number
 ): Promise<VocabularyContentBuildResult | null> {
-  const attemptId = request.attemptId;
-  if (!attemptId || !word.definition) {
+  if (!word.definition) {
     return null;
   }
 
@@ -186,8 +188,23 @@ async function buildDefinitionPracticeContent(
     ],
     randomInt
   );
-  const choices = internalChoices.map((choice) => ({
-    id: getVocabularyPublicChoiceId(attemptId, choice.id),
+
+  const { attemptId, choiceIds } = await context.createDefinitionAttempt(
+    word.id,
+    request.review ?? false,
+    internalChoices.map((choice, index) => ({
+      sourceListWordId: choice.id,
+      position: index,
+      textSnapshot: choice.text,
+      isCorrect: choice.id === word.id,
+    }))
+  );
+  if (choiceIds.length !== internalChoices.length) {
+    return null;
+  }
+
+  const choices = internalChoices.map((choice, index) => ({
+    id: choiceIds[index],
     text: choice.text,
   })) as [VocabularyChoice, VocabularyChoice, VocabularyChoice, VocabularyChoice];
 
@@ -199,33 +216,28 @@ async function buildDefinitionPracticeContent(
       question: word.word,
       choices,
     },
-    answerSnapshot: {
-      answerType: "definition",
-      correctChoiceId: getVocabularyPublicChoiceId(attemptId, word.id),
-      validChoiceIds: choices.map((choice) => choice.id),
-    },
   };
 }
 
-function buildSpellingPracticeContent(
+async function buildSpellingPracticeContent(
   request: AuthorizedVocabularyContentRequest,
-  word: VocabularyWordRecord
-): VocabularyContentBuildResult | null {
-  const attemptId = request.attemptId;
-  if (!attemptId || !word.spellingDefinition || !word.definition) {
+  word: VocabularyWordRecord,
+  context: VocabularyContentBuildContext
+): Promise<VocabularyContentBuildResult | null> {
+  if (!word.spellingDefinition || !word.definition) {
     return null;
   }
+  const { attemptId } = await context.createSpellingAttempt(
+    word.id,
+    request.review ?? false,
+    word.word
+  );
   return {
     content: {
       contentType: "spelling-practice",
       nextCapability: request.nextCapability,
       attemptId,
       definition: word.spellingDefinition,
-    },
-    answerSnapshot: {
-      answerType: "spelling",
-      canonicalSpelling: word.word,
-      speechDefinition: word.definition,
     },
   };
 }
@@ -252,7 +264,6 @@ function buildAnswerRecapContent(
       definition: word.definition,
       exampleSentence: exampleSentences[request.exampleIndex],
     },
-    answerSnapshot: null,
   };
 }
 
@@ -280,7 +291,6 @@ function buildWordSearchCheckpointContent(
       nextCapability: request.nextCapability,
       words,
     },
-    answerSnapshot: null,
   };
 }
 

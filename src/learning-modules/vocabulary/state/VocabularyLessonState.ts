@@ -48,6 +48,19 @@ type IntroductionPhase = {
   stage: "definition-display" | "definition-fun-fact";
 };
 
+// Durable-resume seed data, keyed by lesson-scoped word IDs (never canonical
+// list-word IDs). The caller resolves the canonical-to-lesson-word-ID
+// mapping; this class stays unaware of canonical identity.
+export type VocabularyLessonHydration = {
+  progressByWordId: ReadonlyMap<string, VocabularyWordProgress>;
+  gradedAnswerCount: number;
+  correctCount: number;
+  incorrectCount: number;
+  // Lesson word IDs already fully first-mastered, in first-mastery order.
+  checkpointEligibleOrder: readonly string[];
+  servedCheckpointGroupCount: number;
+};
+
 export class VocabularyLessonState {
   private words: readonly VocabularyLessonWord[];
   private readonly totalWordCount: number;
@@ -76,14 +89,45 @@ export class VocabularyLessonState {
   constructor(
     words: readonly VocabularyLessonWord[],
     totalWordCount: number,
-    random: () => number = Math.random
+    random: () => number = Math.random,
+    hydration?: VocabularyLessonHydration
   ) {
     this.words = words;
     this.totalWordCount = totalWordCount;
     this.random = random;
     this.progressByWordId = new Map(
-      words.map((word) => [word.id, createInitialVocabularyWordProgress()])
+      words.map((word) => [
+        word.id,
+        hydration?.progressByWordId.get(word.id) ??
+          createInitialVocabularyWordProgress(),
+      ])
     );
+
+    if (hydration) {
+      this.gradedAnswerCount = hydration.gradedAnswerCount;
+      this.correctCount = hydration.correctCount;
+      this.incorrectCount = hydration.incorrectCount;
+      this.servedCheckpointGroupCount = hydration.servedCheckpointGroupCount;
+      for (const wordId of hydration.checkpointEligibleOrder) {
+        if (!this.progressByWordId.has(wordId)) {
+          continue;
+        }
+        this.checkpointEligibleWordIds.add(wordId);
+        this.checkpointEligibleOrder.push(wordId);
+      }
+
+      const completedGroups = Math.floor(
+        this.checkpointEligibleOrder.length / WORD_SEARCH_CHECKPOINT_GROUP_SIZE
+      );
+      if (completedGroups > this.servedCheckpointGroupCount) {
+        const start =
+          this.servedCheckpointGroupCount * WORD_SEARCH_CHECKPOINT_GROUP_SIZE;
+        this.pendingCheckpointWordIds = this.checkpointEligibleOrder.slice(
+          start,
+          start + WORD_SEARCH_CHECKPOINT_GROUP_SIZE
+        );
+      }
+    }
   }
 
   /**

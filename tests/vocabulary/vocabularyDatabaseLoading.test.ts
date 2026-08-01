@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  VocabularyContentCapabilityStore,
-  type VocabularyListSource,
-} from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
+import { VocabularyContentCapabilityStore } from "../../src/learning-modules/vocabulary/server/VocabularyContentCapabilityStore";
 import { ACTIVE_POOL_SIZE } from "../../src/learning-modules/vocabulary/state/VocabularyLessonTypes";
 import { handleVocabularyContentRequest } from "../../src/learning-modules/vocabulary/server/handleVocabularyContentRequest";
 import {
@@ -12,10 +9,12 @@ import {
   OTHER_USER_ID,
   TEST_LIST_ID,
   TEST_OWNER_USER_ID,
+  type FakeVocabularyListSource,
   type FakeVocabularyWordSeed,
 } from "./fakeVocabularyListStore";
+import { createFakeVocabularyLearningSource } from "./fakeVocabularyLearningStore";
 
-const LEARNER_ID = "00000000-0000-4000-8000-000000000010";
+const TEST_LEARNING_ID = "00000000-0000-4000-8000-000000000010";
 
 // Synthetic, uniquely defined word seeds -- used instead of the fixed
 // 20-word TEST_WORD_SEEDS set whenever a test needs an arbitrary count.
@@ -34,17 +33,16 @@ function generateWordSeeds(count: number): FakeVocabularyWordSeed[] {
   });
 }
 
-function spyListSource(source: VocabularyListSource): VocabularyListSource & {
-  calls: { findFirst: number[]; findNext: number[] };
+function spyListSource(source: FakeVocabularyListSource): FakeVocabularyListSource & {
+  calls: { findByIds: number[]; findNext: number[] };
 } {
-  const calls = { findFirst: [] as number[], findNext: [] as number[] };
+  const calls = { findByIds: [] as number[], findNext: [] as number[] };
   return {
     calls,
-    isOwned: (userId, listId) => source.isOwned(userId, listId),
-    countWords: (listId) => source.countWords(listId),
-    findFirst: (listId, take) => {
-      calls.findFirst.push(take);
-      return source.findFirst(listId, take);
+    failNext: (operation) => source.failNext(operation),
+    findByIds: (listId, ids) => {
+      calls.findByIds.push(ids.length);
+      return source.findByIds(listId, ids);
     },
     findNext: (listId, afterPosition) => {
       calls.findNext.push(afterPosition);
@@ -56,166 +54,186 @@ function spyListSource(source: VocabularyListSource): VocabularyListSource & {
 }
 
 function createStoreForSeeds(
-  seeds: FakeVocabularyWordSeed[]
+  seeds: FakeVocabularyWordSeed[],
+  learningId: string = TEST_LEARNING_ID,
+  learnerUserId: string = TEST_OWNER_USER_ID
 ): { store: VocabularyContentCapabilityStore; spy: ReturnType<typeof spyListSource> } {
   const list = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, seeds);
   const spy = spyListSource(createFakeVocabularyListSource([list]));
-  const store = new VocabularyContentCapabilityStore({ listSource: spy, seed: () => 0 });
+  const learningSource = createFakeVocabularyLearningSource(
+    [{ learningId, listId: TEST_LIST_ID, learnerUserId }],
+    list.words.map((word) => ({ listId: TEST_LIST_ID, id: word.id, position: word.position, word: word.word }))
+  );
+  const store = new VocabularyContentCapabilityStore({
+    listSource: spy,
+    learningSource,
+    seed: () => 0,
+  });
   return { store, spy };
 }
 
 test("initial load retrieves at most five complete words and reports the authoritative total for lists of every size", async () => {
-  for (const count of [0, 1, 4, 5, 8, 300]) {
+  for (const count of [1, 4, 5, 8, 300]) {
     const { store, spy } = createStoreForSeeds(generateWordSeeds(count));
-    const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
-
-    if (count === 0) {
-      assert.equal(manifest, null, "a zero-word list must not create a false lesson");
-      continue;
-    }
+    const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
 
     assert.ok(manifest);
     assert.equal(manifest.totalWordCount, count);
     assert.equal(manifest.words.length, Math.min(count, ACTIVE_POOL_SIZE));
-    assert.deepEqual(spy.calls.findFirst, [ACTIVE_POOL_SIZE]);
+    assert.deepEqual(spy.calls.findByIds, [Math.min(count, ACTIVE_POOL_SIZE)]);
     assert.equal(spy.calls.findNext.length, 0, "no refill query before any mastery");
   }
 });
 
+test("a zero-word list creates no false lesson", async () => {
+  const { store } = createStoreForSeeds([]);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
+  assert.equal(manifest, null, "a zero-word list must not create a false lesson");
+});
+
 test("the sixth word is never requested while all five active slots remain occupied", async () => {
   const { store, spy } = createStoreForSeeds(generateWordSeeds(20));
-  await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.equal(spy.calls.findNext.length, 0);
 });
 
-test("a database failure during manifest creation is distinguished from a missing list", async () => {
+test("a database failure during manifest creation is distinguished from a missing learning", async () => {
   const list = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, generateWordSeeds(8));
   const source = createFakeVocabularyListSource([list]);
+  const learningSource = createFakeVocabularyLearningSource(
+    [{ learningId: TEST_LEARNING_ID, listId: TEST_LIST_ID, learnerUserId: TEST_OWNER_USER_ID }],
+    list.words.map((word) => ({ listId: TEST_LIST_ID, id: word.id, position: word.position, word: word.word }))
+  );
 
   const notFoundResponse = await handleVocabularyContentRequest(
-    jsonRequest({ contentType: "manifest", wordListId: "missing-list" }),
+    jsonRequest({ contentType: "manifest", learningId: "missing-learning" }),
     TEST_OWNER_USER_ID,
-    new VocabularyContentCapabilityStore({ listSource: source })
+    new VocabularyContentCapabilityStore({ listSource: source, learningSource })
   );
   assert.equal(notFoundResponse.status, 404);
 
-  source.failNext("countWords");
+  const failingLearningSource = {
+    ...learningSource,
+    initialize: (): Promise<never> => {
+      throw new Error("simulated initialize failure");
+    },
+  };
   const failureResponse = await handleVocabularyContentRequest(
-    jsonRequest({ contentType: "manifest", wordListId: TEST_LIST_ID }),
+    jsonRequest({ contentType: "manifest", learningId: TEST_LEARNING_ID }),
     TEST_OWNER_USER_ID,
-    new VocabularyContentCapabilityStore({ listSource: source })
+    new VocabularyContentCapabilityStore({ listSource: source, learningSource: failingLearningSource })
   );
   assert.equal(failureResponse.status, 503);
   const body = (await failureResponse.json()) as { error: string };
   assert.doesNotMatch(body.error.toLowerCase(), /not found|missing/);
 });
 
-test("another authenticated user cannot load a list they do not own, and sees the same result as a missing list", async () => {
+test("a learner without an authorized learning record sees the same result as a missing learning", async () => {
   const { store: ownerStore } = createStoreForSeeds(generateWordSeeds(8));
-  const missingListResult = await ownerStore.createManifest(
-    LEARNER_ID,
+  const missingLearningResult = await ownerStore.createManifest(
     TEST_OWNER_USER_ID,
     "does-not-exist"
   );
 
-  const { store: crossOwnerStore } = createStoreForSeeds(generateWordSeeds(8));
-  const crossOwnerResult = await crossOwnerStore.createManifest(
-    LEARNER_ID,
+  const { store: crossLearnerStore } = createStoreForSeeds(generateWordSeeds(8));
+  const crossLearnerResult = await crossLearnerStore.createManifest(
     OTHER_USER_ID,
-    TEST_LIST_ID
+    TEST_LEARNING_ID
   );
 
-  assert.equal(missingListResult, null);
-  assert.equal(crossOwnerResult, null);
+  assert.equal(missingLearningResult, null);
+  assert.equal(crossLearnerResult, null);
+});
+
+test("a learner can use a list assigned to them without owning the reusable list", async () => {
+  // The list is owned by TEST_OWNER_USER_ID (a teacher/parent), but the
+  // learning record's learnerUserId is a different authenticated user.
+  const { store } = createStoreForSeeds(generateWordSeeds(8), TEST_LEARNING_ID, OTHER_USER_ID);
+  const manifest = await store.createManifest(OTHER_USER_ID, TEST_LEARNING_ID);
+  assert.ok(manifest, "the assigned learner must be authorized without owning the list");
 });
 
 test("content boundaries repeat authorization instead of trusting the initial manifest request", async () => {
-  const list = createFakeVocabularyList(TEST_LIST_ID, OTHER_USER_ID, generateWordSeeds(8));
-  const source = createFakeVocabularyListSource([list]);
-  const store = new VocabularyContentCapabilityStore({ listSource: source, seed: () => 0 });
+  const { store } = createStoreForSeeds(generateWordSeeds(8), TEST_LEARNING_ID, OTHER_USER_ID);
 
-  const manifest = await store.createManifest(LEARNER_ID, OTHER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(OTHER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
 
-  const deniedForNonOwner = await store.authorizeContent(
-    LEARNER_ID,
+  const deniedForWrongUser = await store.authorizeContent(
     TEST_OWNER_USER_ID,
     manifest.lessonId,
     manifest.nextCapability,
     "definition-display"
   );
-  assert.equal(deniedForNonOwner, null);
+  assert.equal(deniedForWrongUser, null);
 
-  const grantedForOwner = await store.authorizeContent(
-    LEARNER_ID,
+  const grantedForLearner = await store.authorizeContent(
     OTHER_USER_ID,
     manifest.lessonId,
     manifest.nextCapability,
     "definition-display"
   );
-  assert.ok(grantedForOwner);
+  assert.ok(grantedForLearner);
 });
 
 test("exactly one refill request retrieves exactly the next ordered word after a confirmed full mastery", async () => {
   const { store, spy } = createStoreForSeeds(generateWordSeeds(8));
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
 
   await masterLessonWordDirectly(store, manifest.lessonId, manifest.words[0].id);
 
-  const outcome = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+  const outcome = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
   assert.ok(outcome?.wordId);
   assert.deepEqual(spy.calls.findNext, [5]);
 
   // Exact replay of the same due slot returns the same recorded outcome
   // instead of advancing the cursor or issuing a second database query.
-  const replay = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+  const replay = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
   assert.deepEqual(replay, outcome);
   assert.deepEqual(spy.calls.findNext, [5]);
 });
 
 test("two concurrent refill requests for the same due slot cannot insert the same next word twice", async () => {
   const { store } = createStoreForSeeds(generateWordSeeds(8));
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
   await masterLessonWordDirectly(store, manifest.lessonId, manifest.words[0].id);
 
   const [first, second] = await Promise.all([
-    store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId),
-    store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId),
+    store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId),
+    store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId),
   ]);
   assert.deepEqual(first, second);
 });
 
 test("a failed refill preserves the ordered position and can be retried", async () => {
-  const list = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, generateWordSeeds(8));
-  const source = createFakeVocabularyListSource([list]);
-  const store = new VocabularyContentCapabilityStore({ listSource: source, seed: () => 0 });
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const { store, spy } = createStoreForSeeds(generateWordSeeds(8));
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
   await masterLessonWordDirectly(store, manifest.lessonId, manifest.words[0].id);
 
-  source.failNext("findNext");
-  await assert.rejects(store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId));
+  spy.failNext("findNext");
+  await assert.rejects(store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId));
 
-  const retried = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+  const retried = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
   assert.ok(retried?.wordId);
 });
 
 test("refill at the end of the list returns an explicit null word without error", async () => {
   const { store } = createStoreForSeeds(generateWordSeeds(5));
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
   await masterLessonWordDirectly(store, manifest.lessonId, manifest.words[0].id);
 
-  const outcome = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+  const outcome = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
   assert.deepEqual(outcome, { wordId: null });
 });
 
 test("no word is skipped or duplicated across repeated refills, and the lesson only completes once the database source is exhausted", async () => {
   const totalWords = 9;
   const { store, spy } = createStoreForSeeds(generateWordSeeds(totalWords));
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
 
   const seenCanonicalIds = new Set<string>(manifest.words.map((word) => word.id));
@@ -223,7 +241,7 @@ test("no word is skipped or duplicated across repeated refills, and the lesson o
 
   for (let refillCount = 0; refillCount < totalWords - ACTIVE_POOL_SIZE; refillCount += 1) {
     await masterLessonWordDirectly(store, manifest.lessonId, lessonWordId);
-    const outcome = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+    const outcome = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
     assert.ok(outcome?.wordId, `expected a real refill word for iteration ${refillCount}`);
     assert.ok(!seenCanonicalIds.has(outcome.wordId), "a refilled word must never repeat");
     seenCanonicalIds.add(outcome.wordId);
@@ -237,7 +255,7 @@ test("no word is skipped or duplicated across repeated refills, and the lesson o
   // mastered and a further refill request becomes the explicit
   // end-of-list result instead of repeating the previous outcome.
   await masterLessonWordDirectly(store, manifest.lessonId, lessonWordId);
-  const endOfList = await store.refillNextWord(LEARNER_ID, TEST_OWNER_USER_ID, manifest.lessonId);
+  const endOfList = await store.refillNextWord(TEST_OWNER_USER_ID, manifest.lessonId);
   assert.deepEqual(endOfList, { wordId: null });
 
   // Master every remaining loaded-but-unmastered word; only once every one
@@ -249,7 +267,14 @@ test("no word is skipped or duplicated across repeated refills, and the lesson o
       {
         state: {
           next(): { kind: string; wordId?: string; totalWords?: number };
-          getWordProgress(wordId: string): { spellingMastered: boolean };
+          getWordProgress(wordId: string): {
+            spellingMastered: boolean;
+            nextReviewQuestionNumber: number | null;
+          };
+          completionReviewWordIds: Set<string> | null;
+          activateAttempt(descriptor: unknown): void;
+          beginSubmission(payload: unknown): void;
+          recordSubmission(result: unknown): void;
         };
         canonicalWordIdByLessonWordId: Map<string, string>;
       }
@@ -262,15 +287,37 @@ test("no word is skipped or duplicated across repeated refills, and the lesson o
     }
   }
 
-  // The pending recap from the very last graded answer, and any queued
-  // Word Search checkpoint, must be consumed before the true final step.
-  let finalStep = lesson.state.next();
-  for (
-    let guard = 0;
-    guard < 5 && (finalStep.kind === "answer-recap" || finalStep.kind === "word-search-checkpoint");
-    guard += 1
-  ) {
-    finalStep = lesson.state.next();
+  // This direct-grading bypass never drives the real introduction flow, so
+  // it never triggers the finite completion-review snapshot
+  // (`captureCompletionReviewSnapshotIfReady`) the normal path uses to stop
+  // rescheduled delayed reviews from recurring forever. Every word is now
+  // loaded and mastered, so freeze the snapshot directly the same way that
+  // method would, from the current outstanding review set.
+  lesson.state.completionReviewWordIds = new Set(
+    [...lesson.canonicalWordIdByLessonWordId.keys()].filter(
+      (id) => lesson.state.getWordProgress(id).nextReviewQuestionNumber !== null
+    )
+  );
+
+  // The pending recap from the very last graded answer, any queued Word
+  // Search checkpoint, and any delayed review already inside that frozen
+  // snapshot must be consumed before the true final step.
+  let finalStep = lesson.state.next() as {
+    kind: string;
+    wordId?: string;
+    review?: boolean;
+    totalWords?: number;
+  };
+  for (let guard = 0; guard < 50 && finalStep.kind !== "lesson-complete"; guard += 1) {
+    if (finalStep.kind === "definition-practice" || finalStep.kind === "spelling-practice") {
+      gradeDirectly(
+        lesson.state,
+        finalStep.wordId as string,
+        finalStep.kind === "definition-practice" ? "definition" : "spelling",
+        finalStep.review ?? false
+      );
+    }
+    finalStep = lesson.state.next() as typeof finalStep;
   }
   assert.equal(finalStep.kind, "lesson-complete");
   assert.equal(finalStep.totalWords, totalWords);
@@ -278,14 +325,13 @@ test("no word is skipped or duplicated across repeated refills, and the lesson o
 
 test("definition-practice fails safely with a content-unavailable result when the list cannot supply four unique definitions", async () => {
   const { store } = createStoreForSeeds(generateWordSeeds(2));
-  const manifest = await store.createManifest(LEARNER_ID, TEST_OWNER_USER_ID, TEST_LIST_ID);
+  const manifest = await store.createManifest(TEST_OWNER_USER_ID, TEST_LEARNING_ID);
   assert.ok(manifest);
 
   let capability = manifest.nextCapability;
   let contentType = peekContentType(store, capability);
   while (contentType !== "definition-practice") {
     const authorized = await store.authorizeContent(
-      LEARNER_ID,
       TEST_OWNER_USER_ID,
       manifest.lessonId,
       capability,
@@ -301,7 +347,6 @@ test("definition-practice fails safely with a content-unavailable result when th
   }
 
   const authorized = await store.authorizeContent(
-    LEARNER_ID,
     TEST_OWNER_USER_ID,
     manifest.lessonId,
     capability,
@@ -348,7 +393,8 @@ function peekContentType(
 // `next()`'s weighted pool selection entirely. This is deterministic and
 // side-effect-free with respect to every other pool word, so refill
 // accounting (exactly one first-mastery event per call) is never disturbed
-// by an incidental mastery of an unrelated word.
+// by an incidental mastery of an unrelated word. Grades three times per
+// answer type to reach the configured mastery streak.
 async function masterLessonWordDirectly(
   store: VocabularyContentCapabilityStore,
   lessonId: string,
@@ -363,6 +409,7 @@ async function masterLessonWordDirectly(
           activateAttempt(descriptor: unknown): void;
           beginSubmission(payload: unknown): void;
           recordSubmission(result: unknown): void;
+          progressByWordId: Map<string, { introduced: boolean }>;
         };
       }
     >;
@@ -370,8 +417,21 @@ async function masterLessonWordDirectly(
   const lesson = internal.lessons.get(lessonId);
   assert.ok(lesson);
 
-  gradeDirectly(lesson.state, lessonWordId, "definition");
-  gradeDirectly(lesson.state, lessonWordId, "spelling");
+  // This bypass never drives the normal introduction screens, so mark the
+  // word introduced directly. Otherwise the finite completion-review
+  // snapshot (`captureCompletionReviewSnapshotIfReady`) can never engage
+  // once delayed reviews start coming due, and grading would cycle forever.
+  const progress = lesson.state.progressByWordId.get(lessonWordId);
+  if (progress) {
+    progress.introduced = true;
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    gradeDirectly(lesson.state, lessonWordId, "definition");
+  }
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    gradeDirectly(lesson.state, lessonWordId, "spelling");
+  }
 }
 
 function gradeDirectly(
@@ -382,7 +442,8 @@ function gradeDirectly(
     recordSubmission(result: unknown): void;
   },
   wordId: string,
-  answerType: "definition" | "spelling"
+  answerType: "definition" | "spelling",
+  review = false
 ): void {
   const attemptId = `synthetic-${answerType}-${wordId}-${Math.random()}`;
   if (answerType === "definition") {
@@ -392,12 +453,12 @@ function gradeDirectly(
       answerType: "definition",
       attemptId,
       validChoiceIds: choiceIds,
-      review: false,
+      review,
     });
     state.beginSubmission({ answerType: "definition", attemptId, selectedChoiceId: choiceIds[0] });
     state.recordSubmission({ answerType: "definition", correctChoiceId: choiceIds[0] });
   } else {
-    state.activateAttempt({ wordId, answerType: "spelling", attemptId, validChoiceIds: [], review: false });
+    state.activateAttempt({ wordId, answerType: "spelling", attemptId, validChoiceIds: [], review });
     state.beginSubmission({ answerType: "spelling", attemptId, answer: "x" });
     state.recordSubmission({ answerType: "spelling", correct: true });
   }

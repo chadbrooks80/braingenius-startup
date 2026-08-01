@@ -10,17 +10,18 @@ import {
 } from "@/lib/learning-engine/speech/ttsUsageService";
 import type { TtsSynthesisRequest } from "@/lib/learning-engine/speech/validation/parseTtsSynthesisRequest";
 import { vocabularyTts } from "../data/vocabularyTts";
-import {
-  vocabularyContentCapabilityStore,
-  type VocabularyContentCapabilityStore,
-} from "./VocabularyContentCapabilityStore";
-import { getVocabularyLearnerId } from "./vocabularyLearnerSession";
+import { findVocabularySpellingAttemptForSpeech } from "./vocabularyLearningStore";
 
 const SPEECH_REQUEST_FIELDS = ["reference"] as const;
 
 type SpeechSynthesizer = (
   request: TtsSynthesisRequest
 ) => Promise<SynthesizedAudio>;
+
+type VocabularySpellingAttemptLookup = (
+  userId: string,
+  reference: string
+) => Promise<{ canonicalSpelling: string; speechDefinition: string } | null>;
 
 function jsonError(status: number, message: string): Response {
   return Response.json(
@@ -30,22 +31,21 @@ function jsonError(status: number, message: string): Response {
 }
 
 /**
- * Resolves an opaque spelling speech reference into provider audio entirely
- * on the server. The canonical written word and its speech-synthesis
- * definition come only from the stored active-attempt snapshot captured at
- * content-build time (after authentication, list authorization, and attempt
- * validation) -- this never scans a database list for a matching word.
- * Browser responses carry audio bytes or a generic error message, never the
- * word. Every request passes the same authenticated/entitled/suspension-
- * checked shared usage policy as public teaching speech, classified as
+ * Resolves an opaque spelling speech reference (the durable attempt ID) into
+ * provider audio entirely on the server. The canonical written word and its
+ * speech-synthesis definition come only from the durable attempt row
+ * (authorized against the authenticated learner via its session/learning
+ * chain) -- this never scans a database list for a matching word. Browser
+ * responses carry audio bytes or a generic error message, never the word.
+ * Every request passes the same authenticated/entitled/suspension-checked
+ * shared usage policy as public teaching speech, classified as
  * VOCABULARY_PROTECTED.
  */
 export async function handleVocabularySpeechRequest(
   request: Request,
   userId: string,
   synthesize: SpeechSynthesizer = synthesizeTts,
-  capabilityStore: VocabularyContentCapabilityStore =
-    vocabularyContentCapabilityStore,
+  findAttempt: VocabularySpellingAttemptLookup = findVocabularySpellingAttemptForSpeech,
   accessDeps: PaidTtsUsageDeps = {}
 ): Promise<Response> {
   let rawBody: unknown;
@@ -65,17 +65,14 @@ export async function handleVocabularySpeechRequest(
     return ttsDenialResponse(authorization.denial);
   }
 
-  const learnerId = getVocabularyLearnerId(request);
   let attempt;
   try {
-    attempt = learnerId
-      ? await capabilityStore.getSpellingAttempt(learnerId, userId, reference)
-      : null;
+    attempt = await findAttempt(userId, reference);
   } catch (error) {
-    console.error("[vocabulary-speech] list authorization unavailable", error);
+    console.error("[vocabulary-speech] attempt lookup unavailable", error);
     return jsonError(503, "This learning module is temporarily unavailable.");
   }
-  if (!attempt || !attempt.canonicalSpelling || !attempt.speechDefinition) {
+  if (!attempt) {
     return jsonError(400, "Invalid vocabulary speech request.");
   }
 

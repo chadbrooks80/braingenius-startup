@@ -35,17 +35,40 @@ test("introduces the first five active words in load order before practice", () 
   assert.equal(step.kind, "definition-practice");
 });
 
-test("one correct definition and one correct spelling master independently", () => {
+test("three consecutive correct definitions and three consecutive correct spellings master independently", () => {
   const word = HANDLES[0];
   const state = new VocabularyLessonState([word], 1, () => 0);
   let step = finishIntroductions(state, 1);
 
+  // Definition mastery requires exactly three consecutive correct answers;
+  // an incorrect answer along the way resets the streak without affecting
+  // the still-untouched spelling stage.
   step = answerAndAdvance(state, step, true);
   let progress = state.getWordProgress(word.id);
   assert.equal(progress.definitionConsecutiveCorrect, 1);
+  assert.equal(progress.definitionMastered, false);
+  assert.equal(step.kind, "definition-practice");
+
+  step = answerAndAdvance(state, step, false);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.definitionConsecutiveCorrect, 0);
+  assert.equal(progress.definitionMastered, false);
+  assert.equal(step.kind, "definition-practice");
+
+  step = answerAndAdvance(state, step, true);
+  step = answerAndAdvance(state, step, true);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.definitionConsecutiveCorrect, 2);
+  assert.equal(progress.definitionMastered, false);
+  assert.equal(step.kind, "definition-practice");
+
+  step = answerAndAdvance(state, step, true);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.definitionConsecutiveCorrect, 3);
   assert.equal(progress.definitionMastered, true);
   assert.equal(step.kind, "spelling-practice");
 
+  // Spelling mastery follows the identical three-consecutive-correct rule.
   step = answerAndAdvance(state, step, false);
   progress = state.getWordProgress(word.id);
   assert.equal(progress.definitionMastered, true);
@@ -53,8 +76,15 @@ test("one correct definition and one correct spelling master independently", () 
   assert.equal(progress.spellingMastered, false);
 
   step = answerAndAdvance(state, step, true);
+  step = answerAndAdvance(state, step, true);
   progress = state.getWordProgress(word.id);
-  assert.equal(progress.spellingConsecutiveCorrect, 1);
+  assert.equal(progress.spellingConsecutiveCorrect, 2);
+  assert.equal(progress.spellingMastered, false);
+  assert.equal(step.kind, "spelling-practice");
+
+  step = answerAndAdvance(state, step, true);
+  progress = state.getWordProgress(word.id);
+  assert.equal(progress.spellingConsecutiveCorrect, 3);
   assert.equal(progress.spellingMastered, true);
   assert.equal(
     progress.nextReviewQuestionNumber,

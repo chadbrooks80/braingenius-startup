@@ -45,6 +45,17 @@ test("successful Vocabulary initialization selects the Vocabulary-owned module l
         nextCapability: "11111111-1111-4111-8111-111111111112",
         words: [{ id: "11111111-1111-4111-8111-111111111113" }],
         totalWordCount: 1,
+        progress: {
+          learningStatus: "ACTIVE",
+          gradedAnswerCount: 0,
+          correctAnswerCount: 0,
+          incorrectAnswerCount: 0,
+          stateVersion: 0,
+          panel: { wordList: [], spellingWords: [], masteredWords: [] },
+        },
+        hydratedProgressByWordId: {},
+        checkpointEligibleWordIdOrder: [],
+        servedCheckpointGroupCount: 0,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )) as typeof fetch;

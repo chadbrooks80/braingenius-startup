@@ -3,7 +3,10 @@ import type {
   VocabularyContentRequest,
   VocabularyContentResponseFor,
 } from "./vocabularyContentTypes";
-import { WORD_SEARCH_CHECKPOINT_GROUP_SIZE } from "./vocabularyContentTypes";
+import {
+  WORD_SEARCH_CHECKPOINT_GROUP_SIZE,
+  isValidVocabularyProgressSnapshot,
+} from "./vocabularyContentTypes";
 
 const CONTENT_ENDPOINT = "/api/learning/vocabulary/content";
 const CONTENT_TIMEOUT_MS = 10_000;
@@ -73,30 +76,48 @@ function isValidContentResponse<Request extends VocabularyContentRequest>(
   }
 
   switch (request.contentType) {
-    case "manifest":
-      return (
-        hasExactFields(raw, [
+    case "manifest": {
+      if (
+        !hasExactFields(raw, [
           "contentType",
           "lessonId",
           "randomSeed",
           "nextCapability",
           "words",
           "totalWordCount",
-        ]) &&
-        isOpaqueIdentifier(raw.lessonId) &&
-        Number.isInteger(raw.randomSeed) &&
-        typeof raw.randomSeed === "number" &&
-        raw.randomSeed >= 0 &&
-        raw.randomSeed <= 4_294_967_295 &&
-        isOpaqueIdentifier(raw.nextCapability) &&
-        Array.isArray(raw.words) &&
-        raw.words.length > 0 &&
-        raw.words.every(isManifestWord) &&
-        new Set(raw.words.map((word) => word.id)).size === raw.words.length &&
-        Number.isInteger(raw.totalWordCount) &&
-        typeof raw.totalWordCount === "number" &&
-        raw.totalWordCount >= raw.words.length
+          "progress",
+          "hydratedProgressByWordId",
+          "checkpointEligibleWordIdOrder",
+          "servedCheckpointGroupCount",
+        ]) ||
+        !isOpaqueIdentifier(raw.lessonId) ||
+        !Number.isInteger(raw.randomSeed) ||
+        typeof raw.randomSeed !== "number" ||
+        raw.randomSeed < 0 ||
+        raw.randomSeed > 4_294_967_295 ||
+        !isOpaqueIdentifier(raw.nextCapability) ||
+        !Array.isArray(raw.words) ||
+        raw.words.length === 0 ||
+        !raw.words.every(isManifestWord) ||
+        new Set(raw.words.map((word) => word.id)).size !== raw.words.length ||
+        !Number.isInteger(raw.totalWordCount) ||
+        typeof raw.totalWordCount !== "number" ||
+        raw.totalWordCount < raw.words.length ||
+        !isValidVocabularyProgressSnapshot(raw.progress) ||
+        !isRecord(raw.hydratedProgressByWordId) ||
+        !Array.isArray(raw.checkpointEligibleWordIdOrder) ||
+        !raw.checkpointEligibleWordIdOrder.every(isNonBlankString) ||
+        !Number.isInteger(raw.servedCheckpointGroupCount) ||
+        typeof raw.servedCheckpointGroupCount !== "number" ||
+        raw.servedCheckpointGroupCount < 0
+      ) {
+        return false;
+      }
+      const wordIds = new Set(raw.words.map((word) => word.id));
+      return Object.entries(raw.hydratedProgressByWordId).every(
+        ([wordId, value]) => wordIds.has(wordId) && isHydratedWordProgress(value)
       );
+    }
     case "word-refill":
       return (
         hasExactFields(raw, ["contentType", "wordId"]) &&
@@ -214,6 +235,35 @@ function isManifestWord(value: unknown): value is {
     isRecord(value) &&
     hasExactFields(value, ["id"]) &&
     isOpaqueIdentifier(value.id)
+  );
+}
+
+const HYDRATED_WORD_PROGRESS_FIELDS = [
+  "introduced",
+  "definitionConsecutiveCorrect",
+  "definitionMastered",
+  "spellingConsecutiveCorrect",
+  "spellingMastered",
+  "practicePresentationCount",
+  "reviewStage",
+  "nextReviewQuestionNumber",
+] as const;
+
+function isHydratedWordProgress(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasExactFields(value, HYDRATED_WORD_PROGRESS_FIELDS) &&
+    typeof value.introduced === "boolean" &&
+    Number.isInteger(value.definitionConsecutiveCorrect) &&
+    typeof value.definitionMastered === "boolean" &&
+    Number.isInteger(value.spellingConsecutiveCorrect) &&
+    typeof value.spellingMastered === "boolean" &&
+    Number.isInteger(value.practicePresentationCount) &&
+    (value.reviewStage === "idle" ||
+      value.reviewStage === "definition-pending" ||
+      value.reviewStage === "spelling-pending") &&
+    (value.nextReviewQuestionNumber === null ||
+      Number.isInteger(value.nextReviewQuestionNumber))
   );
 }
 

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type {
   VocabularyDistractorRow,
   VocabularyListWordRow,
@@ -48,12 +49,7 @@ export function createFakeVocabularyList(
   };
 }
 
-export type FakeVocabularyOperation =
-  | "isOwned"
-  | "countWords"
-  | "findFirst"
-  | "findNext"
-  | "findDistractors";
+export type FakeVocabularyOperation = "findNext" | "findDistractors" | "findByIds";
 
 export type FakeVocabularyListSource = VocabularyListSource & {
   failNext(operation: FakeVocabularyOperation): void;
@@ -79,24 +75,13 @@ export function createFakeVocabularyListSource(
     failNext(operation) {
       failNextOperation = operation;
     },
-    async isOwned(userId, listId) {
-      maybeFail("isOwned");
-      const list = findList(listId);
-      return list ? list.ownerUserId === userId : false;
-    },
-    async countWords(listId) {
-      maybeFail("countWords");
-      return findList(listId)?.words.length ?? 0;
-    },
-    async findFirst(listId, take) {
-      maybeFail("findFirst");
+    async findByIds(listId, ids) {
+      maybeFail("findByIds");
       const list = findList(listId);
       if (!list) {
         return [];
       }
-      return [...list.words]
-        .sort((left, right) => left.position - right.position)
-        .slice(0, take);
+      return list.words.filter((word) => ids.includes(word.id));
     },
     async findNext(listId, afterPosition) {
       maybeFail("findNext");
@@ -260,7 +245,8 @@ function word(
  * pool would offer.
  */
 export function createFakeContentBuildContext(
-  words: readonly VocabularyListWordRow[]
+  words: readonly VocabularyListWordRow[],
+  onDefinitionAttemptCreated?: (attemptId: string, correctChoiceId: string) => void
 ): VocabularyContentBuildContext {
   return {
     getWord: (wordId) => words.find((word) => word.id === wordId),
@@ -276,6 +262,18 @@ export function createFakeContentBuildContext(
         )
         .slice(0, count)
         .map((word) => ({ id: word.id, definition: word.definition }));
+    },
+    async createDefinitionAttempt(_listWordId, _review, choices) {
+      const attemptId = randomUUID();
+      const choiceIds = choices.map(() => randomUUID());
+      const correctIndex = choices.findIndex((choice) => choice.isCorrect);
+      if (onDefinitionAttemptCreated && correctIndex >= 0) {
+        onDefinitionAttemptCreated(attemptId, choiceIds[correctIndex]);
+      }
+      return { attemptId, choiceIds };
+    },
+    async createSpellingAttempt() {
+      return { attemptId: randomUUID() };
     },
   };
 }

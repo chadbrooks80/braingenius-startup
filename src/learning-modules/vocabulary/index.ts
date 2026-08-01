@@ -7,8 +7,8 @@ import type {
 } from "@/types/learning";
 import {
   createInvalidVocabularyRouteError,
-  createVocabularyListIdMissingError,
-  createVocabularyListNotFoundError,
+  createVocabularyLearningIdMissingError,
+  createVocabularyLearningNotFoundError,
 } from "./errors/vocabularyRouteErrors";
 import { createStartupProps } from "./screens/startupScreen";
 import { createMultipleChoiceScreenRequest } from "./screens/multipleChoiceScreen";
@@ -33,9 +33,11 @@ import type {
 } from "./data/vocabularyContentTypes";
 import {
   VocabularyLessonState,
+  type VocabularyLessonHydration,
   type VocabularyLessonStep,
 } from "./state/VocabularyLessonState";
 import { createVocabularyLessonRandom } from "./state/createVocabularyLessonRandom";
+import type { VocabularyProgressSnapshot } from "./data/vocabularyContentTypes";
 
 export type VocabularyModuleApi = {
   loadContent: VocabularyContentLoader;
@@ -48,8 +50,12 @@ const DEFAULT_VOCABULARY_API: VocabularyModuleApi = {
 };
 
 class Vocabulary implements ActiveModule {
-  private readonly wordListId: string;
+  private readonly learningId: string;
   private readonly random: () => number;
+  // Retained only per the shared module-runtime contract: Vocabulary keeps
+  // this narrow function and never stores the LearningEngine instance or its
+  // private setter registry.
+  private readonly runPanelSetter: (setterName: string, value: unknown) => void;
   private readonly api: VocabularyModuleApi;
   private lessonState: VocabularyLessonState | null = null;
   private lessonId: string | null = null;
@@ -61,52 +67,63 @@ class Vocabulary implements ActiveModule {
   // requested exactly once per newly opened active-pool slot.
   private refillsRequested = 0;
 
-  // The second constructor parameter is widened to also accept the Learning
-  // Engine's generic `LearningModuleRuntime` only so this class still
-  // satisfies the shared `LearningModuleConstructor` contract (the engine
-  // always passes a runtime object here, not a random source). Vocabulary
-  // does not consume the runtime in this feature; existing direct
-  // instantiation with an injected `random` function keeps its current
-  // behavior unchanged.
+  // The second constructor parameter is widened to also accept a directly
+  // injected deterministic `random` source so existing tests keep their
+  // exact call signature. Only a real `LearningModuleRuntime` (what the
+  // engine always passes in production) wires `runPanelSetter`; direct test
+  // instantiation with a `random` function gets a no-op panel publisher.
   constructor(
     moduleVariables: string[],
     random: (() => number) | LearningModuleRuntime = Math.random,
     api: VocabularyModuleApi = DEFAULT_VOCABULARY_API
   ) {
     if (moduleVariables.length === 0) {
-      throw createVocabularyListIdMissingError();
+      throw createVocabularyLearningIdMissingError();
     }
 
     if (moduleVariables.length > 1) {
       throw createInvalidVocabularyRouteError();
     }
 
-    this.wordListId = moduleVariables[0];
+    this.learningId = moduleVariables[0];
     this.random = typeof random === "function" ? random : Math.random;
+    this.runPanelSetter =
+      typeof random === "function" ? () => {} : random.runPanelSetter;
     this.api = api;
   }
 
   async initialize(): Promise<void> {
     const manifest = await this.api.loadContent({
       contentType: "manifest",
-      wordListId: this.wordListId,
+      learningId: this.learningId,
     });
 
     if (!manifest) {
-      throw createVocabularyListNotFoundError(this.wordListId);
+      throw createVocabularyLearningNotFoundError(this.learningId);
     }
+
+    const hydration: VocabularyLessonHydration = {
+      progressByWordId: new Map(Object.entries(manifest.hydratedProgressByWordId)),
+      gradedAnswerCount: manifest.progress.gradedAnswerCount,
+      correctCount: manifest.progress.correctAnswerCount,
+      incorrectCount: manifest.progress.incorrectAnswerCount,
+      checkpointEligibleOrder: manifest.checkpointEligibleWordIdOrder,
+      servedCheckpointGroupCount: manifest.servedCheckpointGroupCount,
+    };
 
     this.lessonState = new VocabularyLessonState(
       manifest.words,
       manifest.totalWordCount,
-      createVocabularyLessonRandom(manifest.randomSeed)
+      createVocabularyLessonRandom(manifest.randomSeed),
+      hydration
     );
     this.lessonId = manifest.lessonId;
     this.nextCapability = manifest.nextCapability;
+    this.publishPanel(manifest.progress);
   }
 
   getStartupProps() {
-    return createStartupProps(this.wordListId);
+    return createStartupProps(this.learningId);
   }
 
   async next(): Promise<ScreenRequest | void> {
@@ -136,6 +153,7 @@ class Vocabulary implements ActiveModule {
       const result = await this.api.submitAnswer(submission);
       lessonState.recordSubmission(result);
       await this.refillActivePoolIfNeeded(lessonState);
+      this.publishPanel(result.progress);
       return createVocabularyWindowFeedback(result);
     } catch (error) {
       lessonState.cancelSubmission();
@@ -310,6 +328,16 @@ class Vocabulary implements ActiveModule {
 
   private rotateCapability(content: { nextCapability: string }): void {
     this.nextCapability = content.nextCapability;
+  }
+
+  // Publishes all three panel arrays from one authoritative server
+  // projection through the retained `runPanelSetter` function. Never called
+  // before the database transaction that produced `progress` has succeeded,
+  // so a failed write never changes the panel.
+  private publishPanel(progress: VocabularyProgressSnapshot): void {
+    this.runPanelSetter("setWordList", progress.panel.wordList);
+    this.runPanelSetter("setSpellingWords", progress.panel.spellingWords);
+    this.runPanelSetter("setMasteredWords", progress.panel.masteredWords);
   }
 }
 

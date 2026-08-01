@@ -2,9 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { handleVocabularyAnswerRequest } from "../../src/app/api/learning/vocabulary/submit-answer/handleVocabularyAnswerRequest";
 import type {
-  VocabularyAnswerResult,
+  VocabularyAnswerApiResult,
   VocabularyAnswerSubmission,
 } from "../../src/learning-modules/vocabulary/types";
+import type { VocabularyProgressSnapshot } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
+
+const FAKE_PROGRESS: VocabularyProgressSnapshot = {
+  learningStatus: "ACTIVE",
+  gradedAnswerCount: 1,
+  correctAnswerCount: 1,
+  incorrectAnswerCount: 0,
+  stateVersion: 1,
+  panel: { wordList: [], spellingWords: [], masteredWords: [] },
+};
 import {
   parseVocabularyAnswerSubmission,
   parseVocabularySubmitAnswerPayload,
@@ -101,11 +111,11 @@ test("the module parser and the answer endpoint accept and reject identical subm
 
   const lookup = (
     submission: VocabularyAnswerSubmission
-  ): Promise<VocabularyAnswerResult> =>
+  ): Promise<VocabularyAnswerApiResult> =>
     Promise.resolve(
       submission.answerType === "definition"
-        ? { answerType: "definition", correctChoiceId: "choice-a" }
-        : { answerType: "spelling", correct: true }
+        ? { answerType: "definition", correctChoiceId: "choice-a", progress: FAKE_PROGRESS }
+        : { answerType: "spelling", correct: true, progress: FAKE_PROGRESS }
     );
 
   for (const { body, accepted } of parityCases) {

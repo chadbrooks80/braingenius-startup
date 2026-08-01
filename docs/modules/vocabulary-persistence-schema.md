@@ -138,13 +138,17 @@ row; does not create the separate Dictionary database or a second Prisma
 datasource/client; and does not implement Dictionary lookup or field-merge
 logic.
 
-A later feature (`database-backed-vocabulary-word-loading`) connects
+The `database-backed-vocabulary-word-loading` feature connected
 `ModVocabList`/`ModVocabListWord` to the runtime Vocabulary module through
 `src/learning-modules/vocabulary/server/vocabularyListStore.ts`, replacing
 the former hardcoded fixture for bounded initial loading, active-pool
-refill, and canonical content/answer resolution. `ModVocabLearning`,
-`ModVocabWordProgress`, `ModVocabSession`, `ModVocabAttempt`,
-`ModVocabAttemptChoice`, and `ModVocabDailyPractice` remain unconnected:
-lesson/capability/attempt state is still memory-only, exactly as described
-in the "Persistence and limitations" section of
-[`vocabulary.md`](./vocabulary.md).
+refill, and canonical content/answer resolution.
+
+The `database-backed-vocabulary-progress` feature then connected
+`ModVocabLearning`, `ModVocabWordProgress`, `ModVocabSession`,
+`ModVocabAttempt`, `ModVocabAttemptChoice`, and `ModVocabDailyPractice`
+through the new `src/learning-modules/vocabulary/server/vocabularyLearningStore.ts`
+repository: the database is now the authoritative source for durable
+learner progress, mastery, review scheduling, checkpoint history, and daily
+totals, with process memory retained only as a disposable per-visit cache.
+See [`vocabulary.md`](./vocabulary.md) for current behavior.

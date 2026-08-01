@@ -10,17 +10,18 @@ import {
   createInProcessVocabularyApi,
   getServerCorrectChoiceId,
   getServerSpellingAnswer,
+  TEST_LEARNING_ID,
 } from "./testVocabularyApi";
-import { TEST_LIST_ID, TEST_WORD_SEEDS } from "./fakeVocabularyListStore";
+import { TEST_WORD_SEEDS } from "./fakeVocabularyListStore";
 
-test("constructor rejects a route without a list ID using the module-owned error", () => {
+test("constructor rejects a route without a learning ID using the module-owned error", () => {
   assert.throws(
     () => new Vocabulary([]),
     (error: unknown) =>
       matchesVocabularyRouteError(error, {
         kind: "MODULE_RESOURCE_MISSING",
-        code: "VOCABULARY_LIST_ID_MISSING",
-        message: "Vocabulary route omitted the required word-list ID.",
+        code: "VOCABULARY_LEARNING_ID_MISSING",
+        message: "Vocabulary route omitted the required learning ID.",
       })
   );
 });
@@ -38,7 +39,7 @@ test("constructor rejects extra route variables using the module-owned error", (
   );
 });
 
-test("initialize rejects an unknown list using the module-owned error", async () => {
+test("initialize rejects an unknown learning using the module-owned error", async () => {
   const baseApi = createInProcessVocabularyApi();
   const api: VocabularyModuleApi = {
     ...baseApi,
@@ -46,15 +47,16 @@ test("initialize rejects an unknown list using the module-owned error", async ()
       return null;
     },
   };
-  const vocabulary = new Vocabulary(["missing-word-list"], () => 0, api);
+  const vocabulary = new Vocabulary(["missing-learning-id"], () => 0, api);
 
   await assert.rejects(
     vocabulary.initialize(),
     (error: unknown) =>
       matchesVocabularyRouteError(error, {
         kind: "MODULE_RESOURCE_NOT_FOUND",
-        code: "VOCABULARY_LIST_NOT_FOUND",
-        message: "Vocabulary word list not found: missing-word-list",
+        code: "VOCABULARY_LEARNING_NOT_FOUND",
+        message:
+          "Vocabulary learning not found or not authorized: missing-learning-id",
       })
   );
 });
@@ -69,7 +71,7 @@ test("real browser request bodies use only screen-specific capabilities for ever
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let guard = 0; guard < 500; guard += 1) {
@@ -118,7 +120,7 @@ test("real browser request bodies use only screen-specific capabilities for ever
 
   assert.deepEqual(requests[0], {
     contentType: "manifest",
-    wordListId: TEST_LIST_ID,
+    learningId: TEST_LEARNING_ID,
   });
   const refillRequests = requests.filter(
     (request): request is Extract<VocabularyContentRequest, { contentType: "word-refill" }> =>
@@ -159,7 +161,7 @@ test("real browser request bodies use only screen-specific capabilities for ever
         : ["capability", "contentType", "lessonId"]
     );
     assert.equal("wordId" in request, false);
-    assert.equal("wordListId" in request, false);
+    assert.equal("learningId" in request, false);
     assert.match(request.lessonId, /^[0-9a-f-]{36}$/i);
     assert.match(request.capability, /^[0-9a-f-]{36}$/i);
     const previousType = capabilityTypes.get(request.capability);
@@ -178,7 +180,7 @@ test("real browser request bodies use only screen-specific capabilities for ever
 
 test("routes the first five words through both introduction windows before practice", async () => {
   const vocabulary = new Vocabulary(
-    [TEST_LIST_ID],
+    [TEST_LEARNING_ID],
     () => 0,
     createInProcessVocabularyApi()
   );
@@ -224,7 +226,7 @@ test("reaches an ungraded five-word Word Search checkpoint after five words firs
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   let checkpoint: ScreenRequest | null = null;
@@ -305,7 +307,7 @@ test("repeated checkpoint capability reads and duplicate next handling cannot re
       return baseApi.loadContent(request);
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   const checkpoint = await advanceVocabularyToWordSearchCheckpoint(vocabulary);
@@ -346,7 +348,7 @@ test("network failure preserves the active attempt for a safe retry", async () =
       return baseApi.submitAnswer(submission);
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   for (let index = 0; index < 10; index += 1) {
@@ -407,7 +409,7 @@ test("duplicate next actions and answer submissions cannot create duplicate prog
       return baseApi.submitAnswer(submission);
     },
   };
-  const vocabulary = new Vocabulary([TEST_LIST_ID], () => 0, api);
+  const vocabulary = new Vocabulary([TEST_LEARNING_ID], () => 0, api);
   await vocabulary.initialize();
 
   const [firstDisplay, duplicateDisplay] = await Promise.all([

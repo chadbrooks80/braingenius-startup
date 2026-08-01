@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { handleVocabularyAnswerRequest } from "../../src/app/api/learning/vocabulary/submit-answer/handleVocabularyAnswerRequest";
+import type { VocabularyProgressSnapshot } from "../../src/learning-modules/vocabulary/data/vocabularyContentTypes";
+
+const FAKE_PROGRESS: VocabularyProgressSnapshot = {
+  learningStatus: "ACTIVE",
+  gradedAnswerCount: 1,
+  correctAnswerCount: 1,
+  incorrectAnswerCount: 0,
+  stateVersion: 1,
+  panel: { wordList: [], spellingWords: [], masteredWords: [] },
+};
 
 function requestWithBody(body: BodyInit): Request {
   return new Request("http://localhost/api/learning/vocabulary/submit-answer", {
@@ -16,7 +26,7 @@ test("rejects malformed JSON without calling the answer lookup", async () => {
     requestWithBody("{"),
     async () => {
       lookupCalls += 1;
-      return { answerType: "definition", correctChoiceId: "a" };
+      return { answerType: "definition", correctChoiceId: "a", progress: FAKE_PROGRESS };
     }
   );
 
@@ -45,7 +55,7 @@ test("strictly rejects unknown, missing, and type-mismatched fields", async () =
   for (const body of invalidBodies) {
     const response = await handleVocabularyAnswerRequest(
       requestWithBody(JSON.stringify(body)),
-      async () => ({ answerType: "definition", correctChoiceId: "a" })
+      async () => ({ answerType: "definition", correctChoiceId: "a", progress: FAKE_PROGRESS })
     );
 
     assert.equal(response.status, 400);
@@ -73,7 +83,7 @@ test("rejects attempts that the server lookup does not recognize", async () => {
   });
 });
 
-test("returns minimal definition feedback for a valid submission", async () => {
+test("returns minimal definition feedback plus the authoritative progress snapshot for a valid submission", async () => {
   const response = await handleVocabularyAnswerRequest(
     requestWithBody(
       JSON.stringify({
@@ -88,7 +98,7 @@ test("returns minimal definition feedback for a valid submission", async () => {
         attemptId: "attempt-1",
         selectedChoiceId: "b",
       });
-      return { answerType: "definition", correctChoiceId: "c" };
+      return { answerType: "definition", correctChoiceId: "c", progress: FAKE_PROGRESS };
     }
   );
 
@@ -96,16 +106,18 @@ test("returns minimal definition feedback for a valid submission", async () => {
   assert.deepEqual(await response.json(), {
     answerType: "definition",
     correctChoiceId: "c",
+    progress: FAKE_PROGRESS,
   });
 });
 
-test("returns correct and incorrect spelling feedback", async () => {
+test("returns correct and incorrect spelling feedback plus the authoritative progress snapshot", async () => {
   for (const result of [
-    { answerType: "spelling" as const, correct: true as const },
+    { answerType: "spelling" as const, correct: true as const, progress: FAKE_PROGRESS },
     {
       answerType: "spelling" as const,
       correct: false as const,
       correctAnswer: "brilliant",
+      progress: FAKE_PROGRESS,
     },
   ]) {
     const response = await handleVocabularyAnswerRequest(

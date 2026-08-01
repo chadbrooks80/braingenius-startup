@@ -1,12 +1,9 @@
-import type {
-  VocabularyAnswerResult,
-  VocabularyAnswerSubmission,
-} from "@/learning-modules/vocabulary/types";
+import type { VocabularyAnswerApiResult, VocabularyAnswerSubmission } from "@/learning-modules/vocabulary/types";
 import { parseVocabularyAnswerSubmission } from "@/learning-modules/vocabulary/validation/parseVocabularySubmitAnswerPayload";
 
 type VocabularyAnswerLookup = (
   submission: VocabularyAnswerSubmission
-) => Promise<VocabularyAnswerResult | null>;
+) => Promise<VocabularyAnswerApiResult | null>;
 
 export async function handleVocabularyAnswerRequest(
   request: Request,
@@ -30,7 +27,7 @@ export async function handleVocabularyAnswerRequest(
     );
   }
 
-  let result: VocabularyAnswerResult | null;
+  let result: VocabularyAnswerApiResult | null;
   try {
     result = await getVocabularyAnswer(submission);
   } catch (error) {
@@ -47,5 +44,5 @@ export async function handleVocabularyAnswerRequest(
     );
   }
 
-  return Response.json(result);
+  return Response.json(result, { headers: { "Cache-Control": "no-store" } });
 }

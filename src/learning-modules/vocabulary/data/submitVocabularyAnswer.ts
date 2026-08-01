@@ -1,5 +1,6 @@
+import { isValidVocabularyProgressSnapshot } from "./vocabularyContentTypes";
 import type {
-  VocabularyAnswerResult,
+  VocabularyAnswerApiResult,
   VocabularyAnswerSubmission,
 } from "../types";
 
@@ -15,7 +16,7 @@ type SubmitVocabularyAnswerOptions = {
 export async function submitVocabularyAnswer(
   payload: VocabularyAnswerSubmission,
   options: SubmitVocabularyAnswerOptions = {}
-): Promise<VocabularyAnswerResult> {
+): Promise<VocabularyAnswerApiResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const controller = new AbortController();
   const timeoutId = setTimeout(
@@ -59,19 +60,22 @@ export async function submitVocabularyAnswer(
 function isValidResultForPayload(
   payload: VocabularyAnswerSubmission,
   result: unknown
-): result is VocabularyAnswerResult {
+): result is VocabularyAnswerApiResult {
   if (typeof result !== "object" || result === null || Array.isArray(result)) {
     return false;
   }
 
   const body = result as Record<string, unknown>;
+  if (!isValidVocabularyProgressSnapshot(body.progress)) {
+    return false;
+  }
 
   if (payload.answerType === "definition") {
     return (
       body.answerType === "definition" &&
       typeof body.correctChoiceId === "string" &&
       body.correctChoiceId !== "" &&
-      Object.keys(body).length === 2
+      Object.keys(body).length === 3
     );
   }
 
@@ -80,8 +84,8 @@ function isValidResultForPayload(
   }
 
   return body.correct
-    ? Object.keys(body).length === 2
+    ? Object.keys(body).length === 3
     : typeof body.correctAnswer === "string" &&
         body.correctAnswer !== "" &&
-        Object.keys(body).length === 3;
+        Object.keys(body).length === 4;
 }

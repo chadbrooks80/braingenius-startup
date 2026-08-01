@@ -34,11 +34,11 @@ const ROUTES: Array<{
     name: "content",
     handler: handleVocabularyContentRouteRequest,
     url: "http://local.test/api/learning/vocabulary/content",
-    body: { contentType: "manifest", wordListId: "word_list_id" },
-    // A non-manifest request with no learner cookie is rejected
-    // deterministically before any database access, proving the request
-    // passed the module-access gate and reached the real handler without
-    // depending on a real (unfaked) Prisma-backed list lookup.
+    body: { contentType: "manifest", learningId: "learning-id" },
+    // A non-manifest request against an unauthorized/unknown lesson is
+    // rejected deterministically before any real database access, proving
+    // the request passed the module-access gate and reached the real
+    // handler without depending on a real (unfaked) Prisma-backed lookup.
     passThroughBody: {
       contentType: "definition-display",
       lessonId: "00000000-0000-4000-8000-000000000001",
@@ -51,8 +51,15 @@ const ROUTES: Array<{
     handler: handleVocabularySubmitAnswerRouteRequest,
     url: "http://local.test/api/learning/vocabulary/submit-answer",
     body: { answerType: "definition", attemptId: "attempt-1", selectedChoiceId: "a" },
-    // No learner cookie is sent, so the capability lookup always misses.
-    passThroughBody: { answerType: "definition", attemptId: "attempt-1", selectedChoiceId: "a" },
+    // A structurally invalid submission is rejected by strict parsing before
+    // grading would ever need a real (unfaked) database, proving the
+    // request passed the module-access gate and reached the real handler.
+    passThroughBody: {
+      answerType: "definition",
+      attemptId: "attempt-1",
+      selectedChoiceId: "a",
+      extra: true,
+    },
     passThroughStatus: 400,
   },
   {

@@ -1,6 +1,31 @@
+import type {
+  VocabularyPanelDisplayWord,
+  VocabularyPanelSpellingWord,
+} from "../module-panels/vocabularyPanelTypes";
+import type { VocabularyWordProgress } from "../state/VocabularyLessonTypes";
+
 export type VocabularyChoice = {
   id: string;
   text: string;
+};
+
+export type VocabularyPanelSnapshot = {
+  wordList: VocabularyPanelDisplayWord[];
+  spellingWords: VocabularyPanelSpellingWord[];
+  masteredWords: VocabularyPanelDisplayWord[];
+};
+
+// The authoritative durable-progress projection returned alongside every
+// grade. The browser mirrors it into local lesson state and publishes it to
+// the three module-panel setters; server-returned fields always overwrite
+// local assumptions.
+export type VocabularyProgressSnapshot = {
+  learningStatus: "ACTIVE" | "COMPLETED";
+  gradedAnswerCount: number;
+  correctAnswerCount: number;
+  incorrectAnswerCount: number;
+  stateVersion: number;
+  panel: VocabularyPanelSnapshot;
 };
 
 export const VOCABULARY_SCREEN_CONTENT_TYPES = [
@@ -22,7 +47,7 @@ export type VocabularyScreenContentType =
 
 export type VocabularyLessonManifestRequest = {
   contentType: "manifest";
-  wordListId: string;
+  learningId: string;
 };
 
 // Authorized refill loading: retrieves exactly one next ordered database
@@ -84,6 +109,16 @@ export type VocabularyLessonManifest = {
   // of how many complete word records are currently loaded, so lazy loading
   // never changes lesson statistics or completion.
   totalWordCount: number;
+  // The authoritative durable progress/panel snapshot reconstructed from the
+  // database for this learningId, published immediately on initialization.
+  progress: VocabularyProgressSnapshot;
+  // Durable-resume seed data so the browser's own lesson-sequencing mirror
+  // (which decides which content type to request next) starts from the same
+  // state as the server's mirror instead of blank progress. Keyed by the
+  // opaque lesson-scoped word IDs in `words`, never canonical list-word IDs.
+  hydratedProgressByWordId: Record<string, VocabularyWordProgress>;
+  checkpointEligibleWordIdOrder: string[];
+  servedCheckpointGroupCount: number;
 };
 
 // `wordId: null` means the ordered database source is exhausted: no next
@@ -167,3 +202,80 @@ export type VocabularyContentResponse =
 export type VocabularyContentResponseFor<
   Request extends VocabularyContentRequest,
 > = Extract<VocabularyContentResponse, { contentType: Request["contentType"] }>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonBlankString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+function hasExactFields(
+  value: Record<string, unknown>,
+  fields: readonly string[]
+): boolean {
+  const actualFields = Object.keys(value);
+  return (
+    actualFields.length === fields.length &&
+    actualFields.every((field) => fields.includes(field))
+  );
+}
+
+function isPanelDisplayWordArray(value: unknown): value is VocabularyPanelDisplayWord[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        isRecord(entry) &&
+        hasExactFields(entry, ["id", "word"]) &&
+        isNonBlankString(entry.id) &&
+        isNonBlankString(entry.word)
+    )
+  );
+}
+
+function isPanelSpellingWordArray(
+  value: unknown
+): value is VocabularyPanelSpellingWord[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) => isRecord(entry) && hasExactFields(entry, ["id"]) && isNonBlankString(entry.id)
+    )
+  );
+}
+
+export function isValidVocabularyPanelSnapshot(
+  value: unknown
+): value is VocabularyPanelSnapshot {
+  return (
+    isRecord(value) &&
+    hasExactFields(value, ["wordList", "spellingWords", "masteredWords"]) &&
+    isPanelDisplayWordArray(value.wordList) &&
+    isPanelSpellingWordArray(value.spellingWords) &&
+    isPanelDisplayWordArray(value.masteredWords)
+  );
+}
+
+export function isValidVocabularyProgressSnapshot(
+  value: unknown
+): value is VocabularyProgressSnapshot {
+  return (
+    isRecord(value) &&
+    hasExactFields(value, [
+      "learningStatus",
+      "gradedAnswerCount",
+      "correctAnswerCount",
+      "incorrectAnswerCount",
+      "stateVersion",
+      "panel",
+    ]) &&
+    (value.learningStatus === "ACTIVE" || value.learningStatus === "COMPLETED") &&
+    Number.isInteger(value.gradedAnswerCount) &&
+    Number.isInteger(value.correctAnswerCount) &&
+    Number.isInteger(value.incorrectAnswerCount) &&
+    Number.isInteger(value.stateVersion) &&
+    isValidVocabularyPanelSnapshot(value.panel)
+  );
+}

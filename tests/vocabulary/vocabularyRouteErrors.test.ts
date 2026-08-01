@@ -3,35 +3,35 @@ import test from "node:test";
 import { LearningRouteError } from "../../src/lib/learning-engine/errors/LearningRouteError";
 import {
   createInvalidVocabularyRouteError,
-  createVocabularyListIdMissingError,
-  createVocabularyListNotFoundError,
+  createVocabularyLearningIdMissingError,
+  createVocabularyLearningNotFoundError,
 } from "../../src/learning-modules/vocabulary/errors/vocabularyRouteErrors";
 
-test("creates the module-owned missing-list route error", () => {
-  const error = createVocabularyListIdMissingError();
+test("creates the module-owned missing-learning-id route error", () => {
+  const error = createVocabularyLearningIdMissingError();
 
   assertRouteError(error, {
     kind: "MODULE_RESOURCE_MISSING",
-    code: "VOCABULARY_LIST_ID_MISSING",
-    technicalMessage: "Vocabulary route omitted the required word-list ID.",
+    code: "VOCABULARY_LEARNING_ID_MISSING",
+    technicalMessage: "Vocabulary route omitted the required learning ID.",
     title: "Vocabulary List Not Found",
     message: "This lesson link does not include a vocabulary list.",
   });
   assertPresentationExcludes(error, [error.message]);
 });
 
-test("creates the module-owned list-not-found route error without exposing the list ID", () => {
-  const wordListId = "private-list-diagnostic-42";
-  const error = createVocabularyListNotFoundError(wordListId);
+test("creates the module-owned learning-not-found route error without exposing the learning ID", () => {
+  const learningId = "private-learning-diagnostic-42";
+  const error = createVocabularyLearningNotFoundError(learningId);
 
   assertRouteError(error, {
     kind: "MODULE_RESOURCE_NOT_FOUND",
-    code: "VOCABULARY_LIST_NOT_FOUND",
-    technicalMessage: `Vocabulary word list not found: ${wordListId}`,
+    code: "VOCABULARY_LEARNING_NOT_FOUND",
+    technicalMessage: `Vocabulary learning not found or not authorized: ${learningId}`,
     title: "Vocabulary List Not Found",
     message: "We could not find the vocabulary list requested by this link.",
   });
-  assertPresentationExcludes(error, [wordListId, error.message]);
+  assertPresentationExcludes(error, [learningId, error.message]);
 });
 
 test("creates the module-owned invalid-route error", () => {
