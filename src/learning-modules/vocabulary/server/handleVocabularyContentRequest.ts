@@ -108,7 +108,13 @@ export async function handleVocabularyContentRequest(
     return invalidCapabilityResponse();
   }
 
-  const cachedContent = capabilityStore.getCachedContent(authorization);
+  let cachedContent;
+  try {
+    cachedContent = await capabilityStore.getCachedContent(authorization);
+  } catch (error) {
+    console.error("[vocabulary-content] cached content lookup unavailable", error);
+    return unavailableResponse();
+  }
   let built;
   if (cachedContent) {
     built = { content: cachedContent };
@@ -130,7 +136,12 @@ export async function handleVocabularyContentRequest(
   }
 
   if (!cachedContent) {
-    capabilityStore.recordContentResponse(authorization, built);
+    try {
+      await capabilityStore.recordContentResponse(authorization, built);
+    } catch (error) {
+      console.error("[vocabulary-content] content record unavailable", error);
+      return unavailableResponse();
+    }
   }
 
   return Response.json(built.content, {

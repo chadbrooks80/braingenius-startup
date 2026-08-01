@@ -15,6 +15,7 @@ import {
   TEST_WORD_SEEDS,
 } from "./fakeVocabularyListStore";
 import { createDefaultFakeVocabularyLearningSource } from "./testVocabularyApi";
+import { createFakeVocabularyRuntimeStore } from "./fakeVocabularyRuntimeStore";
 
 const LIST = createFakeVocabularyList(TEST_LIST_ID, TEST_OWNER_USER_ID, TEST_WORD_SEEDS);
 const CONTEXT = createFakeContentBuildContext(LIST.words);
@@ -38,6 +39,7 @@ test("browser-visible manifest and definition-practice projections cannot mechan
   const store = new VocabularyContentCapabilityStore({
     listSource: createDefaultFakeVocabularyListSource(),
     learningSource: createDefaultFakeVocabularyLearningSource(),
+    runtimeStore: createFakeVocabularyRuntimeStore(),
   });
   const manifest = await store.createManifest(
     TEST_OWNER_USER_ID,

@@ -35,40 +35,32 @@ test("introduces the first five active words in load order before practice", () 
   assert.equal(step.kind, "definition-practice");
 });
 
-test("three consecutive correct definitions and three consecutive correct spellings master independently", () => {
+// DEFINITION_MASTERY_STREAK and SPELLING_MASTERY_STREAK are intentionally
+// set to 1 during the current development phase (their eventual product
+// value is 3). This test exercises the currently configured streak rather
+// than a hardcoded 3, so update it alongside the constants when the product
+// value changes.
+test("one correct definition answer and one correct spelling answer master independently at the currently configured mastery streak", () => {
   const word = HANDLES[0];
   const state = new VocabularyLessonState([word], 1, () => 0);
   let step = finishIntroductions(state, 1);
 
-  // Definition mastery requires exactly three consecutive correct answers;
-  // an incorrect answer along the way resets the streak without affecting
-  // the still-untouched spelling stage.
-  step = answerAndAdvance(state, step, true);
-  let progress = state.getWordProgress(word.id);
-  assert.equal(progress.definitionConsecutiveCorrect, 1);
-  assert.equal(progress.definitionMastered, false);
-  assert.equal(step.kind, "definition-practice");
-
+  // An incorrect answer still resets the streak to 0 without mastering; the
+  // very next correct answer then masters immediately since the currently
+  // configured streak only needs to reach 1.
   step = answerAndAdvance(state, step, false);
-  progress = state.getWordProgress(word.id);
+  let progress = state.getWordProgress(word.id);
   assert.equal(progress.definitionConsecutiveCorrect, 0);
   assert.equal(progress.definitionMastered, false);
   assert.equal(step.kind, "definition-practice");
 
   step = answerAndAdvance(state, step, true);
-  step = answerAndAdvance(state, step, true);
   progress = state.getWordProgress(word.id);
-  assert.equal(progress.definitionConsecutiveCorrect, 2);
-  assert.equal(progress.definitionMastered, false);
-  assert.equal(step.kind, "definition-practice");
-
-  step = answerAndAdvance(state, step, true);
-  progress = state.getWordProgress(word.id);
-  assert.equal(progress.definitionConsecutiveCorrect, 3);
+  assert.equal(progress.definitionConsecutiveCorrect, 1);
   assert.equal(progress.definitionMastered, true);
   assert.equal(step.kind, "spelling-practice");
 
-  // Spelling mastery follows the identical three-consecutive-correct rule.
+  // Spelling mastery follows the identical currently configured streak rule.
   step = answerAndAdvance(state, step, false);
   progress = state.getWordProgress(word.id);
   assert.equal(progress.definitionMastered, true);
@@ -76,15 +68,8 @@ test("three consecutive correct definitions and three consecutive correct spelli
   assert.equal(progress.spellingMastered, false);
 
   step = answerAndAdvance(state, step, true);
-  step = answerAndAdvance(state, step, true);
   progress = state.getWordProgress(word.id);
-  assert.equal(progress.spellingConsecutiveCorrect, 2);
-  assert.equal(progress.spellingMastered, false);
-  assert.equal(step.kind, "spelling-practice");
-
-  step = answerAndAdvance(state, step, true);
-  progress = state.getWordProgress(word.id);
-  assert.equal(progress.spellingConsecutiveCorrect, 3);
+  assert.equal(progress.spellingConsecutiveCorrect, 1);
   assert.equal(progress.spellingMastered, true);
   assert.equal(
     progress.nextReviewQuestionNumber,

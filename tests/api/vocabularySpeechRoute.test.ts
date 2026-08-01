@@ -26,6 +26,7 @@ import {
   TEST_OWNER_USER_ID,
   TEST_WORD_SEEDS,
 } from "../vocabulary/fakeVocabularyListStore";
+import { createFakeVocabularyRuntimeStore } from "../vocabulary/fakeVocabularyRuntimeStore";
 import type { PaidTtsUsageDeps } from "../../src/lib/learning-engine/speech/ttsUsageService";
 import {
   ADMIN_SUBSCRIPTION,
@@ -334,6 +335,7 @@ async function createSpellingAuthorization(): Promise<{
     seed: () => 0,
     listSource: createDefaultFakeVocabularyListSource(),
     learningSource,
+    runtimeStore: createFakeVocabularyRuntimeStore(),
   });
   const api: VocabularyModuleApi = {
     async loadContent<Request extends VocabularyContentRequest>(request: Request) {

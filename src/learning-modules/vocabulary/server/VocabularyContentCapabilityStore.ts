@@ -23,7 +23,7 @@ import {
   VocabularyLessonState,
   type VocabularyLessonHydration,
 } from "../state/VocabularyLessonState";
-import type { VocabularyLessonStep, VocabularyWordProgress } from "../state/VocabularyLessonTypes";
+import type { VocabularyWordProgress } from "../state/VocabularyLessonTypes";
 import { createVocabularyLessonRandom } from "../state/createVocabularyLessonRandom";
 import type {
   VocabularyAnswerApiResult,
@@ -41,10 +41,27 @@ import {
   type VocabularyCommitResult,
   type VocabularyLearningSession,
 } from "./vocabularyLearningStore";
+import {
+  vocabularyRuntimeStore,
+  type LoadedLessonRecord,
+  type VocabularyRuntimeStore,
+} from "./vocabularyRuntimeStore";
+import type {
+  CapabilityRuntimeSnapshot,
+  LessonRuntimeSnapshot,
+  VocabularyCapabilityContentResponse,
+  VocabularyScreenStep,
+} from "./vocabularyRuntimeSnapshots";
 
 const DEFAULT_LIFETIME_MS = 30 * 60 * 1_000;
+// Bounds the optimistic compare-and-swap retry loop used when two backend
+// processes race to advance the same lesson/capability. A real conflict
+// resolves within one or two retries (the loser simply re-reads the
+// winner's committed state); exceeding this is treated as a genuine
+// unavailable-database condition rather than looping forever.
+const MAX_CONCURRENCY_RETRIES = 5;
 
-type ScreenStep = Exclude<VocabularyLessonStep, { kind: "lesson-complete" }>;
+type ScreenStep = VocabularyScreenStep;
 
 // Injected boundary to the module-owned `ModVocabList`/`ModVocabListWord`
 // repository. Kept as a narrow interface (not the raw Prisma client or the
@@ -127,44 +144,6 @@ const defaultVocabularyLearningSource: VocabularyLearningSource = {
 
 type RefillOutcome = { wordId: string | null };
 
-type LessonRecord = {
-  userId: string;
-  learningId: string;
-  listId: string;
-  sessionId: string;
-  expiresAt: number;
-  state: VocabularyLessonState;
-  canonicalWordIdByLessonWordId: Map<string, string>;
-  wordRecordCache: Map<string, VocabularyListWordRow>;
-  lastLoadedPosition: number;
-  refillsFulfilled: number;
-  lastRefillResult: RefillOutcome | null;
-  refillInFlight: Promise<RefillOutcome> | null;
-};
-
-type CapabilityRecord = {
-  userId: string;
-  lessonId: string;
-  listId: string;
-  step: ScreenStep | null;
-  predecessor: string | null;
-  nextCapability: string | null;
-  contentResponse: VocabularyContentResponse | null;
-  expiresAt: number;
-};
-
-// A lightweight, disposable index from a durable attempt ID to the
-// in-process lesson/successor it belongs to, used only to advance the
-// screen-sequencing mirror after a durable grade commits. If this process
-// restarts mid-attempt, the answer is still durably graded and progress is
-// never lost; only the in-memory capability chain is discarded, exactly as
-// already documented for this store, and the learner simply reopens the
-// lesson to continue from saved progress.
-type AttemptIndexRecord = {
-  lessonId: string;
-  successorCapability: string;
-};
-
 export type AuthorizedVocabularyContent = {
   capability: string;
   lessonId: string;
@@ -190,18 +169,17 @@ type CapabilityStoreOptions = {
   randomInt?: (maxExclusive: number) => number;
   listSource?: VocabularyListSource;
   learningSource?: VocabularyLearningSource;
+  runtimeStore?: VocabularyRuntimeStore;
 };
 
 export class VocabularyContentCapabilityStore {
-  private readonly lessons = new Map<string, LessonRecord>();
-  private readonly capabilities = new Map<string, CapabilityRecord>();
-  private readonly attemptIndex = new Map<string, AttemptIndexRecord>();
   private readonly now: () => number;
   private readonly lifetimeMs: number;
   private readonly seed: () => number;
   private readonly randomInt: (maxExclusive: number) => number;
   private readonly listSource: VocabularyListSource;
   private readonly learningSource: VocabularyLearningSource;
+  private readonly runtimeStore: VocabularyRuntimeStore;
 
   constructor(options: CapabilityStoreOptions = {}) {
     this.now = options.now ?? Date.now;
@@ -210,13 +188,13 @@ export class VocabularyContentCapabilityStore {
     this.randomInt = options.randomInt ?? secureRandomInt;
     this.listSource = options.listSource ?? defaultVocabularyListSource;
     this.learningSource = options.learningSource ?? defaultVocabularyLearningSource;
+    this.runtimeStore = options.runtimeStore ?? vocabularyRuntimeStore;
   }
 
   async createManifest(
     userId: string,
     learningId: string
   ): Promise<VocabularyLessonManifest | null> {
-    this.removeExpiredRecords();
     const session = await this.learningSource.initialize(userId, learningId);
     if (!session) {
       return null;
@@ -230,65 +208,85 @@ export class VocabularyContentCapabilityStore {
       hydratedPositionIds.length === 0
         ? []
         : await this.listSource.findByIds(session.listId, hydratedPositionIds);
-    const wordRecordCache = new Map<string, VocabularyListWordRow>(
-      hydratedRecords.map((row) => [row.id, row])
-    );
+    const wordRecordCache: Record<string, VocabularyListWordRow> = {};
+    for (const row of hydratedRecords) {
+      wordRecordCache[row.id] = row;
+    }
 
-    const canonicalWordIdByLessonWordId = new Map<string, string>();
+    const canonicalWordIdByLessonWordId: Record<string, string> = {};
     const lessonWords = hydratedRecords
       .slice()
       .sort((left, right) => left.position - right.position)
       .map((row) => {
         const lessonWordId = randomUUID();
-        canonicalWordIdByLessonWordId.set(lessonWordId, row.id);
+        canonicalWordIdByLessonWordId[lessonWordId] = row.id;
         return { id: lessonWordId };
       });
 
-    const hydration = this.buildHydration(session, canonicalWordIdByLessonWordId);
+    const hydration = this.buildHydration(
+      session,
+      new Map(Object.entries(canonicalWordIdByLessonWordId))
+    );
     const lastLoadedPosition =
       hydratedRecords.length > 0
         ? Math.max(...hydratedRecords.map((row) => row.position))
         : 0;
 
-    const lesson: LessonRecord = {
+    const lessonState = new VocabularyLessonState(
+      lessonWords,
+      session.totalWordCount,
+      createVocabularyLessonRandom(randomSeed),
+      hydration
+    );
+
+    const firstStep = lessonState.next();
+    if (firstStep.kind === "lesson-complete") {
+      return null;
+    }
+
+    const capabilityId = randomUUID();
+    const expiresAt = this.expiry();
+
+    const lessonSnapshot: LessonRuntimeSnapshot = {
+      schemaVersion: 1,
       userId,
       learningId,
       listId: session.listId,
       sessionId: session.sessionId,
-      expiresAt: this.expiry(),
-      state: new VocabularyLessonState(
-        lessonWords,
-        session.totalWordCount,
-        createVocabularyLessonRandom(randomSeed),
-        hydration
-      ),
+      randomSeed,
+      lessonState: lessonState.exportSnapshot(),
       canonicalWordIdByLessonWordId,
       wordRecordCache,
       lastLoadedPosition,
       refillsFulfilled: 0,
       lastRefillResult: null,
-      refillInFlight: null,
     };
-    this.lessons.set(lessonId, lesson);
-
-    const firstStep = lesson.state.next();
-    if (firstStep.kind === "lesson-complete") {
-      this.lessons.delete(lessonId);
-      return null;
-    }
-    const nextCapability = this.issueCapability(
+    const capabilitySnapshot: CapabilityRuntimeSnapshot = {
+      schemaVersion: 1,
       userId,
       lessonId,
-      session.listId,
-      firstStep,
-      null
-    );
+      listId: session.listId,
+      step: firstStep,
+      predecessor: null,
+      nextCapability: null,
+      contentResponse: null,
+    };
+
+    await this.runtimeStore.createLessonAndCapability({
+      lessonId,
+      userId,
+      listId: session.listId,
+      expiresAt,
+      lessonSnapshot,
+      capabilityId,
+      capabilitySnapshot,
+    });
 
     return {
       contentType: "manifest",
       lessonId,
       randomSeed,
-      nextCapability,
+      nextCapability: capabilityId,
       words: lessonWords,
       totalWordCount: session.totalWordCount,
       progress: session.progress,
@@ -305,13 +303,20 @@ export class VocabularyContentCapabilityStore {
     contentType: VocabularyScreenContentType,
     exampleIndex?: number
   ): Promise<AuthorizedVocabularyContent | null> {
-    this.removeExpiredRecords();
-    const lesson = this.lessons.get(lessonId);
-    const record = this.capabilities.get(capability);
+    const loadedLesson = await this.loadValidLesson(lessonId);
+    if (!loadedLesson || loadedLesson.snapshot.userId !== userId) {
+      return null;
+    }
+
+    const loadedCapability = await this.runtimeStore.loadCapability(capability);
+    if (!loadedCapability) {
+      return null;
+    }
+
+    let lesson = loadedLesson.snapshot;
+    let record = loadedCapability.snapshot;
+
     if (
-      !lesson ||
-      !record ||
-      lesson.userId !== userId ||
       record.userId !== userId ||
       record.lessonId !== lessonId ||
       record.listId !== lesson.listId ||
@@ -328,49 +333,41 @@ export class VocabularyContentCapabilityStore {
     }
 
     if (!record.nextCapability) {
-      if (record.predecessor) {
-        this.retireCapability(record.predecessor);
-      }
-
-      if (record.step.kind === "definition-fun-fact") {
-        await this.learningSource.markIntroduced(
-          lesson.learningId,
-          lesson.sessionId,
-          this.requireCanonicalWordId(lesson, record.step.wordId)
+      const advanced = await this.advanceCapability(
+        userId,
+        lessonId,
+        lesson,
+        loadedLesson.version,
+        loadedLesson.expiresAt,
+        capability,
+        record,
+        loadedCapability.version
+      );
+      if (!advanced) {
+        throw new Error(
+          "Vocabulary content authorization could not converge after a concurrent update."
         );
       }
-
-      if (isPracticeStep(record.step)) {
-        record.nextCapability = this.issueCapability(
-          userId,
-          lessonId,
-          record.listId,
-          null,
-          capability
-        );
-      } else {
-        const nextStep = lesson.state.next();
-        record.nextCapability = this.issueCapability(
-          userId,
-          lessonId,
-          record.listId,
-          nextStep.kind === "lesson-complete" ? null : nextStep,
-          capability
-        );
-      }
+      lesson = advanced.lesson;
+      record = advanced.capability;
     }
 
-    if (record.step.kind === "word-search-checkpoint") {
+    const step = record.step;
+    if (!step) {
+      return null;
+    }
+
+    if (step.kind === "word-search-checkpoint") {
       return {
         capability,
         lessonId,
         contentType,
         listId: record.listId,
         wordId: "",
-        wordIds: record.step.wordIds.map((lessonWordId) =>
+        wordIds: step.wordIds.map((lessonWordId) =>
           this.requireCanonicalWordId(lesson, lessonWordId)
         ),
-        nextCapability: record.nextCapability,
+        nextCapability: record.nextCapability as string,
       };
     }
 
@@ -379,29 +376,29 @@ export class VocabularyContentCapabilityStore {
       lessonId,
       contentType,
       listId: record.listId,
-      wordId: this.requireCanonicalWordId(lesson, record.step.wordId),
-      review: isPracticeStep(record.step) ? record.step.review : undefined,
-      nextCapability: record.nextCapability,
+      wordId: this.requireCanonicalWordId(lesson, step.wordId),
+      review: isPracticeStep(step) ? step.review : undefined,
+      nextCapability: record.nextCapability as string,
     };
   }
 
-  getCachedContent(
+  async getCachedContent(
     authorization: AuthorizedVocabularyContent
-  ): VocabularyContentResponse | null {
-    return (
-      this.capabilities.get(authorization.capability)?.contentResponse ?? null
-    );
+  ): Promise<VocabularyContentResponse | null> {
+    const loaded = await this.runtimeStore.loadCapability(authorization.capability);
+    return loaded?.snapshot.contentResponse ?? null;
   }
 
   async buildContent(
     authorization: AuthorizedVocabularyContent,
     exampleIndex?: number
   ): Promise<VocabularyContentBuildResult | null> {
-    const lesson = this.lessons.get(authorization.lessonId);
-    if (!lesson) {
+    const loadedLesson = await this.loadValidLesson(authorization.lessonId);
+    if (!loadedLesson) {
       return null;
     }
 
+    let lesson = loadedLesson.snapshot;
     let wordIdsForContent = authorization.wordIds;
     if (authorization.contentType === "word-search-checkpoint") {
       const served = await this.learningSource.serveCheckpointGroup(lesson.learningId);
@@ -409,24 +406,35 @@ export class VocabularyContentCapabilityStore {
         return null;
       }
       wordIdsForContent = served;
-      await this.ensureWordsCached(lesson, served);
+      lesson = await this.ensureWordsCached(
+        authorization.lessonId,
+        loadedLesson.version,
+        loadedLesson.expiresAt,
+        lesson,
+        served
+      );
     } else {
-      await this.ensureWordsCached(lesson, [authorization.wordId]);
+      lesson = await this.ensureWordsCached(
+        authorization.lessonId,
+        loadedLesson.version,
+        loadedLesson.expiresAt,
+        lesson,
+        [authorization.wordId]
+      );
     }
 
+    const activePoolLessonWordIds = this.getActivePoolWordIds(lesson);
+
     const context: VocabularyContentBuildContext = {
-      getWord: (wordId) => lesson.wordRecordCache.get(wordId),
+      getWord: (wordId) => lesson.wordRecordCache[wordId],
       getActiveDistractorCandidates: (excludeWordId) => {
-        const canonicalIds = lesson.state
-          .getActivePoolWordIds()
-          .map((lessonWordId) =>
-            lesson.canonicalWordIdByLessonWordId.get(lessonWordId)
-          )
+        const canonicalIds = activePoolLessonWordIds
+          .map((lessonWordId) => lesson.canonicalWordIdByLessonWordId[lessonWordId])
           .filter(
             (id): id is string => typeof id === "string" && id !== excludeWordId
           );
         return canonicalIds
-          .map((id) => lesson.wordRecordCache.get(id))
+          .map((id) => lesson.wordRecordCache[id])
           .filter((word): word is VocabularyListWordRow => Boolean(word));
       },
       findMoreDistractors: (excludeIds, count) =>
@@ -466,26 +474,53 @@ export class VocabularyContentCapabilityStore {
     );
   }
 
-  recordContentResponse(
+  async recordContentResponse(
     authorization: AuthorizedVocabularyContent,
     built: VocabularyContentBuildResult
-  ): void {
-    const record = this.capabilities.get(authorization.capability);
-    const lesson = this.lessons.get(record?.lessonId ?? "");
-    if (!record || !lesson || record.contentResponse) {
+  ): Promise<void> {
+    const loadedCapability = await this.runtimeStore.loadCapability(authorization.capability);
+    if (
+      !loadedCapability ||
+      loadedCapability.snapshot.lessonId !== authorization.lessonId ||
+      loadedCapability.snapshot.contentResponse
+    ) {
       return;
     }
-    record.contentResponse = built.content;
+    const record = loadedCapability.snapshot;
+
+    const loadedLesson = await this.loadValidLesson(authorization.lessonId);
+    if (!loadedLesson) {
+      return;
+    }
+
+    // `getVocabularyContent` never returns "manifest" or "word-refill" for a
+    // capability-scoped build, matching `VocabularyCapabilityContentResponse`.
+    const contentResponse = built.content as VocabularyCapabilityContentResponse;
+    const updatedCapability: CapabilityRuntimeSnapshot = {
+      ...record,
+      contentResponse,
+    };
 
     if (
       built.content.contentType !== "definition-practice" &&
       built.content.contentType !== "spelling-practice"
     ) {
+      await this.runtimeStore.recordContent({
+        lessonExpiresAt: loadedLesson.expiresAt,
+        capabilityId: authorization.capability,
+        expectedCapabilityVersion: loadedCapability.version,
+        capabilitySnapshot: updatedCapability,
+        lessonUpdate: null,
+      });
       return;
     }
 
-    const wordId = this.requireLessonWordId(lesson, authorization.wordId);
-    lesson.state.activateAttempt({
+    const lessonState = VocabularyLessonState.restoreFromSnapshot(
+      loadedLesson.snapshot.lessonState,
+      loadedLesson.snapshot.randomSeed
+    );
+    const wordId = this.requireLessonWordId(loadedLesson.snapshot, authorization.wordId);
+    lessonState.activateAttempt({
       wordId,
       answerType:
         built.content.contentType === "definition-practice"
@@ -499,119 +534,341 @@ export class VocabularyContentCapabilityStore {
       review: authorization.review ?? false,
     });
 
-    if (record.nextCapability) {
-      this.attemptIndex.set(built.content.attemptId, {
-        lessonId: record.lessonId,
-        successorCapability: record.nextCapability,
-      });
-    }
+    const updatedLessonSnapshot: LessonRuntimeSnapshot = {
+      ...loadedLesson.snapshot,
+      lessonState: lessonState.exportSnapshot(),
+    };
+
+    const attemptIndex = record.nextCapability
+      ? {
+          attemptId: built.content.attemptId,
+          userId: record.userId,
+          listId: record.listId,
+          snapshot: {
+            schemaVersion: 1 as const,
+            lessonId: record.lessonId,
+            successorCapability: record.nextCapability,
+          },
+        }
+      : null;
+
+    await this.runtimeStore.recordContent({
+      lessonExpiresAt: loadedLesson.expiresAt,
+      capabilityId: authorization.capability,
+      expectedCapabilityVersion: loadedCapability.version,
+      capabilitySnapshot: updatedCapability,
+      lessonUpdate: {
+        lessonId: authorization.lessonId,
+        expectedVersion: loadedLesson.version,
+        snapshot: updatedLessonSnapshot,
+        attemptIndex,
+      },
+    });
   }
 
   /**
    * Authorized refill loading: fetches exactly one next ordered database
    * word once server-authoritative lesson state confirms a slot is due.
-   * Concurrent/repeated calls for the same due slot share one in-flight
-   * fetch, and a call with nothing newly due replays the last recorded
+   * Concurrent/repeated calls for the same due slot are resolved by an
+   * optimistic compare-and-swap loop over the shared runtime record: a
+   * losing writer re-reads the committed lesson and replays its recorded
    * outcome instead of advancing the ordered cursor again.
    */
   async refillNextWord(
     userId: string,
     lessonId: string
   ): Promise<RefillOutcome | null> {
-    this.removeExpiredRecords();
-    const lesson = this.lessons.get(lessonId);
-    if (!lesson || lesson.userId !== userId) {
+    const loaded = await this.loadValidLesson(lessonId);
+    if (!loaded || loaded.snapshot.userId !== userId) {
       return null;
     }
-    if (!(await this.learningSource.authorize(userId, lesson.learningId))) {
+    if (!(await this.learningSource.authorize(userId, loaded.snapshot.learningId))) {
       return null;
     }
 
-    if (lesson.refillInFlight) {
-      return lesson.refillInFlight;
-    }
-
-    const due = lesson.state.getFirstMasteryCount();
+    let lesson = loaded.snapshot;
+    let version = loaded.version;
+    const due = lesson.lessonState.checkpointEligibleOrder.length;
     if (lesson.refillsFulfilled >= due) {
       return lesson.lastRefillResult ?? { wordId: null };
     }
 
-    const task = (async (): Promise<RefillOutcome> => {
-      try {
-        const row = await this.listSource.findNext(
-          lesson.listId,
-          lesson.lastLoadedPosition
-        );
-        if (!row) {
-          lesson.refillsFulfilled += 1;
-          lesson.lastRefillResult = { wordId: null };
-          return lesson.lastRefillResult;
-        }
+    for (let attempt = 0; attempt < MAX_CONCURRENCY_RETRIES; attempt += 1) {
+      const row = await this.listSource.findNext(lesson.listId, lesson.lastLoadedPosition);
 
+      let outcome: RefillOutcome;
+      let updatedSnapshot: LessonRuntimeSnapshot;
+      if (!row) {
+        outcome = { wordId: null };
+        updatedSnapshot = {
+          ...lesson,
+          refillsFulfilled: lesson.refillsFulfilled + 1,
+          lastRefillResult: outcome,
+        };
+      } else {
         const lessonWordId = randomUUID();
-        lesson.canonicalWordIdByLessonWordId.set(lessonWordId, row.id);
-        lesson.wordRecordCache.set(row.id, row);
-        lesson.state.appendWord({ id: lessonWordId });
-        lesson.lastLoadedPosition = row.position;
-        lesson.refillsFulfilled += 1;
-        lesson.lastRefillResult = { wordId: lessonWordId };
-        return lesson.lastRefillResult;
-      } finally {
-        lesson.refillInFlight = null;
+        const lessonState = VocabularyLessonState.restoreFromSnapshot(
+          lesson.lessonState,
+          lesson.randomSeed
+        );
+        lessonState.appendWord({ id: lessonWordId });
+        outcome = { wordId: lessonWordId };
+        updatedSnapshot = {
+          ...lesson,
+          lessonState: lessonState.exportSnapshot(),
+          canonicalWordIdByLessonWordId: {
+            ...lesson.canonicalWordIdByLessonWordId,
+            [lessonWordId]: row.id,
+          },
+          wordRecordCache: { ...lesson.wordRecordCache, [row.id]: row },
+          lastLoadedPosition: row.position,
+          refillsFulfilled: lesson.refillsFulfilled + 1,
+          lastRefillResult: outcome,
+        };
       }
-    })();
-    lesson.refillInFlight = task;
-    return task;
+
+      const ok = await this.runtimeStore.updateLesson({
+        lessonId,
+        expectedVersion: version,
+        snapshot: updatedSnapshot,
+        expiresAt: loaded.expiresAt,
+      });
+      if (ok) {
+        return outcome;
+      }
+
+      const reloaded = await this.runtimeStore.loadLesson(lessonId);
+      if (!reloaded) {
+        return null;
+      }
+      lesson = reloaded.snapshot;
+      version = reloaded.version;
+      if (lesson.refillsFulfilled >= due) {
+        return lesson.lastRefillResult ?? { wordId: null };
+      }
+    }
+
+    throw new Error("Vocabulary refill could not converge after a concurrent update.");
   }
 
   async resolveAnswer(
     userId: string,
     submission: VocabularyAnswerSubmission
   ): Promise<VocabularyAnswerApiResult | null> {
-    this.removeExpiredRecords();
-
     const commit = await this.learningSource.commitAnswer(userId, submission);
     if (commit.status !== "ok") {
       return null;
     }
 
     const result = toLegacyResult(submission, commit);
+    const index = await this.runtimeStore.loadAttemptIndex(submission.attemptId);
 
-    const index = this.attemptIndex.get(submission.attemptId);
     if (index) {
-      const lesson = this.lessons.get(index.lessonId);
-      const successor = this.capabilities.get(index.successorCapability);
-      if (lesson && successor && !successor.step) {
-        try {
-          lesson.state.beginSubmission(submission);
-          lesson.state.recordSubmission(result);
-          const nextStep = lesson.state.next();
-          successor.step = nextStep.kind === "lesson-complete" ? null : nextStep;
-        } catch (error) {
-          // The durable answer already committed successfully; a mirror
-          // desync only degrades in-process screen sequencing, which the
-          // learner recovers from by reopening the lesson.
-          console.warn("vocabulary_sequencer_mirror_desync", error);
+      try {
+        const loadedLesson = await this.runtimeStore.loadLesson(index.lessonId);
+        const loadedCapability = await this.runtimeStore.loadCapability(
+          index.successorCapability
+        );
+        if (
+          loadedLesson &&
+          !this.isExpired(loadedLesson.expiresAt) &&
+          loadedCapability &&
+          !loadedCapability.snapshot.step
+        ) {
+          const lessonState = VocabularyLessonState.restoreFromSnapshot(
+            loadedLesson.snapshot.lessonState,
+            loadedLesson.snapshot.randomSeed
+          );
+          lessonState.beginSubmission(submission);
+          lessonState.recordSubmission(result);
+          const nextStep = lessonState.next();
+
+          const updatedLessonSnapshot: LessonRuntimeSnapshot = {
+            ...loadedLesson.snapshot,
+            lessonState: lessonState.exportSnapshot(),
+          };
+          const updatedCapabilitySnapshot: CapabilityRuntimeSnapshot = {
+            ...loadedCapability.snapshot,
+            step: nextStep.kind === "lesson-complete" ? null : nextStep,
+          };
+
+          const ok = await this.runtimeStore.resolveAnswerAdvance({
+            attemptId: submission.attemptId,
+            lessonExpiresAt: loadedLesson.expiresAt,
+            lessonId: index.lessonId,
+            expectedLessonVersion: loadedLesson.version,
+            lessonSnapshot: updatedLessonSnapshot,
+            capabilityId: index.successorCapability,
+            expectedCapabilityVersion: loadedCapability.version,
+            capabilitySnapshot: updatedCapabilitySnapshot,
+          });
+          if (!ok) {
+            await this.runtimeStore.deleteAttemptIndex(submission.attemptId);
+          }
+        } else {
+          await this.runtimeStore.deleteAttemptIndex(submission.attemptId);
         }
+      } catch (error) {
+        // The durable answer already committed successfully; a mirror
+        // desync only degrades in-process screen sequencing, which the
+        // learner recovers from by reopening the lesson.
+        console.warn("vocabulary_sequencer_mirror_desync", error);
+        await this.runtimeStore.deleteAttemptIndex(submission.attemptId).catch(() => undefined);
       }
-      this.attemptIndex.delete(submission.attemptId);
     }
 
     return { ...result, progress: commit.progress };
   }
 
+  /**
+   * Resolves the `authorizeContent` "advance past the current screen"
+   * transition with a bounded optimistic compare-and-swap retry: a losing
+   * writer re-reads the committed capability/lesson and either replays a
+   * concurrent winner's already-advanced result or recomputes the
+   * transition from the freshly committed lesson state.
+   */
+  private async advanceCapability(
+    userId: string,
+    lessonId: string,
+    initialLesson: LessonRuntimeSnapshot,
+    initialLessonVersion: number,
+    lessonExpiresAt: number,
+    capabilityId: string,
+    initialRecord: CapabilityRuntimeSnapshot,
+    initialCapabilityVersion: number
+  ): Promise<{ lesson: LessonRuntimeSnapshot; capability: CapabilityRuntimeSnapshot } | null> {
+    let lesson = initialLesson;
+    let lessonVersion = initialLessonVersion;
+    let record = initialRecord;
+    let capabilityVersion = initialCapabilityVersion;
+
+    for (let attempt = 0; attempt < MAX_CONCURRENCY_RETRIES; attempt += 1) {
+      const step = record.step;
+      if (!step) {
+        return null;
+      }
+
+      if (step.kind === "definition-fun-fact") {
+        await this.learningSource.markIntroduced(
+          lesson.learningId,
+          lesson.sessionId,
+          this.requireCanonicalWordId(lesson, step.wordId)
+        );
+      }
+
+      const newCapabilityId = randomUUID();
+      let lessonUpdate: { expectedVersion: number; snapshot: LessonRuntimeSnapshot } | null =
+        null;
+      let newStep: ScreenStep | null;
+
+      if (isPracticeStep(step)) {
+        newStep = null;
+      } else {
+        const lessonState = VocabularyLessonState.restoreFromSnapshot(
+          lesson.lessonState,
+          lesson.randomSeed
+        );
+        const nextStep = lessonState.next();
+        newStep = nextStep.kind === "lesson-complete" ? null : nextStep;
+        lessonUpdate = {
+          expectedVersion: lessonVersion,
+          snapshot: { ...lesson, lessonState: lessonState.exportSnapshot() },
+        };
+      }
+
+      const newCapabilitySnapshot: CapabilityRuntimeSnapshot = {
+        schemaVersion: 1,
+        userId,
+        lessonId,
+        listId: record.listId,
+        step: newStep,
+        predecessor: capabilityId,
+        nextCapability: null,
+        contentResponse: null,
+      };
+      const updatedRecord: CapabilityRuntimeSnapshot = {
+        ...record,
+        nextCapability: newCapabilityId,
+      };
+
+      const ok = await this.runtimeStore.advanceCapability({
+        lessonId,
+        listId: record.listId,
+        userId,
+        lessonExpiresAt,
+        capabilityId,
+        expectedCapabilityVersion: capabilityVersion,
+        capabilitySnapshot: updatedRecord,
+        newCapability: { id: newCapabilityId, snapshot: newCapabilitySnapshot },
+        retireCapabilityId: record.predecessor,
+        lessonUpdate,
+      });
+
+      if (ok) {
+        return {
+          lesson: lessonUpdate ? lessonUpdate.snapshot : lesson,
+          capability: updatedRecord,
+        };
+      }
+
+      const reloadedCapability = await this.runtimeStore.loadCapability(capabilityId);
+      if (!reloadedCapability) {
+        return null;
+      }
+      record = reloadedCapability.snapshot;
+      capabilityVersion = reloadedCapability.version;
+
+      if (record.nextCapability) {
+        // A concurrent winner already committed this exact transition;
+        // return its result instead of creating a second successor.
+        const reloadedLesson = await this.runtimeStore.loadLesson(lessonId);
+        return {
+          lesson: reloadedLesson ? reloadedLesson.snapshot : lesson,
+          capability: record,
+        };
+      }
+
+      const reloadedLesson = await this.runtimeStore.loadLesson(lessonId);
+      if (!reloadedLesson) {
+        return null;
+      }
+      lesson = reloadedLesson.snapshot;
+      lessonVersion = reloadedLesson.version;
+    }
+
+    return null;
+  }
+
   private async ensureWordsCached(
-    lesson: LessonRecord,
+    lessonId: string,
+    lessonVersion: number,
+    lessonExpiresAt: number,
+    lesson: LessonRuntimeSnapshot,
     canonicalWordIds: readonly string[]
-  ): Promise<void> {
-    const missing = canonicalWordIds.filter((id) => !lesson.wordRecordCache.has(id));
+  ): Promise<LessonRuntimeSnapshot> {
+    const missing = canonicalWordIds.filter((id) => !(id in lesson.wordRecordCache));
     if (missing.length === 0) {
-      return;
+      return lesson;
     }
     const rows = await this.listSource.findByIds(lesson.listId, missing);
-    for (const row of rows) {
-      lesson.wordRecordCache.set(row.id, row);
+    if (rows.length === 0) {
+      return lesson;
     }
+
+    const updatedSnapshot: LessonRuntimeSnapshot = {
+      ...lesson,
+      wordRecordCache: { ...lesson.wordRecordCache, ...Object.fromEntries(rows.map((row) => [row.id, row])) },
+    };
+    // Best-effort: a lost race here only means a future request re-fetches
+    // the same rows, so the freshly fetched cache is used for this request
+    // either way.
+    await this.runtimeStore.updateLesson({
+      lessonId,
+      expectedVersion: lessonVersion,
+      snapshot: updatedSnapshot,
+      expiresAt: lessonExpiresAt,
+    });
+    return updatedSnapshot;
   }
 
   /**
@@ -692,44 +949,28 @@ export class VocabularyContentCapabilityStore {
     };
   }
 
-  private issueCapability(
-    userId: string,
-    lessonId: string,
-    listId: string,
-    step: ScreenStep | null,
-    predecessor: string | null
-  ): string {
-    const capability = randomUUID();
-    this.capabilities.set(capability, {
-      userId,
-      lessonId,
-      listId,
-      step,
-      predecessor,
-      nextCapability: null,
-      contentResponse: null,
-      expiresAt: this.expiry(),
-    });
-    return capability;
-  }
-
-  private retireCapability(capability: string): void {
-    this.capabilities.delete(capability);
+  private getActivePoolWordIds(lesson: LessonRuntimeSnapshot): string[] {
+    return VocabularyLessonState.restoreFromSnapshot(
+      lesson.lessonState,
+      lesson.randomSeed
+    ).getActivePoolWordIds();
   }
 
   private requireCanonicalWordId(
-    lesson: LessonRecord,
+    lesson: LessonRuntimeSnapshot,
     lessonWordId: string
   ): string {
-    const wordId = lesson.canonicalWordIdByLessonWordId.get(lessonWordId);
+    const wordId = lesson.canonicalWordIdByLessonWordId[lessonWordId];
     if (!wordId) {
       throw new Error("Vocabulary lesson word capability is invalid.");
     }
     return wordId;
   }
 
-  private requireLessonWordId(lesson: LessonRecord, canonicalWordId: string): string {
-    for (const [lessonWordId, candidate] of lesson.canonicalWordIdByLessonWordId) {
+  private requireLessonWordId(lesson: LessonRuntimeSnapshot, canonicalWordId: string): string {
+    for (const [lessonWordId, candidate] of Object.entries(
+      lesson.canonicalWordIdByLessonWordId
+    )) {
       if (candidate === canonicalWordId) {
         return lessonWordId;
       }
@@ -741,18 +982,26 @@ export class VocabularyContentCapabilityStore {
     return this.now() + this.lifetimeMs;
   }
 
-  private removeExpiredRecords(): void {
-    const now = this.now();
-    for (const [lessonId, lesson] of this.lessons) {
-      if (lesson.expiresAt <= now) {
-        this.lessons.delete(lessonId);
-      }
+  private isExpired(expiresAt: number): boolean {
+    return expiresAt <= this.now();
+  }
+
+  /**
+   * Loads a lesson and lazily invalidates it once its fixed, non-sliding
+   * expiry has passed, removing every runtime record for that lesson (its
+   * capability and attempt-index rows included) so they become unusable
+   * exactly as the former in-memory expiry sweep guaranteed.
+   */
+  private async loadValidLesson(lessonId: string): Promise<LoadedLessonRecord | null> {
+    const loaded = await this.runtimeStore.loadLesson(lessonId);
+    if (!loaded) {
+      return null;
     }
-    for (const [capability, record] of this.capabilities) {
-      if (record.expiresAt <= now || !this.lessons.has(record.lessonId)) {
-        this.capabilities.delete(capability);
-      }
+    if (this.isExpired(loaded.expiresAt)) {
+      await this.runtimeStore.purgeLessonRecords(lessonId);
+      return null;
     }
+    return loaded;
   }
 }
 

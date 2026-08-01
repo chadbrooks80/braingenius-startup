@@ -107,6 +107,18 @@ enum ModVocabAttemptStatus {
   @@map("mod_vocab_attempt_status")
 }
 
+// The three former process-local capability-store record kinds
+// (`VocabularyContentCapabilityStore`'s in-memory lesson/capability/attempt-
+// index Maps), now sharing one durable table so any backend process can
+// continue a lesson. See docs/modules/vocabulary-persistence-schema.md.
+enum ModVocabRuntimeRecordKind {
+  LESSON
+  CAPABILITY
+  ATTEMPT
+
+  @@map("mod_vocab_runtime_record_kind")
+}
+
 model User {
   id                      String         @id @default(cuid())
   isOwner                 Boolean?
@@ -336,8 +348,9 @@ model ModVocabList {
 
   owner User @relation("ModVocabListOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
 
-  words     ModVocabListWord[]
-  learnings ModVocabLearning[]
+  words          ModVocabListWord[]
+  learnings      ModVocabLearning[]
+  runtimeRecords ModVocabRuntimeRecord[]
 
   @@index([ownerUserId, createdAt])
   @@map("mod_vocab_lists")
@@ -539,4 +552,37 @@ model ModVocabDailyPractice {
   @@unique([learnerUserId, practiceDate])
   @@index([learnerUserId, practiceDate])
   @@map("mod_vocab_daily_practice")
+}
+
+// Shared durable replacement for the three former
+// `VocabularyContentCapabilityStore` in-memory Maps (lesson, capability,
+// attempt-index). A single row's `id` is scoped by `recordKind`, so a
+// LESSON, CAPABILITY, and ATTEMPT row may reuse the same opaque application
+// UUID without colliding. `payload` is a strictly parsed, versioned JSON
+// snapshot (see `vocabularyRuntimeSnapshots.ts`); `stateVersion` is the
+// optimistic-concurrency token every multi-record transition compares and
+// increments so two backend processes can never both advance the same
+// lesson from the same state. This is a bounded-lifetime runtime cache, not
+// a second source of durable learner history -- see
+// docs/modules/vocabulary-persistence-schema.md.
+model ModVocabRuntimeRecord {
+  recordKind   ModVocabRuntimeRecordKind
+  id           String
+  lessonId     String
+  learnerId    String
+  wordListId   String
+  payload      Json
+  stateVersion Int                       @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  wordList ModVocabList @relation(fields: [wordListId], references: [id], onDelete: Cascade)
+
+  @@id([recordKind, id])
+  @@index([lessonId, recordKind])
+  @@index([learnerId, lessonId])
+  @@index([wordListId])
+  @@index([expiresAt])
+  @@map("mod_vocab_runtime_records")
 }

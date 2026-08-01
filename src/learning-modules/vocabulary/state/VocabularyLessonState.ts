@@ -1,4 +1,5 @@
 import { normalizedRandom } from "@/lib/random/normalizedRandom";
+import { createVocabularyLessonRandom } from "./createVocabularyLessonRandom";
 import type {
   VocabularyAnswerResult,
   VocabularyAnswerSubmission,
@@ -61,6 +62,35 @@ export type VocabularyLessonHydration = {
   servedCheckpointGroupCount: number;
 };
 
+// A complete, JSON-plain-data capture of every private field this class
+// needs to resume mid-lesson exactly where an uninterrupted instance would
+// have continued -- distinct from `VocabularyLessonHydration`, which only
+// seeds a *fresh* lesson from durable long-term progress. `randomDrawCount`
+// is the number of times this instance has ever called its injected
+// `random` source; restoring replays the same seeded generator that many
+// times (see `createVocabularyLessonRandom`) rather than resetting its
+// position, so every later selection stays identical to the uninterrupted
+// instance.
+export type VocabularyLessonStateSnapshot = {
+  schemaVersion: 1;
+  words: readonly VocabularyLessonWord[];
+  totalWordCount: number;
+  progressByWordId: Record<string, VocabularyWordProgress>;
+  activeAttempt: VocabularyActiveAttempt | null;
+  introductionPhase: IntroductionPhase | null;
+  pendingRecap: Extract<VocabularyLessonStep, { kind: "answer-recap" }> | null;
+  recapVisible: boolean;
+  gradedAnswerCount: number;
+  correctCount: number;
+  incorrectCount: number;
+  lastPracticedWordId: string | null;
+  completionReviewWordIds: readonly string[] | null;
+  checkpointEligibleOrder: readonly string[];
+  servedCheckpointGroupCount: number;
+  pendingCheckpointWordIds: readonly string[] | null;
+  randomDrawCount: number;
+};
+
 export class VocabularyLessonState {
   private words: readonly VocabularyLessonWord[];
   private readonly totalWordCount: number;
@@ -85,6 +115,11 @@ export class VocabularyLessonState {
   private readonly checkpointEligibleWordIds = new Set<string>();
   private servedCheckpointGroupCount = 0;
   private pendingCheckpointWordIds: string[] | null = null;
+  // Every call this instance has ever made to its injected `random` source.
+  // Combined with the lesson's `randomSeed`, this is the exact draw
+  // position a runtime snapshot restore replays to reproduce the identical
+  // next selection an uninterrupted instance would have made.
+  private randomDrawCount = 0;
 
   constructor(
     words: readonly VocabularyLessonWord[],
@@ -245,7 +280,7 @@ export class VocabularyLessonState {
     this.pendingRecap = {
       kind: "answer-recap",
       wordId: outcome.wordId,
-      exampleIndex: Math.floor(normalizedRandom(this.random()) * 3),
+      exampleIndex: Math.floor(normalizedRandom(this.drawRandom()) * 3),
     };
   }
 
@@ -264,6 +299,99 @@ export class VocabularyLessonState {
 
   getWordProgress(wordId: string): VocabularyWordProgress {
     return { ...this.requireProgress(wordId) };
+  }
+
+  /**
+   * A complete, JSON-plain-data capture of this instance, sufficient for
+   * `restoreFromSnapshot` to reproduce the exact next transition an
+   * uninterrupted instance would have produced. Used by the runtime store
+   * to persist mid-lesson state between requests instead of relying on
+   * process memory.
+   */
+  exportSnapshot(): VocabularyLessonStateSnapshot {
+    return {
+      schemaVersion: 1,
+      words: this.words,
+      totalWordCount: this.totalWordCount,
+      progressByWordId: Object.fromEntries(this.progressByWordId),
+      activeAttempt: this.activeAttempt ? { ...this.activeAttempt } : null,
+      introductionPhase: this.introductionPhase
+        ? { ...this.introductionPhase }
+        : null,
+      pendingRecap: this.pendingRecap ? { ...this.pendingRecap } : null,
+      recapVisible: this.recapVisible,
+      gradedAnswerCount: this.gradedAnswerCount,
+      correctCount: this.correctCount,
+      incorrectCount: this.incorrectCount,
+      lastPracticedWordId: this.lastPracticedWordId,
+      completionReviewWordIds: this.completionReviewWordIds
+        ? [...this.completionReviewWordIds]
+        : null,
+      checkpointEligibleOrder: [...this.checkpointEligibleOrder],
+      servedCheckpointGroupCount: this.servedCheckpointGroupCount,
+      pendingCheckpointWordIds: this.pendingCheckpointWordIds
+        ? [...this.pendingCheckpointWordIds]
+        : null,
+      randomDrawCount: this.randomDrawCount,
+    };
+  }
+
+  /**
+   * Rebuilds an instance from `exportSnapshot()` output. `randomSeed` is
+   * replayed through a fresh `createVocabularyLessonRandom` generator for
+   * exactly `snapshot.randomDrawCount` draws before use, reproducing the
+   * generator's exact prior draw position without ever resetting it -- the
+   * approved alternative to serializing the generator's internal state
+   * directly.
+   */
+  static restoreFromSnapshot(
+    snapshot: VocabularyLessonStateSnapshot,
+    randomSeed: number
+  ): VocabularyLessonState {
+    const random = createVocabularyLessonRandom(randomSeed);
+    for (let draw = 0; draw < snapshot.randomDrawCount; draw += 1) {
+      random();
+    }
+
+    const instance = new VocabularyLessonState(
+      snapshot.words,
+      snapshot.totalWordCount,
+      random
+    );
+
+    instance.progressByWordId.clear();
+    for (const [wordId, progress] of Object.entries(snapshot.progressByWordId)) {
+      instance.progressByWordId.set(wordId, { ...progress });
+    }
+    instance.activeAttempt = snapshot.activeAttempt
+      ? { ...snapshot.activeAttempt }
+      : null;
+    instance.introductionPhase = snapshot.introductionPhase
+      ? { ...snapshot.introductionPhase }
+      : null;
+    instance.pendingRecap = snapshot.pendingRecap
+      ? { ...snapshot.pendingRecap }
+      : null;
+    instance.recapVisible = snapshot.recapVisible;
+    instance.gradedAnswerCount = snapshot.gradedAnswerCount;
+    instance.correctCount = snapshot.correctCount;
+    instance.incorrectCount = snapshot.incorrectCount;
+    instance.lastPracticedWordId = snapshot.lastPracticedWordId;
+    instance.completionReviewWordIds = snapshot.completionReviewWordIds
+      ? new Set(snapshot.completionReviewWordIds)
+      : null;
+    instance.checkpointEligibleOrder.length = 0;
+    instance.checkpointEligibleOrder.push(...snapshot.checkpointEligibleOrder);
+    instance.checkpointEligibleWordIds.clear();
+    for (const wordId of snapshot.checkpointEligibleOrder) {
+      instance.checkpointEligibleWordIds.add(wordId);
+    }
+    instance.servedCheckpointGroupCount = snapshot.servedCheckpointGroupCount;
+    instance.pendingCheckpointWordIds = snapshot.pendingCheckpointWordIds
+      ? [...snapshot.pendingCheckpointWordIds]
+      : null;
+    instance.randomDrawCount = snapshot.randomDrawCount;
+    return instance;
   }
 
   private selectNextStep(): VocabularyLessonStep {
@@ -322,7 +450,7 @@ export class VocabularyLessonState {
     const word = selectVocabularyPracticeWord(
       candidates,
       (wordId) => this.requireProgress(wordId).practicePresentationCount,
-      this.random
+      () => this.drawRandom()
     );
     const progress = this.requireProgress(word.id);
     const answerType = progress.definitionMastered
@@ -465,6 +593,11 @@ export class VocabularyLessonState {
 
   private requireActiveAttempt(): VocabularyActiveAttempt {
     return requireVocabularyActiveAttempt(this.activeAttempt);
+  }
+
+  private drawRandom(): number {
+    this.randomDrawCount += 1;
+    return this.random();
   }
 
   private requireProgress(wordId: string): VocabularyWordProgress {

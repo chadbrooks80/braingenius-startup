@@ -26,6 +26,7 @@ import {
   TEST_OWNER_USER_ID,
   TEST_WORD_SEEDS,
 } from "../vocabulary/fakeVocabularyListStore";
+import { createFakeVocabularyRuntimeStore } from "../vocabulary/fakeVocabularyRuntimeStore";
 
 function createStore(
   options: Partial<ConstructorParameters<typeof VocabularyContentCapabilityStore>[0]> = {}
@@ -33,6 +34,7 @@ function createStore(
   return new VocabularyContentCapabilityStore({
     listSource: createDefaultFakeVocabularyListSource(),
     learningSource: createDefaultFakeVocabularyLearningSource(),
+    runtimeStore: createFakeVocabularyRuntimeStore(),
     ...options,
   });
 }

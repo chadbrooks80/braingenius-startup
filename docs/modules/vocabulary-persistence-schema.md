@@ -152,3 +152,45 @@ repository: the database is now the authoritative source for durable
 learner progress, mastery, review scheduling, checkpoint history, and daily
 totals, with process memory retained only as a disposable per-visit cache.
 See [`vocabulary.md`](./vocabulary.md) for current behavior.
+
+## Runtime record table (`database-backed-vocabulary-runtime-security-state`)
+
+A later, separate migration
+(`prisma/migrations/20260801155256_add_mod_vocab_runtime_records/migration.sql`)
+adds one additional table, `mod_vocab_runtime_records` (Prisma model
+`ModVocabRuntimeRecord`), and one additional enum,
+`mod_vocab_runtime_record_kind` (`LESSON`, `CAPABILITY`, `ATTEMPT`). This
+table is the shared durable replacement for the three former process-local
+Maps inside `VocabularyContentCapabilityStore` (active lesson state, the
+screen-scoped capability chain, and the disposable answer-to-successor
+attempt index) -- it is not part of Phase 1's eight tables above, and it is
+not a second source of long-term learner history. `ModVocabLearning`,
+`ModVocabWordProgress`, `ModVocabSession`, `ModVocabAttempt`, and
+`ModVocabAttemptChoice` remain the sole durable, unbounded-lifetime learner
+progress records.
+
+A single row's primary key is the compound `(recordKind, id)`, so a LESSON,
+CAPABILITY, and ATTEMPT row may reuse the same opaque application-generated
+UUID without colliding. `payload` (`Json`) holds an explicit, versioned,
+strictly parsed snapshot of that record kind (see
+`src/learning-modules/vocabulary/server/vocabularyRuntimeSnapshots.ts`);
+`stateVersion` is an optimistic-concurrency token every multi-record
+transition compares and increments so two backend processes can never both
+advance the same lesson from the same committed state. `expiresAt` is fixed
+once at lesson creation and reused verbatim for every capability/attempt row
+that lesson later produces, so the existing 30-minute lifetime cannot slide
+with activity; `lessonId`, `learnerId`, and `wordListId` are plain indexed
+lookup columns (`wordListId` is the only foreign key, cascading from
+`ModVocabList`) rather than data relationships the runtime store itself
+interprets. `tests/vocabulary/vocabularyRuntimeRecordSchema.test.ts` verifies
+this migration's enum, table, indexes, foreign key, and absence of
+destructive or seed statements.
+
+The ATTEMPT record kind is only a disposable sequencer-mirror index
+(`{lessonId, successorCapability}`) used to advance the in-process screen
+sequencer once a durable grade commits -- it is not, and does not need to
+be, a copy of the graded attempt. Offered choice IDs, the correct choice or
+canonical spelling, and the protected speech definition already live
+durably in `ModVocabAttempt`/`ModVocabAttemptChoice`, an architecture that
+predates this feature. `ModVocabRuntimeRecord` never duplicates that
+grading data.

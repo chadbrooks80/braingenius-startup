@@ -35,14 +35,18 @@ const ROUTES: Array<{
     handler: handleVocabularyContentRouteRequest,
     url: "http://local.test/api/learning/vocabulary/content",
     body: { contentType: "manifest", learningId: "learning-id" },
-    // A non-manifest request against an unauthorized/unknown lesson is
-    // rejected deterministically before any real database access, proving
-    // the request passed the module-access gate and reached the real
-    // handler without depending on a real (unfaked) Prisma-backed lookup.
+    // A structurally malformed screen-content request (an invalid opaque
+    // capability shape) is rejected by strict request parsing before the
+    // handler ever calls the database-backed capability store, proving the
+    // request passed the module-access gate and reached the real handler
+    // without depending on a real (unfaked) Prisma-backed lookup. A
+    // well-formed but unauthorized/unknown lessonId cannot serve this role
+    // now that lesson/capability state is authoritative in the shared
+    // runtime database rather than an in-process Map.
     passThroughBody: {
       contentType: "definition-display",
       lessonId: "00000000-0000-4000-8000-000000000001",
-      capability: "00000000-0000-4000-8000-000000000002",
+      capability: "not-a-valid-opaque-capability",
     },
     passThroughStatus: 400,
   },

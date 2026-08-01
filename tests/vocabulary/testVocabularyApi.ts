@@ -22,6 +22,7 @@ import {
   createFakeVocabularyLearningSource,
   type FakeVocabularyLearningSource,
 } from "./fakeVocabularyLearningStore";
+import { createFakeVocabularyRuntimeStore } from "./fakeVocabularyRuntimeStore";
 
 // The authenticated `ModVocabLearning.id` used by default across Vocabulary
 // tests, distinct from `TEST_LIST_ID` (the reusable `ModVocabList.id` it
@@ -51,6 +52,7 @@ export function createInProcessVocabularyApi(
   capabilityStore: VocabularyContentCapabilityStore = new VocabularyContentCapabilityStore({
     listSource: createDefaultFakeVocabularyListSource(),
     learningSource: createDefaultFakeVocabularyLearningSource(userId),
+    runtimeStore: createFakeVocabularyRuntimeStore(),
   })
 ): VocabularyModuleApi {
   return {
